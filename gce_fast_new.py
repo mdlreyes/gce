@@ -12,6 +12,7 @@ import scipy
 import sys
 import params
 from dtd_ia import dtd_ia
+import gce_yields
 
 def gce_model(pars):
     """Galactic chemical evolution model.
@@ -54,8 +55,10 @@ def gce_model(pars):
     pristine[1] = 0.2486        # Helium from BBN
     pristine=pristine
 
-    #Get indices for each tracked element that has contributions
-    #to its yield from SNe II. Will fail if element is not contained in SN_yield.
+    # Load all sources of chemical yields
+    nel, eps_sun, SN_yield, AGB_yield, M_SN, M_HN, z_II, M_AGB, z_AGB = gce_yields.initialize_yields_inclBa(AGB_source = AGB_source)
+
+    # Get indices for each tracked element. Will fail if element is not contained in SN_yield.
     snindex = {'h':np.where(SN_yield['atomic'] == 1)[0],
             'he':np.where(SN_yield['atomic'] == 2)[0],
             #'c':np.where(SN_yield['atomic'] == 6)[0],
@@ -96,12 +99,6 @@ def gce_model(pars):
     # OR (gas remains within the galaxy at a given time step AND the gas mass in iron at the previous timestep is subsolar) ]
     while ((timestep < (n - 1)) and ((timestep <= 10) or 
     ( (model['mgas'][timestep] > 0.0) and (model['eps'][timestep-1,snindex['fe']] < 0.0) ) )):
-
-        # Eq. 2: Compute gas mass (M_sun), determined from individual element gas masses
-        model['mgas'][timestep] = model['abund'][timestep-1,snindex['h']] + model['abund'][timestep-1,snindex['he']] + \
-            (model['abund'][timestep-1,snindex['mg']] + model['abund'][timestep-1,snindex['si']] + \
-            model['abund'][timestep-1,snindex['ca']]+model['abund'][timestep-1,snindex['ti']])*10.0**(1.31) + \
-            model['abund'][timestep-1,snindex['fe']]*10.0**(0.03) 
              
         if model['mgas'][timestep] < 0.: 
             # If somehow the galaxy has negative gas mass (unphysical), set gas mass to zero instead
@@ -119,21 +116,19 @@ def gce_model(pars):
         # Eq. 5: SFR (Msun Gyr**-1) set by generalization of K-S law                                                            
         model['mdot'][timestep] = sfr_norm * model['mgas'][timestep]**sfr_exp / 1.e6**(sfr_exp-1.0)
 
-        # Eq. 10: Ia SNe
+        # Compute rates of SNe, AGB stars that will happen IN THE FUTURE!
+
+        # Eq. 10: rate of Ia SNe
         n_ia = model['mdot'][timestep] * dtd_ia(t[timestep:] - t[timestep], ia_model)   # Number of Type Ia SNe that will explode in the future
         
         model['Ia_rate'][timestep:] = model['Ia_rate'][timestep:] + n_ia    # Put Type Ia rate in future array
 
-        # TODO: Put IaSNe yields in future array
-
-        # Eq. 7, 8: rate of Type II SNe
+        # Eq. 8: rate of Type II SNe
         n_ii = model['mdot'][timestep] * n_himass   # Number of stars formed now that will explode in the future
         t_ii = t_himass[:-1] + t[timestep]          # Times when they will explode (Gyr)
         idx_ii = np.searchsorted(t_ii, t)           # Indices to put yields in the future array
 
         model['II_rate'][idx_ii] = model['II_rate'][idx_ii] + n_ii  # Put Type II rate in future array
-
-        # TODO: Put IISNe yields in future array
 
         # Eq. 13: rate of AGB stars
         n_agb = model['mdot'][timestep] * n_lomass  # Number of stars formed now that will explode in the future
@@ -142,10 +137,27 @@ def gce_model(pars):
 
         model['AGB_rate'][idx_agb] = model['AGB_rate'][idx_agb] + n_agb  # Put AGB rate in future array
 
-        # TODO: Put AGB yields in future array
+        # Compute yields IN CURRENT TIMESTEP
 
-        # Inflows
+        # Eq. 11: Type Ia SNe
+        f_Ia = SN_yield[:]['Ia']       # Mass ejected from each SN Ia (M_sun SN**-1) [array size = (elem)]  
+        M_Ia = f_Ia*model['Ia_rate'][timestep]  # Eq. 11: Mass returned to the ISM by Ia SNe  [array size = (elem)]
 
-        # Outflows
+        # TODO: Compute IISNe yields
+
+        # TODO: Compute AGB yields
+
+        # TODO: Inflows
+
+        # TODO: Outflows
+
+        # Eq. 2: Compute gas mass (M_sun), determined from individual element gas masses
+        model['mgas'][timestep+1] = model['abund'][timestep-1,snindex['h']] + model['abund'][timestep-1,snindex['he']] + \
+            (model['abund'][timestep-1,snindex['mg']] + model['abund'][timestep-1,snindex['si']] + \
+            model['abund'][timestep-1,snindex['ca']]+model['abund'][timestep-1,snindex['ti']])*10.0**(1.31) + \
+            model['abund'][timestep-1,snindex['fe']]*10.0**(0.03) 
+
+        # Increment timestep
+        timestep += 1
 
     return
