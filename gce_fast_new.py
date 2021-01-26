@@ -11,7 +11,7 @@ import numpy as np
 import scipy
 import sys
 import params
-from dtd_ia import dtd_ia
+import dtd
 import gce_yields
 
 def gce_model(pars):
@@ -74,22 +74,7 @@ def gce_model(pars):
     model['f_in'] = 1.e6 * f_in_norm0 * t * np.exp(-t/f_in_t0)    # Compute inflow rates (just a function of time)                                                                                
     model['abund'][0,0] = model['mgas'][0]*pristine[0]    # Set initial gas mass of H
     model['abund'][0,1] = model['mgas'][0]*pristine[1]    # Set initial gas mass of He
-    model['mgal'][0] = model['mgas'][0]   # Set the initial galaxy mass to the initial gas mass
-
-    # Prepare the arrays for IMF calculations 
-    # TODO: make IMF an input variable?
-    m_himass = np.logspace(np.log10(params.M_SN_min),np.log10(params.M_SN_max),200) # Mass range for massive stars/SNII (Msun)                                                                                       
-    t_himass = 1.2 * m_himass**(-1.85) + 0.003                                      # Eq. 6: Total stellar lifetime for massive stars (Gyr)
-    n_himass = 0.31 * m_himass[:-1]**(-2.7) * np.diff(m_himass)                     # From Kroupa IMF: Normalized number of massive stars that will explode
-
-    m_lomass = np.logspace(np.log10(M_AGB_min), np.log10(M_AGB_max), 200)           # Mass range for low & intermediate mass stars/AGB stars (Msun)  
-    t_lomass = np.zeros(len(m_lomass))                                              # Total stellar lifetime for more massive stars (Gyr)
-    t_lomass[m_lomass >= 6.6] = 1.2*m_int2[m_lomass >= 6.6]**(-1.85) + 0.003        # Eq. 6
-    t_lomass[m_lomass < 6.6] = 10**((0.334-np.sqrt(1.790-0.2232*(7.764-np.log10(m_int2[m_lomass < 6.6]))))/0.1116) # Eq. 12
-    n_lomass = np.zeros(len(m_lomass))                                              # From Kroupa IMF: Normalized number of stars that will be AGB stars
-    n_lomass[m_lomass >= 1] = 0.31 * m_lomass[m_lomass >= 1]**(-2.7)
-    n_lomass[m_lomass < 1] = 0.31 * m_lomass[m_lomass >= 1]**(-2.2)
-    n_lomass = n_lomass[:-1] * np.diff(m_lomass)                                  
+    model['mgal'][0] = model['mgas'][0]   # Set the initial galaxy mass to the initial gas mass                
 
     # Step through time!
     timestep = 0
@@ -116,36 +101,24 @@ def gce_model(pars):
         # Eq. 5: SFR (Msun Gyr**-1) set by generalization of K-S law                                                            
         model['mdot'][timestep] = sfr_norm * model['mgas'][timestep]**sfr_exp / 1.e6**(sfr_exp-1.0)
 
-        # Compute rates of SNe, AGB stars that will happen IN THE FUTURE!
+        # Eq. 10: rate of Ia SNe that will explode IN THE FUTURE
+        n_ia = model['mdot'][timestep] * dtd.dtd_ia(t[timestep:] - t[timestep], params.ia_model)    # Number of Type Ia SNe that will explode in the future
+        model['Ia_rate'][timestep:] = model['Ia_rate'][timestep:] + n_ia                            # Put Type Ia rate in future array
 
-        # Eq. 10: rate of Ia SNe
-        n_ia = model['mdot'][timestep] * dtd_ia(t[timestep:] - t[timestep], ia_model)   # Number of Type Ia SNe that will explode in the future
-        
-        model['Ia_rate'][timestep:] = model['Ia_rate'][timestep:] + n_ia    # Put Type Ia rate in future array
+        # Eq. 11: Type Ia SNe yields IN CURRENT TIMESTEP
+        f_Ia = SN_yield[:]['Ia']                    # Mass ejected from each SN Ia (M_sun SN**-1) [array size = (elem)]  
+        M_Ia = f_Ia * model['Ia_rate'][timestep]    # Eq. 11: Mass returned to the ISM by Ia SNe  [array size = (elem)]
 
-        # Eq. 8: rate of Type II SNe
-        n_ii = model['mdot'][timestep] * n_himass   # Number of stars formed now that will explode in the future
-        t_ii = t_himass[:-1] + t[timestep]          # Times when they will explode (Gyr)
-        idx_ii = np.searchsorted(t_ii, t)           # Indices to put yields in the future array
+        # Eq. 8: rate of Type II SNe that will explode IN THE FUTURE
+        m_himass, n_himass = dtd_ii(t[timestep:] - t[timestep], params.imf_model)
+        n_ii = model['mdot'][timestep] * n_himass                           # Number of stars formed now that will explode in the future
+        model['II_rate'][timestep:] = model['II_rate'][timestep:] + n_ii    # Put Type II rate in future array
 
-        model['II_rate'][idx_ii] = model['II_rate'][idx_ii] + n_ii  # Put Type II rate in future array
+        # TODO: Type II SNe yields IN THE FUTURE
 
-        # Eq. 13: rate of AGB stars
-        n_agb = model['mdot'][timestep] * n_lomass  # Number of stars formed now that will explode in the future
-        t_agb = t_lomass[:-1] + t[timestep]         # Times when they will produce winds (Gyr)
-        idx_agb = np.searchsorted(t_agb, t)         # Indices to put yields in the future array
+        # TODO: Eq. 13: rate of AGB stars that will explode IN THE FUTURE
 
-        model['AGB_rate'][idx_agb] = model['AGB_rate'][idx_agb] + n_agb  # Put AGB rate in future array
-
-        # Compute yields IN CURRENT TIMESTEP
-
-        # Eq. 11: Type Ia SNe
-        f_Ia = SN_yield[:]['Ia']       # Mass ejected from each SN Ia (M_sun SN**-1) [array size = (elem)]  
-        M_Ia = f_Ia*model['Ia_rate'][timestep]  # Eq. 11: Mass returned to the ISM by Ia SNe  [array size = (elem)]
-
-        # TODO: Compute IISNe yields
-
-        # TODO: Compute AGB yields
+        # TODO: AGB yields IN THE FUTURE
 
         # TODO: Inflows
 
