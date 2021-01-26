@@ -56,7 +56,13 @@ def gce_model(pars):
     pristine=pristine
 
     # Load all sources of chemical yields
-    nel, eps_sun, SN_yield, AGB_yield, M_SN, M_HN, z_II, M_AGB, z_AGB = gce_yields.initialize_yields_inclBa(AGB_source = AGB_source)
+    nel, eps_sun, SN_yield, AGB_yield, M_SN, _, z_II, M_AGB, z_AGB = gce_yields.initialize_yields_inclBa(AGB_source = AGB_source)
+
+    # Linearly extrapolate supernova yields to min/max progenitor masses
+    sn_min = SN_yield[elem]['II'][:,0] * M_SN_min/M_SN[0]               # Extrapolate to min progenitor mass
+    sn_max = SN_yield[elem]['II'][:,-1] * M_SN_max/M_SN[-1]             # Extrapolate to max progenitor mass
+    yield_ii = np.concatenate((sn_min.reshape(-1,1), SN_yield[elem]['II'], sn_max.reshape(-1,1)), axis=1)   # Concatenate yield tables
+    M_SN = np.concatenate(([M_SN_min], [M_SN], [M_SN_max]))             # Concatenate mass list
 
     # Get indices for each tracked element. Will fail if element is not contained in SN_yield.
     snindex = {'h':np.where(SN_yield['atomic'] == 1)[0],
@@ -74,7 +80,15 @@ def gce_model(pars):
     model['f_in'] = 1.e6 * f_in_norm0 * t * np.exp(-t/f_in_t0)    # Compute inflow rates (just a function of time)                                                                                
     model['abund'][0,0] = model['mgas'][0]*pristine[0]    # Set initial gas mass of H
     model['abund'][0,1] = model['mgas'][0]*pristine[1]    # Set initial gas mass of He
-    model['mgal'][0] = model['mgas'][0]   # Set the initial galaxy mass to the initial gas mass                
+    model['mgal'][0] = model['mgas'][0]   # Set the initial galaxy mass to the initial gas mass   
+
+    # Prepare arrays for Type II SNe calculations
+    m_himass, n_himass = dtd_ii(t, params.imf_model)   # Mass and fraction of stars that will explode in the future
+    idx_bad = np.where((m_himass < M_SN_min) or (m_himass > M_SN_max))          # Limit to timesteps where stars between 10-100 M_sun will explode
+    m_himass[idx_bad] = 0.
+    n_himass[idx_bad] = 0.
+    for elem in range(nel):     
+        ii_yield[:,elem] = interp_func(M_SN, yield_ii[:,m], m_himass)           # Compute yields of masses of stars that will explode
 
     # Step through time!
     timestep = 0
@@ -110,11 +124,11 @@ def gce_model(pars):
         M_Ia = f_Ia * model['Ia_rate'][timestep]    # Eq. 11: Mass returned to the ISM by Ia SNe  [array size = (elem)]
 
         # Eq. 8: rate of Type II SNe that will explode IN THE FUTURE
-        m_himass, n_himass = dtd_ii(t[timestep:] - t[timestep], params.imf_model)
         n_ii = model['mdot'][timestep] * n_himass                           # Number of stars formed now that will explode in the future
-        model['II_rate'][timestep:] = model['II_rate'][timestep:] + n_ii    # Put Type II rate in future array
+        # TODO: Put Type II rate in future array
 
-        # TODO: Type II SNe yields IN THE FUTURE
+        # TODO: Eq. 7: Type II SNe yields IN THE FUTURE
+        # Interpolate metallicity
 
         # TODO: Eq. 13: rate of AGB stars that will explode IN THE FUTURE
 
