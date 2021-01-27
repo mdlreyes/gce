@@ -69,8 +69,8 @@ def gce_model(pars):
     # Linearly extrapolate supernova yields to min/max progenitor masses
     sn_min = SN_yield[:]['II'][:,:,0] * M_SN_min/M_SN[0]               # Extrapolate yields to min progenitor mass
     sn_max = SN_yield[:]['II'][:,:,-1] * M_SN_max/M_SN[-1]             # Extrapolate yields to max progenitor mass
-    yield_ii = np.concatenate((sn_min.reshape(-1,1), SN_yield[elem]['II'], sn_max.reshape(-1,1)), axis=1)   # Concatenate yield tables
-    M_SN = np.concatenate(([M_SN_min], [M_SN], [M_SN_max]))             # Concatenate mass list
+    yield_ii = np.concatenate((sn_min[...,None], SN_yield[elem]['II'], sn_max[...,None]), axis=2)   # Concatenate yield tables
+    M_SN = np.concatenate(([M_SN_min], M_SN, [M_SN_max]))             # Concatenate mass list
 
     # Get indices for each tracked element. Will fail if element is not contained in SN_yield.
     snindex = {'h':np.where(SN_yield['atomic'] == 1)[0],
@@ -91,14 +91,18 @@ def gce_model(pars):
     model['mgal'][0] = model['mgas'][0]   # Set the initial galaxy mass to the initial gas mass   
 
     # Prepare arrays for Type II SNe calculations
-    M_II = np.zeros((n,nel))
-    m_himass, n_himass = dtd_ii(t, params.imf_model)   # Mass and fraction of stars that will explode in the future
+    M_II = np.zeros((nel, n))                                           # Array of yields contributed by Type II SNe
+    m_himass, n_himass = dtd.dtd_ii(t, params.imf_model)                # Mass and fraction of stars that will explode in the future
     idx_bad = np.where((m_himass < M_SN_min) or (m_himass > M_SN_max))  # Limit to timesteps where stars between 10-100 M_sun will explode
     m_himass[idx_bad] = 0.
     n_himass[idx_bad] = 0.
-    ii_yield_mass = np.zeros((len(z_II),n))
-    for z in range(len(z_II)):     
-        ii_yield_mass[z,:] = interp_func(M_SN, yield_ii[z,:], m_himass)   # Compute yields of masses of stars that will explode
+
+    # Interpolate yield tables over mass
+    ii_yield_mass = np.zeros((nel,len(z_II),n))
+    for elem in nel:
+        for z in range(len(z_II)):     
+            ii_yield_mass[elem,z,:] = interp_func(M_SN, yield_ii[elem,z,:], m_himass)   # Compute yields of masses of stars that will explode
+    ii_yield_mass[:,:,idx_bad] = 0.
 
     # Step through time!
     timestep = 0
@@ -120,7 +124,7 @@ def gce_model(pars):
             model['z'][timestep] = (model['mgas'][timestep] - model['abund'][timestep-1,snindex['h']] - model['abund'][timestep-1,snindex['he']])/model['mgas'][timestep]
         else:
             # Otherwise, if the gas is depleted, the gas mass is zero
-            z[timestep] =  0.0
+            model['z'][timestep] =  0.0
 
         # Eq. 5: SFR (Msun Gyr**-1) set by generalization of K-S law                                                            
         model['mdot'][timestep] = sfr_norm * model['mgas'][timestep]**sfr_exp / 1.e6**(sfr_exp-1.0)
@@ -137,10 +141,13 @@ def gce_model(pars):
         n_ii = model['mdot'][timestep] * n_himass   # Number of stars formed now that will explode in the future
         model['II_rate'][timestep:] = model['II_rate'][timestep:] + n_ii[:(n-timestep+1)]  # Put Type II rate in future array
 
-        # TODO: Eq. 7: Type II SNe yields IN THE FUTURE
-        for elem in range(nel):     
-            ii_yield_mass[:,elem] = interp_func(M_SN, yield_ii[:,m], m_himass)   # Compute yields of masses of stars that will explode# Interpolate metallicity
-        M_II = ii_yield_mass *  # Put yields in future array
+        # Eq. 7: Type II SNe yields IN THE FUTURE
+        ii_yield_final = np.zeros((nel,n))
+        for elem in range(nel):
+            for m in range(m_himass):
+                if m_himass[m] > 0:     
+                    ii_yield_final[elem,m] = interp_func(z_II, ii_yield_mass[elem,:,m], model['z'][timestep])   # Interpolate yield tables over metallicity
+        M_II[:,timestep:] = M_II[:,timestep:] + ii_yield_final[:,:(n-timestep+1)]  # Put Type II yields in future array
 
         # TODO: Eq. 13: rate of AGB stars that will explode IN THE FUTURE
 
