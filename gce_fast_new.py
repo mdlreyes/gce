@@ -67,10 +67,16 @@ def gce_model(pars):
     nel, eps_sun, SN_yield, AGB_yield, M_SN, _, z_II, M_AGB, z_AGB = gce_yields.initialize_yields_inclBa(AGB_source = AGB_source)
 
     # Linearly extrapolate supernova yields to min/max progenitor masses
-    sn_min = SN_yield[:]['II'][:,:,0] * M_SN_min/M_SN[0]               # Extrapolate yields to min progenitor mass
-    sn_max = SN_yield[:]['II'][:,:,-1] * M_SN_max/M_SN[-1]             # Extrapolate yields to max progenitor mass
-    yield_ii = np.concatenate((sn_min[...,None], SN_yield[elem]['II'], sn_max[...,None]), axis=2)   # Concatenate yield tables
-    M_SN = np.concatenate(([M_SN_min], M_SN, [M_SN_max]))             # Concatenate mass list
+    sn_min = SN_yield[:]['II'][:,:,0] * params.M_SN_min/M_SN[0]             # Extrapolate yields to min progenitor mass
+    sn_max = SN_yield[:]['II'][:,:,-1] * params.M_SN_max/M_SN[-1]           # Extrapolate yields to max progenitor mass
+    yield_ii = np.concatenate((sn_min[...,None], SN_yield[:]['II'], sn_max[...,None]), axis=2)   # Concatenate yield tables
+    M_SN = np.concatenate(([params.M_SN_min], M_SN, [params.M_SN_max]))     # Concatenate mass list
+
+    # Linearly extrapolate AGB yields to min/max progenitor masses
+    agb_min = AGB_yield[:]['AGB'][:,:,0] * params.M_AGB_min/M_AGB[0]        # Extrapolate yields to min progenitor mass
+    agb_max = AGB_yield[:]['AGB'][:,:,-1] * params.M_AGB_max/M_AGB[-1]      # Extrapolate yields to max progenitor mass
+    yield_ii = np.concatenate((agb_min[...,None], AGB_yield[:]['AGB'], agb_max[...,None]), axis=2)   # Concatenate yield tables
+    M_AGB = np.concatenate(([params.M_AGB_min], M_AGB, [params.M_AGB_max])) # Concatenate mass list
 
     # Get indices for each tracked element. Will fail if element is not contained in SN_yield.
     snindex = {'h':np.where(SN_yield['atomic'] == 1)[0],
@@ -90,12 +96,18 @@ def gce_model(pars):
     model['abund'][0,1] = model['mgas'][0]*pristine[1]    # Set initial gas mass of He
     model['mgal'][0] = model['mgas'][0]   # Set the initial galaxy mass to the initial gas mass   
 
-    # Prepare arrays for Type II SNe calculations
+    # Prepare arrays for Type II SNe and AGB calculations
     M_II = np.zeros((nel, n))                                           # Array of yields contributed by Type II SNe
     m_himass, n_himass = dtd.dtd_ii(t, params.imf_model)                # Mass and fraction of stars that will explode in the future
-    idx_bad = np.where((m_himass < M_SN_min) or (m_himass > M_SN_max))  # Limit to timesteps where stars between 10-100 M_sun will explode
+    idx_bad = np.where((m_himass < params.M_SN_min) or (m_himass > params.M_SN_max))  # Limit to timesteps where stars between 10-100 M_sun will explode
     m_himass[idx_bad] = 0.
     n_himass[idx_bad] = 0.
+
+    M_AGB = np.zeros((nel, n))                                          # Array of yields contributed by AGB stars
+    m_agb, n_agb = dtd.dtd_agb(t, params.imf_model)                     # Mass and fraction of stars that become AGBs in the future
+    #idx_bad = np.where((m_himass < params.M_SN_min) or (m_himass > params.M_SN_max))  # Limit to timesteps where stars between 10-100 M_sun will explode
+    #m_himass[idx_bad] = 0.
+    #n_himass[idx_bad] = 0.
 
     # Interpolate yield tables over mass
     ii_yield_mass = np.zeros((nel,len(z_II),n))

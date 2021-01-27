@@ -32,13 +32,20 @@ def dtd_ii(t,imf_model):
     m_himass = ((t - 0.003)/1.2)**(-1/1.85)
 
     # Fraction of massive stars that will explode (as a function of time in Gyr)
-
     if imf_model == 'kroupa':
         # Integral of Kroupa IMF of M(t)
         n_himass = 0.0966 * (t - 0.003)**2.459
 
-    idx_bad = np.where((m_himass < M_SN_min) or (m_himass > M_SN_max))    # Limit to timesteps where stars between 10-100 M_sun will explode
-    m_himass[idx_bad] = 0.
-    n_himass[idx_bad] = 0.
+    return m_himass, n_himass
+
+def dtd_agb(t,imf_model):
+
+    # Eq. 6 (inverted): Massive stars that will explode in the future (M_sun)
+    m_himass = ((t - 0.003)/1.2)**(-1/1.85)
+
+    # Fraction of massive stars that will explode (as a function of time in Gyr)
+    if imf_model == 'kroupa':
+        # Integral of Kroupa IMF of M(t)
+        n_himass = 0.0966 * (t - 0.003)**2.459
 
     return m_himass, n_himass
