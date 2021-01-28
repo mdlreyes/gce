@@ -75,7 +75,7 @@ def gce_model(pars):
     # Linearly extrapolate AGB yields to min/max progenitor masses
     agb_min = AGB_yield[:]['AGB'][:,:,0] * params.M_AGB_min/M_AGB[0]        # Extrapolate yields to min progenitor mass
     agb_max = AGB_yield[:]['AGB'][:,:,-1] * params.M_AGB_max/M_AGB[-1]      # Extrapolate yields to max progenitor mass
-    yield_ii = np.concatenate((agb_min[...,None], AGB_yield[:]['AGB'], agb_max[...,None]), axis=2)   # Concatenate yield tables
+    yield_agb = np.concatenate((agb_min[...,None], AGB_yield[:]['AGB'], agb_max[...,None]), axis=2)   # Concatenate yield tables
     M_AGB = np.concatenate(([params.M_AGB_min], M_AGB, [params.M_AGB_max])) # Concatenate mass list
 
     # Get indices for each tracked element. Will fail if element is not contained in SN_yield.
@@ -97,17 +97,17 @@ def gce_model(pars):
     model['mgal'][0] = model['mgas'][0]   # Set the initial galaxy mass to the initial gas mass   
 
     # Prepare arrays for Type II SNe and AGB calculations
-    M_II = np.zeros((nel, n))                                           # Array of yields contributed by Type II SNe
-    m_himass, n_himass = dtd.dtd_ii(t, params.imf_model)                # Mass and fraction of stars that will explode in the future
+    M_II_arr = np.zeros((nel, n))                           # Array of yields contributed by Type II SNe
+    m_himass, n_himass = dtd.dtd_ii(t, params.imf_model)    # Mass and fraction of stars that will explode in the future
     idx_bad = np.where((m_himass < params.M_SN_min) or (m_himass > params.M_SN_max))  # Limit to timesteps where stars between 10-100 M_sun will explode
     m_himass[idx_bad] = 0.
     n_himass[idx_bad] = 0.
 
-    M_AGB = np.zeros((nel, n))                                          # Array of yields contributed by AGB stars
-    m_agb, n_agb = dtd.dtd_agb(t, params.imf_model)                     # Mass and fraction of stars that become AGBs in the future
-    #idx_bad = np.where((m_himass < params.M_SN_min) or (m_himass > params.M_SN_max))  # Limit to timesteps where stars between 10-100 M_sun will explode
-    #m_himass[idx_bad] = 0.
-    #n_himass[idx_bad] = 0.
+    M_AGB_arr = np.zeros((nel, n))                          # Array of yields contributed by AGB stars
+    m_intmass, n_intmass = dtd.dtd_agb(t, params.imf_model) # Mass and fraction of stars that become AGBs in the future
+    idx_bad_agb = np.where((m_intmass < params.M_AGB_min) or (m_intmass > params.M_AGB_max))  # Limit to timesteps where stars between 0.865-1 M_sun will explode
+    m_intmass[idx_bad_agb] = 0.
+    n_intmass[idx_bad_agb] = 0.
 
     # Interpolate yield tables over mass
     ii_yield_mass = np.zeros((nel,len(z_II),n))
@@ -115,6 +115,12 @@ def gce_model(pars):
         for z in range(len(z_II)):     
             ii_yield_mass[elem,z,:] = interp_func(M_SN, yield_ii[elem,z,:], m_himass)   # Compute yields of masses of stars that will explode
     ii_yield_mass[:,:,idx_bad] = 0.
+
+    agb_yield_mass = np.zeros((nel,len(z_AGB),n))
+    for elem in nel:
+        for z in range(len(z_AGB)):     
+            agb_yield_mass[elem,z,:] = interp_func(M_AGB, yield_agb[elem,z,:], m_intmass)   # Compute yields of masses of stars that will explode
+    agb_yield_mass[:,:,idx_bad_agb] = 0.
 
     # Step through time!
     timestep = 0
@@ -155,21 +161,37 @@ def gce_model(pars):
 
         # Eq. 7: Type II SNe yields IN THE FUTURE
         ii_yield_final = np.zeros((nel,n))
-        for elem in range(nel):
+        for elem in range(nel):          # Interpolate yield tables over metallicity
             for m in range(m_himass):
                 if m_himass[m] > 0:     
-                    ii_yield_final[elem,m] = interp_func(z_II, ii_yield_mass[elem,:,m], model['z'][timestep])   # Interpolate yield tables over metallicity
-        M_II[:,timestep:] = M_II[:,timestep:] + ii_yield_final[:,:(n-timestep+1)]  # Put Type II yields in future array
+                    ii_yield_final[elem,m] = interp_func(z_II, ii_yield_mass[elem,:,m], model['z'][timestep])
+        M_II_arr[:,timestep:] = M_II_arr[:,timestep:] + ii_yield_final[:,:(n-timestep+1)]  # Put Type II yields in future array
 
-        # TODO: Eq. 13: rate of AGB stars that will explode IN THE FUTURE
+        # Rate of AGB stars that will explode IN THE FUTURE
+        n_agb = model['mdot'][timestep] * n_intmass   # Number of stars formed now that will produce AGB winds in the future
+        model['AGB_rate'][timestep:] = model['AGB_rate'][timestep:] + n_agb[:(n-timestep+1)]  # Put AGB rate in future array
 
-        # TODO: AGB yields IN THE FUTURE
+        # Eq. 13: AGB yields IN THE FUTURE
+        agb_yield_final = np.zeros((nel,n))
+        for elem in range(nel):          # Interpolate yield tables over metallicity
+            for m in range(m_intmass):
+                if m_intmass[m] > 0:     
+                    agb_yield_final[elem,m] = interp_func(z_AGB, agb_yield_mass[elem,:,m], model['z'][timestep])
+        M_AGB_arr[:,timestep:] = M_AGB_arr[:,timestep:] + AGB_yield_final[:,:(n-timestep+1)]  # Put AGB yields in future array
 
-        # TODO: Inflows
+        # Eq. 15: outflows IN CURRENT TIMESTEP (depends on gas mass fraction x_el)
+        if mgas[timestep] > 0.0: 
+            # If there's currently gas within the galaxy, gas mass fraction depends on prev timestep
+            x_el = abund[timestep-1,:]/mgas[timestep]
+        else: 
+            # Otherwise, if there is no gas, then the gas mass fraction is zero
+            x_el = np.zeros(nel)
 
-        # TODO: Outflows
+        model['mout'][timestep,:] = f_out * x_el * (model['II_rate'][timestep] + model['Ia_rate'][timestep]) 
 
-        # Eq. 2: Compute gas mass (M_sun), determined from individual element gas masses
+        # Now compute other stuff!
+
+        # Eq. 2: Compute gas mass (M_sun), determined from individual element gas masses, for NEXT TIMESTEP
         model['mgas'][timestep+1] = model['abund'][timestep-1,snindex['h']] + model['abund'][timestep-1,snindex['he']] + \
             (model['abund'][timestep-1,snindex['mg']] + model['abund'][timestep-1,snindex['si']] + \
             model['abund'][timestep-1,snindex['ca']]+model['abund'][timestep-1,snindex['ti']])*10.0**(1.31) + \
