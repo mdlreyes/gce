@@ -152,8 +152,8 @@ def gce_model(pars):
         model['Ia_rate'][timestep:] = model['Ia_rate'][timestep:] + n_ia                            # Put Type Ia rate in future array
 
         # Eq. 11: Type Ia SNe yields IN CURRENT TIMESTEP
-        f_Ia = SN_yield[:]['Ia']                    # Mass ejected from each SN Ia (M_sun SN**-1) [array size = (elem)]  
-        M_Ia = f_Ia * model['Ia_rate'][timestep]    # Eq. 11: Mass returned to the ISM by Ia SNe  [array size = (elem)]
+        f_Ia = SN_yield[:]['Ia']                    # Mass ejected from each SN Ia (M_sun SN**-1) 
+        M_Ia = f_Ia * model['Ia_rate'][timestep]    # Eq. 11: Mass returned to the ISM by Ia SNe
 
         # Eq. 8: rate of Type II SNe that will explode IN THE FUTURE
         n_ii = model['mdot'][timestep] * n_himass   # Number of stars formed now that will explode in the future
@@ -180,9 +180,9 @@ def gce_model(pars):
         M_AGB_arr[:,timestep:] = M_AGB_arr[:,timestep:] + AGB_yield_final[:,:(n-timestep+1)]  # Put AGB yields in future array
 
         # Eq. 15: outflows IN CURRENT TIMESTEP (depends on gas mass fraction x_el)
-        if mgas[timestep] > 0.0: 
+        if model['mgas'][timestep] > 0.0: 
             # If there's currently gas within the galaxy, gas mass fraction depends on prev timestep
-            x_el = abund[timestep-1,:]/mgas[timestep]
+            x_el = model['abund'][timestep-1,:]/model['mgas'][timestep]
         else: 
             # Otherwise, if there is no gas, then the gas mass fraction is zero
             x_el = np.zeros(nel)
@@ -190,6 +190,24 @@ def gce_model(pars):
         model['mout'][timestep,:] = f_out * x_el * (model['II_rate'][timestep] + model['Ia_rate'][timestep]) 
 
         # Now compute other stuff!
+
+        # Rate at which a given element is locked up in stars (M_sun Gyr**-1)
+        # SFR - (gas returned from SNe and AGB stars)                                                                                                  
+        model['dstar_dt'][timestep,:] = (x_el)*model['mdot'][timestep] - M_II_arr[:,timestep] - M_AGB_arr[:,timestep] - M_Ia
+
+        # Change in gas phase abundance (M_sun Gyr**-1) 
+        # -(rate of locking stars up) - outflow + inflow                                                         
+        model['de_dt'][timestep,:] = -model['dstar_dt'][timestep,:] - model['mout'][timestep,:] + model['f_in'][timestep]*pristine 
+
+        # TODO: Update gas masses (M_sun)                                                        
+        if timestep > 0:
+            if timestep < 4:
+                #print('test', np.shape(abund[timestep-1,:]), np.shape(np.sum(int2*de_dt[timestep-1:timestep+1,:].T, axis=1)))
+                if timestep-1 == 0: abund[timestep,:] = abund[timestep-1,:] + np.sum(int2*de_dt[timestep-1:timestep+1,:].T, axis=1)
+                elif timestep-1 == 1: abund[timestep,:] = abund[timestep-2,:] + np.sum(int3*de_dt[timestep-2:timestep+1,:].T, axis=1)
+                elif timestep-1 == 2: abund[timestep,:] = abund[timestep-3,:] + np.sum(int4*de_dt[timestep-3:timestep+1,:].T, axis=1)
+            else: abund[timestep,:] = abund[timestep-4,:] + np.sum(int5*de_dt[timestep-4:timestep+1,:].T, axis=1)
+
 
         # Eq. 2: Compute gas mass (M_sun), determined from individual element gas masses, for NEXT TIMESTEP
         model['mgas'][timestep+1] = model['abund'][timestep-1,snindex['h']] + model['abund'][timestep-1,snindex['he']] + \
