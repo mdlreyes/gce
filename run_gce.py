@@ -13,11 +13,11 @@ scl_pars = [ 701.57967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.4971068
 def time_check(pars):
     t1=time.time()
     model, atomic = gce_old.gce_model(pars)
-    print('Time for old model: %.2e'%(time.time()-time1))
+    print('Time for old model: %.2e'%(time.time()-t1))
 
     t2=time.time()
     model, atomic = gce.gce_model(pars)
-    print('Time for new model: %.2e'%(time.time()-time1))
+    print('Time for new model: %.2e'%(time.time()-t2))
 
     return
 

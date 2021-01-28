@@ -26,7 +26,8 @@ def interp_func(x,y,xinterp):
 def gce_model(pars):
     """Galactic chemical evolution model.
 
-    Takes in additional parameters from gce_params.py, and reads yields using gce_yields.py
+    Takes in additional parameters from params.py, reads yields using gce_yields.py, 
+    and computes delay-time distributions using dtd.py
 
     Args:
         pars (list): Parameters as described in paper = [A_in/1e6, tau_in, A_out/1000, A_star/1e6, alpha, M_gas_0]
