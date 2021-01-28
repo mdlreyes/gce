@@ -189,27 +189,30 @@ def gce_model(pars):
 
         model['mout'][timestep,:] = f_out * x_el * (model['II_rate'][timestep] + model['Ia_rate'][timestep]) 
 
-        # Now compute other stuff!
+        # Now put all the parts of the model together!
 
-        # Rate at which a given element is locked up in stars (M_sun Gyr**-1)
+        # Compute rate at which a given element is locked up in stars (M_sun Gyr**-1)
         # SFR - (gas returned from SNe and AGB stars)                                                                                                  
         model['dstar_dt'][timestep,:] = (x_el)*model['mdot'][timestep] - M_II_arr[:,timestep] - M_AGB_arr[:,timestep] - M_Ia
 
-        # Change in gas phase abundance (M_sun Gyr**-1) 
+        # Compute change in gas mass (M_sun Gyr**-1) 
         # -(rate of locking stars up) - outflow + inflow                                                         
         model['de_dt'][timestep,:] = -model['dstar_dt'][timestep,:] - model['mout'][timestep,:] + model['f_in'][timestep]*pristine 
 
-        # TODO: Update gas masses (M_sun)                                                        
+        # Update gas masses of individual elements (M_sun)  
+        int2 = delta_t * np.array([1., 1.]) / 2.  # Constants for trapezoidal integration                                                    
         if timestep > 0:
-            if timestep < 4:
-                #print('test', np.shape(abund[timestep-1,:]), np.shape(np.sum(int2*de_dt[timestep-1:timestep+1,:].T, axis=1)))
-                if timestep-1 == 0: abund[timestep,:] = abund[timestep-1,:] + np.sum(int2*de_dt[timestep-1:timestep+1,:].T, axis=1)
-                elif timestep-1 == 1: abund[timestep,:] = abund[timestep-2,:] + np.sum(int3*de_dt[timestep-2:timestep+1,:].T, axis=1)
-                elif timestep-1 == 2: abund[timestep,:] = abund[timestep-3,:] + np.sum(int4*de_dt[timestep-3:timestep+1,:].T, axis=1)
-            else: abund[timestep,:] = abund[timestep-4,:] + np.sum(int5*de_dt[timestep-4:timestep+1,:].T, axis=1)
+            model['abund'][timestep,:] = model['abund'][timestep-1,:] + np.sum(int2*model['de_dt'][timestep-1:timestep+1,:].T, axis=1)
 
+        # Compute epsilon-notation gas-phase abundances (number of atoms in units of M_sun/amu = 1.20d57)
+        for elem in range(nel):
+            if model['abund'][timestep,elem] <= 0.0: 
+                model['abund'][timestep,elem] = 0
+                model['abund'][timestep,elem] = np.nan
+            else:
+                model['eps'][timestep,elem] = np.log10(model['abund'][timestep,elem]/interp_func(z_II,SN_yield[elem]['weight_II'][:,3], model['z'][timestep]))
 
-        # Eq. 2: Compute gas mass (M_sun), determined from individual element gas masses, for NEXT TIMESTEP
+        # Eq. 2: Compute total gas mass (M_sun), determined from individual element gas masses, for NEXT TIMESTEP
         model['mgas'][timestep+1] = model['abund'][timestep-1,snindex['h']] + model['abund'][timestep-1,snindex['he']] + \
             (model['abund'][timestep-1,snindex['mg']] + model['abund'][timestep-1,snindex['si']] + \
             model['abund'][timestep-1,snindex['ca']]+model['abund'][timestep-1,snindex['ti']])*10.0**(1.31) + \
@@ -218,4 +221,8 @@ def gce_model(pars):
         # Increment timestep
         timestep += 1
 
-    return
+    # Timing test
+    time2 = time()
+    print('Time: %.2e'%(time2-time1))
+
+    return model[:timestep], SN_yield['atomic']
