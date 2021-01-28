@@ -5,11 +5,12 @@ The original version of the code (described in n Kirby+2011b) was written by E.N
 Rather than computing integrals at each time step, this code tracks a "forward-looking" array.
 """
 
-from time import time # For timing purposes
-
+# Import packages
 import numpy as np
 import scipy
 import sys
+
+# Import other files
 import params
 import dtd
 import gce_yields
@@ -34,8 +35,6 @@ def gce_model(pars):
         model (array): All outputs of model.
         SN_yield['atomic'] (array): Atomic numbers of all tracked elements.
     """
-
-    time1 = time()
 
     # Integration parameters
     n = 13600           # number of timesteps in the model 
@@ -220,9 +219,5 @@ def gce_model(pars):
 
         # Increment timestep
         timestep += 1
-
-    # Timing test
-    time2 = time()
-    print('Time: %.2e'%(time2-time1))
 
     return model[:timestep], SN_yield['atomic']
