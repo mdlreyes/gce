@@ -1,6 +1,6 @@
 import gce_fast_new as gce
 import gce_fast_old as gce_old
-#import gce_plot
+import gce_plot
 import time
 #import gce_yields_plot
 
@@ -27,4 +27,4 @@ if __name__ == "__main__":
     time_check(scl_pars)
 
     #model2, atomic2 = gce.gce_model(scl_pars)
-    #gce_plot.plotting_compare(model2, atomic2, title1="Sculptor final", plot=True, skip_end_dots=-10,eu_estimate=False)
+    gce_plot.plotting_compare(model2, atomic2, title1="Sculptor final", plot=True, skip_end_dots=-10,eu_estimate=False)
