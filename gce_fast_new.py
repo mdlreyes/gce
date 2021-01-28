@@ -162,7 +162,7 @@ def gce_model(pars):
         # Eq. 7: Type II SNe yields IN THE FUTURE
         ii_yield_final = np.zeros((nel,n))
         for elem in range(nel):          # Interpolate yield tables over metallicity
-            for m in range(m_himass):
+            for m in range(len(m_himass)):
                 if m_himass[m] > 0:     
                     ii_yield_final[elem,m] = interp_func(z_II, ii_yield_mass[elem,:,m], model['z'][timestep])
         M_II_arr[:,timestep:] = M_II_arr[:,timestep:] + ii_yield_final[:,:(n-timestep+1)]  # Put Type II yields in future array
@@ -174,7 +174,7 @@ def gce_model(pars):
         # Eq. 13: AGB yields IN THE FUTURE
         agb_yield_final = np.zeros((nel,n))
         for elem in range(nel):          # Interpolate yield tables over metallicity
-            for m in range(m_intmass):
+            for m in range(len(m_intmass)):
                 if m_intmass[m] > 0:     
                     agb_yield_final[elem,m] = interp_func(z_AGB, agb_yield_mass[elem,:,m], model['z'][timestep])
         M_AGB_arr[:,timestep:] = M_AGB_arr[:,timestep:] + AGB_yield_final[:,:(n-timestep+1)]  # Put AGB yields in future array
