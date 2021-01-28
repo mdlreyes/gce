@@ -99,13 +99,13 @@ def gce_model(pars):
     # Prepare arrays for Type II SNe and AGB calculations
     M_II_arr = np.zeros((nel, n))                           # Array of yields contributed by Type II SNe
     m_himass, n_himass = dtd.dtd_ii(t, params.imf_model)    # Mass and fraction of stars that will explode in the future
-    idx_bad = np.where((m_himass < params.M_SN_min) or (m_himass > params.M_SN_max))  # Limit to timesteps where stars between 10-100 M_sun will explode
+    idx_bad = np.where((m_himass < params.M_SN_min) | (m_himass > params.M_SN_max))  # Limit to timesteps where stars between 10-100 M_sun will explode
     m_himass[idx_bad] = 0.
     n_himass[idx_bad] = 0.
 
     M_AGB_arr = np.zeros((nel, n))                          # Array of yields contributed by AGB stars
     m_intmass, n_intmass = dtd.dtd_agb(t, params.imf_model) # Mass and fraction of stars that become AGBs in the future
-    idx_bad_agb = np.where((m_intmass < params.M_AGB_min) or (m_intmass > params.M_AGB_max))  # Limit to timesteps where stars between 0.865-1 M_sun will explode
+    idx_bad_agb = np.where((m_intmass < params.M_AGB_min) | (m_intmass > params.M_AGB_max))  # Limit to timesteps where stars between 0.865-1 M_sun will explode
     m_intmass[idx_bad_agb] = 0.
     n_intmass[idx_bad_agb] = 0.
 
