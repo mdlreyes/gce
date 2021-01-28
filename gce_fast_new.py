@@ -177,7 +177,7 @@ def gce_model(pars):
             for m in range(len(m_intmass)):
                 if m_intmass[m] > 0:     
                     agb_yield_final[elem,m] = interp_func(z_AGB, agb_yield_mass[elem,:,m], model['z'][timestep])
-        M_AGB_arr[:,timestep:] = M_AGB_arr[:,timestep:] + AGB_yield_final[:,:(n-timestep+1)]  # Put AGB yields in future array
+        M_AGB_arr[:,timestep:] = M_AGB_arr[:,timestep:] + agb_yield_final[:,:(n-timestep+1)]  # Put AGB yields in future array
 
         # Eq. 15: outflows IN CURRENT TIMESTEP (depends on gas mass fraction x_el)
         if model['mgas'][timestep] > 0.0: 
