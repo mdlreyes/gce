@@ -9,11 +9,12 @@ import scipy
 import scipy.integrate
 import sys
 #Load other files
-import gce_params
+sys.path.insert(0, '/raid/gduggan/gce')
+import params as gce_params
 import gce_yields
 import imf
 sys.path.insert(0, '/raid/gduggan/gce/dtd')
-import dtd_ia
+import dtd as dtd_ia
 
 """
 Mass ejected by supernova (courtesy Hai Fu):
