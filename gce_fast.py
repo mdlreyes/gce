@@ -7,7 +7,6 @@ Rather than computing integrals at each time step, this code tracks a "forward-l
 
 # Import packages
 import numpy as np
-import scipy
 import sys
 
 # Import other files
