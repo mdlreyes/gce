@@ -157,7 +157,7 @@ def gce_model(pars):
 
         # Eq. 8: rate of Type II SNe that will explode IN THE FUTURE
         n_ii = model['mdot'][timestep] * n_himass   # Number of stars formed now that will explode in the future
-        model['II_rate'][timestep:] = model['II_rate'][timestep:] + n_ii[:(n-timestep+1)]  # Put Type II rate in future array
+        model['II_rate'][timestep:] = model['II_rate'][timestep:] + n_ii[:(n-timestep)]  # Put Type II rate in future array
 
         # Eq. 7: Type II SNe yields IN THE FUTURE
         ii_yield_final = np.zeros((nel,n))
@@ -165,11 +165,11 @@ def gce_model(pars):
             for m in range(len(m_himass)):
                 if m_himass[m] > 0:     
                     ii_yield_final[elem,m] = interp_func(z_II, ii_yield_mass[elem,:,m], model['z'][timestep])
-        M_II_arr[:,timestep:] = M_II_arr[:,timestep:] + ii_yield_final[:,:(n-timestep+1)]  # Put Type II yields in future array
+        M_II_arr[:,timestep:] = M_II_arr[:,timestep:] + ii_yield_final[:,:(n-timestep)]  # Put Type II yields in future array
 
         # Rate of AGB stars that will explode IN THE FUTURE
         n_agb = model['mdot'][timestep] * n_intmass   # Number of stars formed now that will produce AGB winds in the future
-        model['AGB_rate'][timestep:] = model['AGB_rate'][timestep:] + n_agb[:(n-timestep+1)]  # Put AGB rate in future array
+        model['AGB_rate'][timestep:] = model['AGB_rate'][timestep:] + n_agb[:(n-timestep)]  # Put AGB rate in future array
 
         # Eq. 13: AGB yields IN THE FUTURE
         agb_yield_final = np.zeros((nel,n))
@@ -177,7 +177,7 @@ def gce_model(pars):
             for m in range(len(m_intmass)):
                 if m_intmass[m] > 0:     
                     agb_yield_final[elem,m] = interp_func(z_AGB, agb_yield_mass[elem,:,m], model['z'][timestep])
-        M_AGB_arr[:,timestep:] = M_AGB_arr[:,timestep:] + agb_yield_final[:,:(n-timestep+1)]  # Put AGB yields in future array
+        M_AGB_arr[:,timestep:] = M_AGB_arr[:,timestep:] + agb_yield_final[:,:(n-timestep)]  # Put AGB yields in future array
 
         # Eq. 15: outflows IN CURRENT TIMESTEP (depends on gas mass fraction x_el)
         if model['mgas'][timestep] > 0.0: 
