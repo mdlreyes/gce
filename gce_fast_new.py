@@ -111,13 +111,13 @@ def gce_model(pars):
 
     # Interpolate yield tables over mass
     ii_yield_mass = np.zeros((nel,len(z_II),n))
-    for elem in nel:
+    for elem in range(nel):
         for z in range(len(z_II)):     
             ii_yield_mass[elem,z,:] = interp_func(M_SN, yield_ii[elem,z,:], m_himass)   # Compute yields of masses of stars that will explode
     ii_yield_mass[:,:,idx_bad] = 0.
 
     agb_yield_mass = np.zeros((nel,len(z_AGB),n))
-    for elem in nel:
+    for elem in range(nel):
         for z in range(len(z_AGB)):     
             agb_yield_mass[elem,z,:] = interp_func(M_AGB, yield_agb[elem,z,:], m_intmass)   # Compute yields of masses of stars that will explode
     agb_yield_mass[:,:,idx_bad_agb] = 0.
