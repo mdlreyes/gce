@@ -50,6 +50,9 @@ def gce_model(pars):
     sfr_exp = pars[4]       # Exponent of SF law
     mgas0 = 1.e6*pars[5]    # Initial gas mass (M_sun)
 
+    # Load all sources of chemical yields
+    nel, eps_sun, SN_yield, AGB_yield, M_SN, _, z_II, M_AGB, z_AGB = gce_yields.initialize_yields_inclBa(AGB_source = AGB_source)
+
     # Create array to hold model outputs
     model = np.zeros(n, dtype=[('t','float64'),('f_in','float64'),('mgas','float64'),\
         ('Ia_rate','float64'),('II_rate','float64'),('AGB_rate','float64'),\
@@ -62,9 +65,6 @@ def gce_model(pars):
     pristine[0] = 0.7514        # Hydrogen from BBN                                                                                      
     pristine[1] = 0.2486        # Helium from BBN
     pristine=pristine
-
-    # Load all sources of chemical yields
-    nel, eps_sun, SN_yield, AGB_yield, M_SN, _, z_II, M_AGB, z_AGB = gce_yields.initialize_yields_inclBa(AGB_source = AGB_source)
 
     # Linearly extrapolate supernova yields to min/max progenitor masses
     sn_min = SN_yield[:]['II'][:,:,0] * params.M_SN_min/M_SN[0]             # Extrapolate yields to min progenitor mass

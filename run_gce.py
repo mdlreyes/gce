@@ -1,8 +1,8 @@
 import gce_fast_new as gce
 import gce_fast_old as gce_old
-import gce_plot
+#import gce_plot
 import time
-import gce_yields_plot
+#import gce_yields_plot
 
 #   using names used in the paper:  pars = [A_in/1e6,  tau_in,   A_out/1000,    A_star/1e6, alpha,    M_gas_0]
 scl_pars = [ 701.57967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685] #result of "restore, 'scl_sfr-law.sav'" in idl
