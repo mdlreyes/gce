@@ -37,6 +37,9 @@ def dtd_ii(t,imf_model):
         # Integral of Kroupa IMF of M(t)
         n_himass = 0.31 * (m_himass)**(-2.7)
 
+    m_himass[~np.isfinite(m_himass)] = 0.
+    n_himass[~np.isfinite(m_himass)] = 0.
+
     return m_himass, n_himass
 
 def dtd_agb(t,imf_model):
@@ -71,5 +74,8 @@ def dtd_agb(t,imf_model):
         m_agb[idx_himass] = m_himass[idx_himass]
         m_agb[idx_intmass] = m_lomass[idx_intmass]
         m_agb[idx_lomass] = m_lomass[idx_lomass]
+
+    m_agb[~np.isfinite(m_agb)] = 0.
+    n_agb[~np.isfinite(m_agb)] = 0.
 
     return m_agb, n_agb

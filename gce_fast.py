@@ -41,14 +41,6 @@ def gce_model(pars):
     delta_t = 0.001     # time step (Gyr)
     t = np.arange(n)*delta_t    # time passed in model array -- age universe (Gyr)
 
-    # Read parameters from pars
-    f_in_norm0 = pars[0]    # Normalization of gas inflow rate (10**-6 M_sun Gyr**-1)
-    f_in_t0 = pars[1]       # Exponential decay time for gas inflow (Gyr)           
-    f_out = pars[2]*1.e3    # Strength of gas outflow due to supernovae (M_sun SN**-1) 
-    sfr_norm = pars[3]      # Normalization of SF law (10**-6 M_sun Gyr**-1)
-    sfr_exp = pars[4]       # Exponent of SF law
-    mgas0 = 1.e6*pars[5]    # Initial gas mass (M_sun)
-
     # Load all sources of chemical yields
     nel, eps_sun, SN_yield, AGB_yield, M_SN, _, z_II, M_AGB, z_AGB = gce_yields.initialize_yields_inclBa(AGB_source = params.AGB_source)
 
@@ -58,6 +50,15 @@ def gce_model(pars):
         ('de_dt','float64',(nel)),('dstar_dt','float64',(nel)),\
         ('abund','float64',(nel)),('eps','float64',(nel)),('mout','float64',(nel)),\
         ('z','float64'),('mdot','float64'),('mgal','float64'),('mstar','float64')])
+    model['t'] = t
+
+    # Read parameters from pars
+    f_in_norm0 = pars[0]    # Normalization of gas inflow rate (10**-6 M_sun Gyr**-1)
+    f_in_t0 = pars[1]       # Exponential decay time for gas inflow (Gyr)           
+    f_out = pars[2]*1.e3    # Strength of gas outflow due to supernovae (M_sun SN**-1) 
+    sfr_norm = pars[3]      # Normalization of SF law (10**-6 M_sun Gyr**-1)
+    sfr_exp = pars[4]       # Exponent of SF law
+    model['mgas'][0] = 1.e6*pars[5]    # Initial gas mass (M_sun)
 
     # Define parameters for pristine gas 
     pristine = np.zeros(nel)    # Pristine element fractions by mass (dimensionless)
@@ -90,23 +91,22 @@ def gce_model(pars):
             'ba':np.where(SN_yield['atomic'] == 56)[0]}
 
     # Initialize model
-    model['f_in'] = 1.e6 * f_in_norm0 * t * np.exp(-t/f_in_t0)    # Compute inflow rates (just a function of time)                                                                                
+    model['f_in'] = 1.e6 * f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)                                                                                
     model['abund'][0,0] = model['mgas'][0]*pristine[0]    # Set initial gas mass of H
     model['abund'][0,1] = model['mgas'][0]*pristine[1]    # Set initial gas mass of He
     model['mgal'][0] = model['mgas'][0]   # Set the initial galaxy mass to the initial gas mass   
 
-    # Prepare arrays for Type II SNe and AGB calculations
-    M_II_arr = np.zeros((nel, n))                           # Array of yields contributed by Type II SNe
-    m_himass, n_himass = dtd.dtd_ii(t, params.imf_model)    # Mass and fraction of stars that will explode in the future
-    idx_bad = np.where((m_himass < params.M_SN_min) | (m_himass > params.M_SN_max))  # Limit to timesteps where stars between 10-100 M_sun will explode
+    # Prepare arrays for SNe and AGB calculations
+    n_wd = dtd.dtd_ia(model['t'], params.ia_model)      # Fraction of stars that will explode as Type Ia SNe in future
+
+    M_II_arr = np.zeros((nel, n))                                       # Array of yields contributed by Type II SNe
+    m_himass, n_himass = dtd.dtd_ii(model['t'], params.imf_model)       # Mass and fraction of stars that will explode in the future
+    idx_bad = np.where((m_himass < params.M_SN_min) | (m_himass > params.M_SN_max)) # Limit to timesteps where stars between 10-100 M_sun will explode
     m_himass[idx_bad] = 0.
     n_himass[idx_bad] = 0.
 
-    M_AGB_arr = np.zeros((nel, n))                          # Array of yields contributed by AGB stars
-    m_intmass, n_intmass = dtd.dtd_agb(t, params.imf_model) # Mass and fraction of stars that become AGBs in the future
-    idx_bad_agb = np.where((m_intmass < params.M_AGB_min) | (m_intmass > params.M_AGB_max))  # Limit to timesteps where stars between 0.865-1 M_sun will explode
-    m_intmass[idx_bad_agb] = 0.
-    n_intmass[idx_bad_agb] = 0.
+    M_AGB_arr = np.zeros((nel, n))                                      # Array of yields contributed by AGB stars
+    m_intmass, n_intmass = dtd.dtd_agb(model['t'], params.imf_model)    # Mass and fraction of stars that become AGBs in the future
 
     # Interpolate yield tables over mass
     ii_yield_mass = np.zeros((nel,len(z_II),n))
@@ -119,7 +119,6 @@ def gce_model(pars):
     for elem in range(nel):
         for z in range(len(z_AGB)):     
             agb_yield_mass[elem,z,:] = interp_func(M_AGB, yield_agb[elem,z,:], m_intmass)   # Compute yields of masses of stars that will explode
-    agb_yield_mass[:,:,idx_bad_agb] = 0.
 
     # Step through time!
     timestep = 0
@@ -147,8 +146,8 @@ def gce_model(pars):
         model['mdot'][timestep] = sfr_norm * model['mgas'][timestep]**sfr_exp / 1.e6**(sfr_exp-1.0)
 
         # Eq. 10: rate of Ia SNe that will explode IN THE FUTURE
-        n_ia = model['mdot'][timestep] * dtd.dtd_ia(t[timestep:] - t[timestep], params.ia_model)    # Number of Type Ia SNe that will explode in the future
-        model['Ia_rate'][timestep:] = model['Ia_rate'][timestep:] + n_ia                            # Put Type Ia rate in future array
+        n_ia = model['mdot'][timestep] * n_wd       # Number of Type Ia SNe that will explode in the future
+        model['Ia_rate'][timestep:] = model['Ia_rate'][timestep:] + n_ia[:(n-timestep)]     # Put Type Ia rate in future array
 
         # Eq. 11: Type Ia SNe yields IN CURRENT TIMESTEP
         f_Ia = SN_yield[:]['Ia']                    # Mass ejected from each SN Ia (M_sun SN**-1) 
@@ -191,14 +190,15 @@ def gce_model(pars):
         # Now put all the parts of the model together!
 
         # Compute rate at which a given element is locked up in stars (M_sun Gyr**-1)
-        # SFR - (gas returned from SNe and AGB stars)                                                                                                  
+        # SFR - (gas returned from SNe and AGB stars)    
         model['dstar_dt'][timestep,:] = (x_el)*model['mdot'][timestep] - M_II_arr[:,timestep] - M_AGB_arr[:,timestep] - M_Ia
 
         # Compute change in gas mass (M_sun Gyr**-1) 
         # -(rate of locking stars up) - outflow + inflow                                                         
         model['de_dt'][timestep,:] = -model['dstar_dt'][timestep,:] - model['mout'][timestep,:] + model['f_in'][timestep]*pristine 
 
-        # Update gas masses of individual elements (M_sun)  
+        # Update gas masses of individual elements (M_sun),
+        # using trapezoidal rule to integrate from previous timestep
         int2 = delta_t * np.array([1., 1.]) / 2.  # Constants for trapezoidal integration                                                    
         if timestep > 0:
             model['abund'][timestep,:] = model['abund'][timestep-1,:] + np.sum(int2*model['de_dt'][timestep-1:timestep+1,:].T, axis=1)
@@ -207,15 +207,27 @@ def gce_model(pars):
         for elem in range(nel):
             if model['abund'][timestep,elem] <= 0.0: 
                 model['abund'][timestep,elem] = 0
-                model['abund'][timestep,elem] = np.nan
+                model['eps'][timestep,elem] = np.nan
             else:
                 model['eps'][timestep,elem] = np.log10(model['abund'][timestep,elem]/interp_func(z_II,SN_yield[elem]['weight_II'][:,3], model['z'][timestep]))
 
+        # Calculate the stellar mass of the galaxy at a given timestep,
+        # using trapezoidal rule to integrate from previous timestep
+        if timestep > 0:
+            model['mstar'][timestep] = model['mstar'][timestep-1] + np.sum(int2*np.sum(model['dstar_dt'][timestep-1:timestep+1], 1))
+        else: model['mstar'][timestep] = 0.0
+
+        #total galaxy mass (M_sun) at this timestep
+        model['mgal'][timestep] = model['mgas'][timestep] + model['mstar'][timestep]  
+
         # Eq. 2: Compute total gas mass (M_sun), determined from individual element gas masses, for NEXT TIMESTEP
-        model['mgas'][timestep+1] = model['abund'][timestep-1,snindex['h']] + model['abund'][timestep-1,snindex['he']] + \
-            (model['abund'][timestep-1,snindex['mg']] + model['abund'][timestep-1,snindex['si']] + \
-            model['abund'][timestep-1,snindex['ca']]+model['abund'][timestep-1,snindex['ti']])*10.0**(1.31) + \
-            model['abund'][timestep-1,snindex['fe']]*10.0**(0.03) 
+        model['mgas'][timestep+1] = model['abund'][timestep,snindex['h']] + model['abund'][timestep,snindex['he']] + \
+            (model['abund'][timestep,snindex['mg']] + model['abund'][timestep,snindex['si']] + \
+            model['abund'][timestep,snindex['ca']]+model['abund'][timestep,snindex['ti']])*10.0**(1.31) + \
+            model['abund'][timestep,snindex['fe']]*10.0**(0.03) 
+
+        #If somehow the galaxy has negative gas mass, it actually has zero gas mass   
+        if model['mgas'][timestep+1] < 0.: model['mgas'][timestep+1] = 0.0
 
         # Increment timestep
         timestep += 1
