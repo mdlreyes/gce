@@ -107,6 +107,7 @@ def gce_model(pars):
 
     M_AGB_arr = np.zeros((nel, n))                                      # Array of yields contributed by AGB stars
     m_intmass, n_intmass = dtd.dtd_agb(model['t'], params.imf_model)    # Mass and fraction of stars that become AGBs in the future
+    idx_bad_agb = np.where((m_intmass < params.M_AGB_min) | (m_intmass > params.M_AGB_max)) # Limit to timesteps where stars between 0.865-10 M_sun will become AGB stars
 
     # Interpolate yield tables over mass
     ii_yield_mass = np.zeros((nel,len(z_II),n))
@@ -119,6 +120,7 @@ def gce_model(pars):
     for elem in range(nel):
         for z in range(len(z_AGB)):     
             agb_yield_mass[elem,z,:] = interp_func(M_AGB, yield_agb[elem,z,:], m_intmass)   # Compute yields of masses of stars that will explode
+    agb_yield_mass[:,:,idx_bad_agb] = 0.
 
     # Step through time!
     timestep = 0
@@ -231,5 +233,7 @@ def gce_model(pars):
 
         # Increment timestep
         timestep += 1
+
+    print('why stop?', timestep, model['mgas'][timestep], model['eps'][timestep-1,snindex['fe']])
 
     return model[:timestep], SN_yield['atomic']

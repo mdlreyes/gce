@@ -14,21 +14,28 @@ def time_check(pars):
     t1=time.time()
     model, atomic = gce_old.gce_model(pars)
     print('Time for old model: %.2e'%(time.time()-t1))
-    print('test', model['eps'].shape)
-    print('test', model['eps'][950:-1,8])
+    print('mdot', model['mdot'][50:100])
+    #print('test II', model['II_rate'][:50])
+    #print('test Ia', model['Ia_rate'][:50])
+    print('test AGB', model['AGB_rate'][50:100])
+    print('test z', model['z'][50:100])
+
 
     t2=time.time()
     model, atomic = gce.gce_model(pars)
     print('Time for new model: %.2e'%(time.time()-t2))
-    print('test', model['eps'].shape)
-    print('test', model['abund'][:,8])
+    print('mdot', model['mdot'][50:100])
+    #print('test II', model['II_rate'][:50])
+    #print('test Ia', model['Ia_rate'][:50])
+    print('test AGB', model['AGB_rate'][50:100])
+    print('test z', model['z'][50:100])
 
     return
 
 if __name__ == "__main__":
 
     # Time check
-    #time_check(scl_pars)
+    time_check(scl_pars)
 
-    model2, atomic2 = gce.gce_model(scl_pars)
-    gce_plot.plotting_compare(model2, atomic2, title1="Sculptor final", plot=True, skip_end_dots=-10,eu_estimate=False)
+    #model2, atomic2 = gce.gce_model(scl_pars)
+    #gce_plot.plotting_compare(model2, atomic2, title1="Sculptor final", plot=True, skip_end_dots=-10,eu_estimate=False)

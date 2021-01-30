@@ -99,19 +99,12 @@ def plotting_compare(model, atomic, title1, model2=[], atomic2=[], title2='', pl
     map_data_index_to_plot = np.zeros(len(plot_atomic),dtype=int)    
     for i in range(len(map_data_index_to_plot)):
         map_data_index_to_plot[i] = np.where(atomic == plot_atomic[i])[0]
-    #fe_plot_index = np.where(atomic == 26)[0][0]
-    #h_plot_index = np.where(atomic == 1)[0][0]
-    # plot_atomic = atomic[map_data_index_to_plot]
-    # fe_plot_index = map_data_index_to_plot[fe_plot_index]
-    # atomic[map_data_index_to_plot[fe_plot_index]] = plot_atomic[fe_plot_index]
 
-    print('test')
     feh = model['eps'][:,map_data_index_to_plot[fe_plot_index]]
     feh_mask = feh > -3.5
     indexfeh = np.argsort(feh[feh_mask])
     dfeh = feh[feh_mask][indexfeh][1:]-feh[feh_mask][indexfeh][:-1]
     dstar = np.sum(model['dstar_dt'],1)
-    print('made it here')
     print(("Min and Max SFR:", min(dstar),max(dstar)))#,dstar.shape,feh.shape,dstar[feh_mask],dstar[feh_mask][indexfeh],dstar[feh_mask][indexfeh][1:]
     normalize = np.ma.masked_invalid(np.sum(model['dstar_dt'],1)[feh_mask][indexfeh][1:]*dfeh).sum()
     #print normalize#, np.sum(model['dstar_dt'],1)[feh_mask][indexfeh],dfeh
