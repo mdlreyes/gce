@@ -35,7 +35,7 @@ def dtd_ii(t,imf_model):
     # Fraction of massive stars that will explode (as a function of time in Gyr)
     if imf_model == 'kroupa93':
         # Integral of Kroupa IMF of M(t)
-        n_himass = 0.31 * (m_himass)**(-2.7)
+        n_himass = 0.31 * (m_himass)**(-2.7) * -np.concatenate((np.diff(m_himass),[0]))
 
     m_himass[~np.isfinite(m_himass)] = 0.
     n_himass[~np.isfinite(m_himass)] = 0.
@@ -53,15 +53,15 @@ def dtd_agb(t,imf_model):
     # Fraction of massive stars that will produce AGB winds (as a function of time in Gyr)
     if imf_model == 'kroupa93':
         # Integral of Kroupa IMF of M(t) for M > 6.6 M_sun (imf_himass, m_himass)
-        n_himass = 0.31 * (m_himass)**(-2.7)
+        n_himass = 0.31 * (m_himass)**(-2.7) * -np.concatenate((np.diff(m_himass),[0]))
         idx_himass = np.where((m_himass >= 6.6) & (m_himass < 10))
 
         # Integral of Kroupa IMF of M(t) for 1 < M < 6.6 M_sun (imf_himass, m_lomass)
-        n_intmass = 0.31 * (m_lomass)**(-2.7)
+        n_intmass = 0.31 * (m_lomass)**(-2.7) * -np.concatenate((np.diff(m_lomass),[0]))
         idx_intmass = np.where((m_lomass >= 1) & (m_lomass < 6.61))
 
         # Integral of Kroupa IMF of M(t) for 0.5 < M < 1 M_sun (imf_lomass, m_lomass)
-        n_lomass = 0.31 * (m_lomass)**(-2.2)
+        n_lomass = 0.31 * (m_lomass)**(-2.2) * -np.concatenate((np.diff(m_lomass),[0]))
         idx_lomass = np.where((m_lomass >= 0.865) & (m_lomass < 1))
 
         # Combine arrays to get total fraction of future AGB stars

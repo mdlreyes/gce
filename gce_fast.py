@@ -97,7 +97,7 @@ def gce_model(pars):
     model['mgal'][0] = model['mgas'][0]   # Set the initial galaxy mass to the initial gas mass   
 
     # Prepare arrays for SNe and AGB calculations
-    n_wd = dtd.dtd_ia(model['t'], params.ia_model)      # Fraction of stars that will explode as Type Ia SNe in future
+    n_wd = dtd.dtd_ia(model['t'], params.ia_model) * delta_t      # Fraction of stars that will explode as Type Ia SNe in future
 
     M_II_arr = np.zeros((nel, n))                                       # Array of yields contributed by Type II SNe
     m_himass, n_himass = dtd.dtd_ii(model['t'], params.imf_model)       # Mass and fraction of stars that will explode in the future
@@ -212,6 +212,8 @@ def gce_model(pars):
                 model['eps'][timestep,elem] = np.nan
             else:
                 model['eps'][timestep,elem] = np.log10(model['abund'][timestep,elem]/interp_func(z_II,SN_yield[elem]['weight_II'][:,3], model['z'][timestep]))
+
+        model['eps'][timestep] = 12.0 + model['eps'][timestep] - model['eps'][timestep,0] - eps_sun # Logarithmic number density relative to hydrogen, relative to sun
 
         # Calculate the stellar mass of the galaxy at a given timestep,
         # using trapezoidal rule to integrate from previous timestep
