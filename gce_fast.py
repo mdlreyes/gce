@@ -157,7 +157,7 @@ def gce_model(pars):
 
         # Eq. 10: rate of Ia SNe that will explode IN THE FUTURE
         n_ia = model['mdot'][timestep] * n_wd       # Number of Type Ia SNe that will explode in the future
-        model['Ia_rate'][timestep:] = model['Ia_rate'][timestep:] + n_ia[:(n-timestep)]     # Put Type Ia rate in future array
+        model['Ia_rate'][timestep:] += n_ia[:(n-timestep)]     # Put Type Ia rate in future array
 
         # Eq. 11: Type Ia SNe yields IN CURRENT TIMESTEP
         f_Ia = SN_yield[:]['Ia']                    # Mass ejected from each SN Ia (M_sun SN**-1) 
@@ -165,16 +165,16 @@ def gce_model(pars):
 
         # Eq. 8: rate of Type II SNe that will explode IN THE FUTURE
         n_ii = model['mdot'][timestep] * n_himass   # Number of stars formed now that will explode in the future
-        model['II_rate'][timestep:] = model['II_rate'][timestep:] + n_ii[:(n-timestep)]  # Put Type II rate in future array
+        model['II_rate'][timestep:] += n_ii[:(n-timestep)]  # Put Type II rate in future array
 
         # Eq. 7: Type II SNe yields IN THE FUTURE
         if model['z'][timestep] > 0.:
             ii_yield_final = f_ii_metallicity(model['z'][timestep])
-            M_II_arr[:,timestep:] = M_II_arr[:,timestep:] + n_ii[:(n-timestep)]*ii_yield_final[:,:(n-timestep)]  # Put Type II yields in future array
+            M_II_arr[:,timestep:] += n_ii[:(n-timestep)] * ii_yield_final[:,:(n-timestep)]  # Put Type II yields in future array
 
         # Rate of AGB stars that will explode IN THE FUTURE
         n_agb = model['mdot'][timestep] * n_intmass   # Number of stars formed now that will produce AGB winds in the future
-        model['AGB_rate'][timestep:] = model['AGB_rate'][timestep:] + n_agb[:(n-timestep)]  # Put AGB rate in future array
+        model['AGB_rate'][timestep:] += n_agb[:(n-timestep)]  # Put AGB rate in future array
 
         # Eq. 13: AGB yields IN THE FUTURE
         if model['z'][timestep] > 0.:
@@ -182,7 +182,7 @@ def gce_model(pars):
                 agb_yield_final = agb_yield_mass[:,0,:]
             else:
                 agb_yield_final = f_agb_metallicity(model['z'][timestep])
-            M_AGB_arr[:,timestep:] = M_AGB_arr[:,timestep:] + n_agb[:(n-timestep)]*agb_yield_final[:,:(n-timestep)]  # Put AGB yields in future array
+            M_AGB_arr[:,timestep:] += n_agb[:(n-timestep)] * agb_yield_final[:,:(n-timestep)]  # Put AGB yields in future array
 
         # Eq. 15: outflows IN CURRENT TIMESTEP (depends on gas mass fraction x_el)
         if model['mgas'][timestep] > 0.0: 
