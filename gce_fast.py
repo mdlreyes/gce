@@ -38,7 +38,7 @@ def gce_model(pars):
     """  
 
     # Integration parameters
-    n = 13600           # number of timesteps in the model 
+    n = 1360           # number of timesteps in the model 
     delta_t = 0.001     # time step (Gyr)
     t = np.arange(n)*delta_t    # time passed in model array -- age universe (Gyr)
 
@@ -126,8 +126,6 @@ def gce_model(pars):
     # Interpolate yield tables over metallicity
     f_ii_metallicity = interp1d(z_II, ii_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
     f_agb_metallicity = interp1d(z_AGB, agb_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
-
-    t1=time.time() 
 
     # Step through time!
     timestep = 0 
@@ -240,6 +238,7 @@ def gce_model(pars):
         # Increment timestep
         timestep += 1
 
-    print('Full time loop: %.2e'%(time.time()-t1))
+    #print('Full time loop: %.2e'%(time.time()-t1))
+    print('why stop?', timestep, model['mgas'][timestep], model['eps'][timestep-1,snindex['fe']])
 
     return model[:timestep], SN_yield['atomic']
