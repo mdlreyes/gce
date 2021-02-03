@@ -115,17 +115,19 @@ def gce_model(pars):
     n_intmass[idx_bad_agb] = 0.
 
     # Interpolate yield tables over mass
-    f_ii_mass = interp1d(M_SN, yield_ii, axis=2, bounds_error=False)
+    f_ii_mass = interp1d(M_SN, yield_ii, axis=2, bounds_error=False, copy=False, assume_sorted=True)
     ii_yield_mass = f_ii_mass(m_himass) # Compute yields of masses of stars that will explode
     ii_yield_mass[:,:,idx_bad] = 0.
 
-    f_agb_mass = interp1d(M_AGB, yield_agb, axis=2, bounds_error=False)
+    f_agb_mass = interp1d(M_AGB, yield_agb, axis=2, bounds_error=False, copy=False, assume_sorted=True)
     agb_yield_mass = f_agb_mass(m_intmass) # Compute yields of masses of stars that will produce AGB winds
     agb_yield_mass[:,:,idx_bad_agb] = 0.
 
     # Interpolate yield tables over metallicity
-    f_ii_metallicity = interp1d(z_II, ii_yield_mass, axis=1, bounds_error=False) 
-    f_agb_metallicity = interp1d(z_AGB, agb_yield_mass, axis=1, bounds_error=False) 
+    f_ii_metallicity = interp1d(z_II, ii_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
+    f_agb_metallicity = interp1d(z_AGB, agb_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
+
+    t1=time.time() 
 
     # Step through time!
     timestep = 0 
@@ -135,9 +137,6 @@ def gce_model(pars):
     # OR (gas remains within the galaxy at a given time step AND the gas mass in iron at the previous timestep is subsolar) ]
     while ((timestep < (n-1)) and ((timestep <= 10) or 
     ( (model['mgas'][timestep] > 0.0) and (model['eps'][timestep-1,snindex['fe']] < 0.0) ) )):
-
-        #if timestep == 0:
-        #    t1=time.time() 
 
         if model['mgas'][timestep] < 0.: 
             # If somehow the galaxy has negative gas mass (unphysical), set gas mass to zero instead
@@ -169,8 +168,8 @@ def gce_model(pars):
 
         # Eq. 7: Type II SNe yields IN THE FUTURE
         if model['z'][timestep] > 0.:
-            ii_yield_final = f_ii_metallicity(model['z'][timestep])
-            M_II_arr[:,timestep:] += n_ii[:(n-timestep)] * ii_yield_final[:,:(n-timestep)]  # Put Type II yields in future array
+            # Put Type II yields in future array
+            M_II_arr[:,timestep:] += n_ii[:(n-timestep)] * f_ii_metallicity(model['z'][timestep])[:,:(n-timestep)]
 
         # Rate of AGB stars that will explode IN THE FUTURE
         n_agb = model['mdot'][timestep] * n_intmass   # Number of stars formed now that will produce AGB winds in the future
@@ -178,11 +177,11 @@ def gce_model(pars):
 
         # Eq. 13: AGB yields IN THE FUTURE
         if model['z'][timestep] > 0.:
+            # Put AGB yields in future array
             if model['z'][timestep] < min(z_AGB):
-                agb_yield_final = agb_yield_mass[:,0,:]
+                M_AGB_arr[:,timestep:] += n_agb[:(n-timestep)] * agb_yield_mass[:,0,:(n-timestep)]
             else:
-                agb_yield_final = f_agb_metallicity(model['z'][timestep])
-            M_AGB_arr[:,timestep:] += n_agb[:(n-timestep)] * agb_yield_final[:,:(n-timestep)]  # Put AGB yields in future array
+                M_AGB_arr[:,timestep:] += n_agb[:(n-timestep)] * f_agb_metallicity(model['z'][timestep])[:,:(n-timestep)]
 
         # Eq. 15: outflows IN CURRENT TIMESTEP (depends on gas mass fraction x_el)
         if model['mgas'][timestep] > 0.0: 
@@ -238,12 +237,9 @@ def gce_model(pars):
         #If somehow the galaxy has negative gas mass, it actually has zero gas mass   
         if model['mgas'][timestep+1] < 0.: model['mgas'][timestep+1] = 0.0
 
-        #if timestep == 0:
-        #    print('Single timestep: %.2e'%(time.time()-t1))
-
         # Increment timestep
         timestep += 1
 
-    print('why stop?', timestep, model['mgas'][timestep], model['eps'][timestep-1,snindex['fe']])
+    print('Full time loop: %.2e'%(time.time()-t1))
 
     return model[:timestep], SN_yield['atomic']
