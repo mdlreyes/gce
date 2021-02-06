@@ -1,8 +1,7 @@
 import gce_fast as gce
 import gce_fast_old as gce_old
-import gce_plot
 import time
-#import gce_yields_plot
+from line_profiler import LineProfiler
 
 #   using names used in the paper:  pars = [A_in/1e6,  tau_in,   A_out/1000,    A_star/1e6, alpha,    M_gas_0]
 scl_pars = [ 701.57967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685] #result of "restore, 'scl_sfr-law.sav'" in idl
@@ -37,5 +36,11 @@ if __name__ == "__main__":
     # Time check
     #time_check(scl_pars)
 
-    model2, atomic2 = gce.gce_model(scl_pars)
-    #gce_plot.plotting_compare(model2, atomic2, title1="Sculptor final", plot=True, skip_end_dots=-10,eu_estimate=False)
+    # Line profiling
+    #lp = LineProfiler()
+    #lp_wrapper = lp(gce.gce_model)
+    #lp_wrapper(scl_pars)
+    #lp.print_stats()
+
+    # Run a single model
+    gce.runmodel(scl_pars, plot=True)

@@ -17,13 +17,14 @@ import sys
 import params
 import dtd
 import gce_yields
+import gce_plot
 
 def interp_func(x,y,xinterp):
     index = np.argsort(x)
     yinterp = np.interp(xinterp,x[index],y[index])      
     return yinterp
 
-def gce_model(pars):
+def gce_model(pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB, snindex, pristine, n_wd, n_himass, f_ii_metallicity, n_intmass, f_agb_metallicity, agb_yield_mass):
     """Galactic chemical evolution model.
 
     Takes in additional parameters from params.py, reads yields using gce_yields.py, 
@@ -36,14 +37,6 @@ def gce_model(pars):
         model (array): All outputs of model.
         SN_yield['atomic'] (array): Atomic numbers of all tracked elements.
     """  
-
-    # Integration parameters
-    n = 1360           # number of timesteps in the model 
-    delta_t = 0.001     # time step (Gyr)
-    t = np.arange(n)*delta_t    # time passed in model array -- age universe (Gyr)
-
-    # Load all sources of chemical yields
-    nel, eps_sun, SN_yield, AGB_yield, M_SN, _, z_II, M_AGB, z_AGB = gce_yields.initialize_yields_inclBa(AGB_source = params.AGB_source)
 
     # Create array to hold model outputs
     model = np.zeros(n, dtype=[('t','float64'),('f_in','float64'),('mgas','float64'),\
@@ -61,71 +54,15 @@ def gce_model(pars):
     sfr_exp = pars[4]       # Exponent of SF law
     model['mgas'][0] = 1.e6*pars[5]    # Initial gas mass (M_sun)
 
-    # Define parameters for pristine gas 
-    pristine = np.zeros(nel)    # Pristine element fractions by mass (dimensionless)
-    pristine[0] = 0.7514        # Hydrogen from BBN                                                                                      
-    pristine[1] = 0.2486        # Helium from BBN
-    pristine=pristine
-
-    # Get indices for each tracked element. Will fail if element is not contained in SN_yield.
-    snindex = {'h':np.where(SN_yield['atomic'] == 1)[0],
-            'he':np.where(SN_yield['atomic'] == 2)[0],
-            #'c':np.where(SN_yield['atomic'] == 6)[0],
-            #'o':np.where(SN_yield['atomic'] == 8)[0],
-            'mg':np.where(SN_yield['atomic'] == 12)[0],
-            'si':np.where(SN_yield['atomic'] == 14)[0],
-            'ca':np.where(SN_yield['atomic'] == 20)[0],
-            'ti':np.where(SN_yield['atomic'] == 22)[0],
-            'fe':np.where(SN_yield['atomic'] == 26)[0],
-            'ba':np.where(SN_yield['atomic'] == 56)[0]}
-
     # Initialize model
     model['f_in'] = 1.e6 * f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)                                                                                
     model['abund'][0,0] = model['mgas'][0]*pristine[0]    # Set initial gas mass of H
     model['abund'][0,1] = model['mgas'][0]*pristine[1]    # Set initial gas mass of He
     model['mgal'][0] = model['mgas'][0]   # Set the initial galaxy mass to the initial gas mass    
 
-    # Linearly extrapolate supernova yields to min/max progenitor masses
-    sn_min = SN_yield[:]['II'][:,:,0] * params.M_SN_min/M_SN[0]             # Extrapolate yields to min progenitor mass
-    sn_max = SN_yield[:]['II'][:,:,-1] * params.M_SN_max/M_SN[-1]           # Extrapolate yields to max progenitor mass
-    yield_ii = np.concatenate((sn_min[...,None], SN_yield[:]['II'], sn_max[...,None]), axis=2)   # Concatenate yield tables
-    M_SN = np.concatenate(([params.M_SN_min], M_SN, [params.M_SN_max]))     # Concatenate mass list
-
-    # Linearly extrapolate AGB yields to min/max progenitor masses
-    agb_min = AGB_yield[:]['AGB'][:,:,0] * params.M_AGB_min/M_AGB[0]        # Extrapolate yields to min progenitor mass
-    agb_max = AGB_yield[:]['AGB'][:,:,-1] * params.M_AGB_max/M_AGB[-1]      # Extrapolate yields to max progenitor mass
-    yield_agb = np.concatenate((agb_min[...,None], AGB_yield[:]['AGB'], agb_max[...,None]), axis=2)   # Concatenate yield tables
-    M_AGB = np.concatenate(([params.M_AGB_min], M_AGB, [params.M_AGB_max])) # Concatenate mass list 
-
-    # TODO: Linearly extrapolate AGB yields to Z = 0
-
-    # Prepare arrays for SNe and AGB calculations
-    n_wd = dtd.dtd_ia(model['t'], params.ia_model) * delta_t      # Fraction of stars that will explode as Type Ia SNe in future
-
+    # Prep arrays to hold yields
     M_II_arr = np.zeros((nel, n))                                       # Array of yields contributed by Type II SNe
-    m_himass, n_himass = dtd.dtd_ii(model['t'], params.imf_model)       # Mass and fraction of stars that will explode in the future
-    idx_bad = np.where((m_himass < params.M_SN_min) | (m_himass > params.M_SN_max)) # Limit to timesteps where stars between 10-100 M_sun will explode
-    m_himass[idx_bad] = 0.
-    n_himass[idx_bad] = 0.
-
     M_AGB_arr = np.zeros((nel, n))                                      # Array of yields contributed by AGB stars
-    m_intmass, n_intmass = dtd.dtd_agb(model['t'], params.imf_model)    # Mass and fraction of stars that become AGBs in the future
-    idx_bad_agb = np.where((m_intmass < params.M_AGB_min) | (m_intmass > params.M_AGB_max)) # Limit to timesteps where stars between 0.865-10 M_sun will become AGB stars
-    m_intmass[idx_bad_agb] = 0.
-    n_intmass[idx_bad_agb] = 0.
-
-    # Interpolate yield tables over mass
-    f_ii_mass = interp1d(M_SN, yield_ii, axis=2, bounds_error=False, copy=False, assume_sorted=True)
-    ii_yield_mass = f_ii_mass(m_himass) # Compute yields of masses of stars that will explode
-    ii_yield_mass[:,:,idx_bad] = 0.
-
-    f_agb_mass = interp1d(M_AGB, yield_agb, axis=2, bounds_error=False, copy=False, assume_sorted=True)
-    agb_yield_mass = f_agb_mass(m_intmass) # Compute yields of masses of stars that will produce AGB winds
-    agb_yield_mass[:,:,idx_bad_agb] = 0.
-
-    # Interpolate yield tables over metallicity
-    f_ii_metallicity = interp1d(z_II, ii_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
-    f_agb_metallicity = interp1d(z_AGB, agb_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
 
     # Step through time!
     timestep = 0 
@@ -242,3 +179,77 @@ def gce_model(pars):
     print('why stop?', timestep, model['mgas'][timestep], model['eps'][timestep-1,snindex['fe']])
 
     return model[:timestep], SN_yield['atomic']
+
+def runmodel(scl_pars, plot=False):
+
+    # Integration parameters
+    n = 1360           # number of timesteps in the model 
+    delta_t = 0.001     # time step (Gyr)
+    t = np.arange(n)*delta_t    # time passed in model array -- age universe (Gyr)
+
+    # Load all sources of chemical yields
+    nel, eps_sun, SN_yield, AGB_yield, M_SN, _, z_II, M_AGB, z_AGB = gce_yields.initialize_yields_inclBa(AGB_source = params.AGB_source)
+
+    # Get indices for each tracked element. Will fail if element is not contained in SN_yield.
+    snindex = {'h':np.where(SN_yield['atomic'] == 1)[0],
+            'he':np.where(SN_yield['atomic'] == 2)[0],
+            #'c':np.where(SN_yield['atomic'] == 6)[0],
+            #'o':np.where(SN_yield['atomic'] == 8)[0],
+            'mg':np.where(SN_yield['atomic'] == 12)[0],
+            'si':np.where(SN_yield['atomic'] == 14)[0],
+            'ca':np.where(SN_yield['atomic'] == 20)[0],
+            'ti':np.where(SN_yield['atomic'] == 22)[0],
+            'fe':np.where(SN_yield['atomic'] == 26)[0],
+            'ba':np.where(SN_yield['atomic'] == 56)[0]}
+
+    # Define parameters for pristine gas 
+    pristine = np.zeros(nel)    # Pristine element fractions by mass (dimensionless)
+    pristine[0] = 0.7514        # Hydrogen from BBN                                                                                      
+    pristine[1] = 0.2486        # Helium from BBN
+    pristine=pristine
+
+    # Linearly extrapolate supernova yields to min/max progenitor masses
+    sn_min = SN_yield[:]['II'][:,:,0] * params.M_SN_min/M_SN[0]             # Extrapolate yields to min progenitor mass
+    sn_max = SN_yield[:]['II'][:,:,-1] * params.M_SN_max/M_SN[-1]           # Extrapolate yields to max progenitor mass
+    yield_ii = np.concatenate((sn_min[...,None], SN_yield[:]['II'], sn_max[...,None]), axis=2)   # Concatenate yield tables
+    M_SN = np.concatenate(([params.M_SN_min], M_SN, [params.M_SN_max]))     # Concatenate mass list
+
+    # Linearly extrapolate AGB yields to min/max progenitor masses
+    agb_min = AGB_yield[:]['AGB'][:,:,0] * params.M_AGB_min/M_AGB[0]        # Extrapolate yields to min progenitor mass
+    agb_max = AGB_yield[:]['AGB'][:,:,-1] * params.M_AGB_max/M_AGB[-1]      # Extrapolate yields to max progenitor mass
+    yield_agb = np.concatenate((agb_min[...,None], AGB_yield[:]['AGB'], agb_max[...,None]), axis=2)   # Concatenate yield tables
+    M_AGB = np.concatenate(([params.M_AGB_min], M_AGB, [params.M_AGB_max])) # Concatenate mass list 
+
+    # TODO: Linearly extrapolate AGB yields to Z = 0
+
+    # Prepare arrays for SNe and AGB calculations
+    n_wd = dtd.dtd_ia(t, params.ia_model) * delta_t      # Fraction of stars that will explode as Type Ia SNe in future
+
+    m_himass, n_himass = dtd.dtd_ii(t, params.imf_model)       # Mass and fraction of stars that will explode in the future
+    idx_bad = np.where((m_himass < params.M_SN_min) | (m_himass > params.M_SN_max)) # Limit to timesteps where stars between 10-100 M_sun will explode
+    m_himass[idx_bad] = 0.
+    n_himass[idx_bad] = 0.
+
+    m_intmass, n_intmass = dtd.dtd_agb(t, params.imf_model)    # Mass and fraction of stars that become AGBs in the future
+    idx_bad_agb = np.where((m_intmass < params.M_AGB_min) | (m_intmass > params.M_AGB_max)) # Limit to timesteps where stars between 0.865-10 M_sun will become AGB stars
+    m_intmass[idx_bad_agb] = 0.
+    n_intmass[idx_bad_agb] = 0.
+
+    # Interpolate yield tables over mass
+    f_ii_mass = interp1d(M_SN, yield_ii, axis=2, bounds_error=False, copy=False, assume_sorted=True)
+    ii_yield_mass = f_ii_mass(m_himass) # Compute yields of masses of stars that will explode
+    ii_yield_mass[:,:,idx_bad] = 0.
+
+    f_agb_mass = interp1d(M_AGB, yield_agb, axis=2, bounds_error=False, copy=False, assume_sorted=True)
+    agb_yield_mass = f_agb_mass(m_intmass) # Compute yields of masses of stars that will produce AGB winds
+    agb_yield_mass[:,:,idx_bad_agb] = 0.
+
+    # Interpolate yield tables over metallicity
+    f_ii_metallicity = interp1d(z_II, ii_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
+    f_agb_metallicity = interp1d(z_AGB, agb_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
+
+    model2, atomic2 = gce_model(scl_pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB, snindex, pristine, n_wd, n_himass, f_ii_metallicity, n_intmass, f_agb_metallicity, agb_yield_mass)
+    if plot:
+        gce_plot.plotting_compare(model2, atomic2, title1="Sculptor final", plot=True, skip_end_dots=-10,eu_estimate=False)
+
+    return
