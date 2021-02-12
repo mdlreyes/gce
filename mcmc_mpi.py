@@ -94,8 +94,8 @@ def mcmc(params, nsteps):
     f_agb_metallicity = interp1d(z_AGB, agb_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
 
 	# Run model
-	def gce_model(pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB, snindex, pristine, n_wd, n_himass, f_ii_metallicity, n_intmass, f_agb_metallicity, agb_yield_mass):
-    """Galactic chemical evolution model."""  
+	def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB, snindex, pristine, n_wd, n_himass, f_ii_metallicity, n_intmass, f_agb_metallicity, agb_yield_mass):
+    	"""Galactic chemical evolution model."""  
 
 		# Create array to hold model outputs
 		model = np.zeros(n, dtype=[('t','float64'),('f_in','float64'),('mgas','float64'),\
@@ -262,6 +262,9 @@ def mcmc(params, nsteps):
 
 		L = 0.
 
+		# Get data from model
+		elem_model, sfr, mstar_model = gce_model(params)
+
 		# Loop over each star
 		for star in nstars:
 
@@ -285,10 +288,13 @@ def mcmc(params, nsteps):
 
 		return L
 
-	# TODO: define the priors
+	# Define the priors
 	def lnprior(params):
-		theta, bperp = params
-		if -np.pi/2. < theta < np.pi/2. and -10.0 < bperp < 10.0:
+
+		f_in_norm0, f_in_t0, f_out, sfr_norm, sfr_exp, mgas0 = params
+
+		# Define uniform priors, based on values in Table 2 of Kirby+11
+		if (0. < f_in_norm0 < 5.) and (0. < f_in_t0 < 1.) and (0. < f_out < 20.) and (0. < sfr_norm < 10.) and (0. < sfr_exp < 2.) and (0. < mgas0 < 20.):
 			return 0.0
 		return -np.inf
 
@@ -304,9 +310,9 @@ def mcmc(params, nsteps):
 	# Start by doing basic max-likelihood fit to get initial values
 	nll = lambda *args: -lnlike(*args)
 
-	# TODO: put in parameters
+	# TODO: put in initial guesses for parameters (or use results from Kirby+11)
 	result = op.minimize(nll, [0., 0.], args=())
-	theta_init, b_init = result["x"]
+	params_init = result["x"]
 
 	# Sample the log-probability function using emcee - first, initialize the walkers
 	ndim = len(params)
