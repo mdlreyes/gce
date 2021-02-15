@@ -14,6 +14,7 @@ import params
 import dtd
 import gce_yields
 import gce_plot
+from getdata import getdata
 
 import sys
 import numpy as np
@@ -237,12 +238,12 @@ def mcmc(params, nsteps):
 		# Once model is done, define the model outputs that are useful for MCMC
 		model = model[:timestep]
 
-		elem_model = [ #model['eps'][:,snindex['c']] - model['eps'][:,snindex['fe']], 	# [C/Fe]
-				#model['eps'][:,snindex['ba']] - model['eps'][:,snindex['fe']],	# [Ba/Fe]
-				model['eps'][:,snindex['fe']] - model['eps'][:,snindex['h']],		# [Fe/H]
+		elem_model = [ model['eps'][:,snindex['fe']] - model['eps'][:,snindex['h']],		# [Fe/H]
 				model['eps'][:,snindex['mg']] - model['eps'][:,snindex['fe']],		# [Mg/Fe]
 				model['eps'][:,snindex['si']] - model['eps'][:,snindex['fe']],		# [Si/Fe]
 				model['eps'][:,snindex['ca']] - model['eps'][:,snindex['fe']]		# [Ca/Fe]
+				#model['eps'][:,snindex['c']] - model['eps'][:,snindex['fe']], 	# [C/Fe]
+				#model['eps'][:,snindex['ba']] - model['eps'][:,snindex['fe']],	# [Ba/Fe]
 			]
 		sfr = model['mdot']
 		mstar_model = model['mstar'][-1]
@@ -250,11 +251,10 @@ def mcmc(params, nsteps):
 		return elem_model, sfr, mstar_model
 
 	# TODO: Define observed data
-	elem_data = 
-	delem_data = 
+	elem_data, delem_data = getdata(galaxy='Scl')
 	mstar_obs = 12e5.
 	dmstar_obs = 5e5.
-	mgas_obs = 
+	mgas_obs = 0.
 	dmgas_obs = 1e3.
 
 	# Eq. 18: Log likelihood function
