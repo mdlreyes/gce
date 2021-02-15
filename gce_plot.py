@@ -34,7 +34,7 @@ eu_solar = 0.51
 
 accuracy_cutoff = 0.28 #dex cut for alpha/Fe error, Ba/Fe error, and Mg/Fe error
 
-plot_path = '/raid/madlr/gce/plots/'
+plot_path = 'plots/'
 
 rc('font', family='serif')
 #rc('font', weight='medium')

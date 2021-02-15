@@ -19,11 +19,6 @@ import dtd
 import gce_yields
 import gce_plot
 
-def interp_func(x,y,xinterp):
-    index = np.argsort(x)
-    yinterp = np.interp(xinterp,x[index],y[index])      
-    return yinterp
-
 def gce_model(pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB, snindex, pristine, n_wd, n_himass, f_ii_metallicity, n_intmass, f_agb_metallicity, agb_yield_mass):
     """Galactic chemical evolution model.
 
@@ -150,7 +145,7 @@ def gce_model(pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II
                 model['abund'][timestep,elem] = 0
                 model['eps'][timestep,elem] = np.nan
             else:
-                model['eps'][timestep,elem] = np.log10(model['abund'][timestep,elem]/interp_func(z_II,SN_yield[elem]['weight_II'][:,3], model['z'][timestep]))
+                model['eps'][timestep,elem] = np.log10(model['abund'][timestep,elem]/np.interp(model['z'][timestep], z_II, SN_yield[elem]['weight_II'][:,3]) )
 
         model['eps'][timestep] = 12.0 + model['eps'][timestep] - model['eps'][timestep,0] - eps_sun # Logarithmic number density relative to hydrogen, relative to sun
 

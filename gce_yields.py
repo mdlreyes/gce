@@ -204,7 +204,7 @@ def load_Karakas16(yield_path, eps_sun, eps_atomic_num, atomic_weight, verbose=F
     #print kar16    
     return M_kar16, z_kar16, kar16
 
-def initialize_yields_inclBa(yield_path='/raid/gduggan/gce/yields/', r_process_keyword='none', AGB_source = 'cri15', verbose = False):
+def initialize_yields_inclBa(yield_path='yields/', r_process_keyword='none', AGB_source = 'cri15', verbose = False):
     #nel, eps_sun, SN_yield, AGB_yield, M_SN, M_HN, z_II, M_AGB, z_AGB
     # r_process_keyword: 'none', 'typical_SN_only', 'rare_event_only', 'both'
     # AGB_source: 'cri15', 'kar16'

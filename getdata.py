@@ -54,8 +54,8 @@ def getdata(galaxy, c=False, ba=False, mn=False):
             finalerrs.append(newerrs)
             #finalnames.append(names[i])
 
-    data = np.asarray(finaldata)
-    errs = np.asarray(finalerrs)
+    data = np.asarray(finaldata).T
+    errs = np.asarray(finalerrs).T
     #names = np.asarray(finalnames)
 
     return data, errs
