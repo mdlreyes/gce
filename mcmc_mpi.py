@@ -1,5 +1,5 @@
 """
-run_gce_mpi.py
+mcmc_mpi.py
 
 Runs gce_fast on multiple processors
 """
@@ -255,8 +255,8 @@ def mcmc(nsteps):
     elem_data, delem_data = getdata(galaxy='Scl')
     mstar_obs = 12.e5
     dmstar_obs = 5.e5
-    mgas_obs = 0.
-    dmgas_obs = 1.e3
+    mgas_obs = 3.2e3
+    dmgas_obs = 0.4e3
 
     # Eq. 18: Log likelihood function
     def lnlike(parameters):

@@ -11,6 +11,7 @@ def getdata(galaxy, c=False, ba=False, mn=False):
     
     # Open files
     table = ascii.read("data/kirby10.dat").filled(-999)
+    table_c = ascii.read("data/kirby15.dat").filled(-999)
     table_ba = ascii.read("data/duggan18.dat")
     table_mn = ascii.read("data/delosreyes20.dat")
 
@@ -29,6 +30,16 @@ def getdata(galaxy, c=False, ba=False, mn=False):
 
         newdata = data[i]
         newerrs = errs[i]
+
+        # Cross-match with carbon table if needed
+        if c: 
+            if names[i] in table_c['Name']:
+                c_idx = np.where(table_c['Name'] == names[i])
+                if ~np.isclose(table_c['[C/Fe]'][c_idx],-999.):
+                    newdata = np.concatenate((newdata,table_c['[C/Fe]'][c_idx]))
+                    newerrs = np.concatenate((newerrs,table_c['e_[C/Fe]'][c_idx]))
+            else:
+                continue
 
         # Cross-match with barium table if needed
         if ba: 
@@ -63,5 +74,5 @@ def getdata(galaxy, c=False, ba=False, mn=False):
 if __name__ == "__main__":
 
     # Test to make sure script is working
-    data, errs = getdata('Scl', mn=True)#, mn=True)
-    print(data.shape, errs.shape)
+    data, errs = getdata('Scl', c=True, ba=True)
+    print(data.shape)
