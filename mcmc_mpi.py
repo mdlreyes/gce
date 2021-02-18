@@ -116,7 +116,7 @@ def mcmc(nsteps):
         model['mgas'][0] = 1.e6*pars[5]    # Initial gas mass (M_sun)
 
         # Initialize model
-        model['f_in'] = 1.e6 * f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)                                                                                
+        model['f_in'] = 1.e9 * f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)                                                                                
         model['abund'][0,0] = model['mgas'][0]*pristine[0]    # Set initial gas mass of H
         model['abund'][0,1] = model['mgas'][0]*pristine[1]    # Set initial gas mass of He
         model['mgal'][0] = model['mgas'][0]   # Set the initial galaxy mass to the initial gas mass    
@@ -237,7 +237,7 @@ def mcmc(nsteps):
             timestep += 1
 
         # Once model is done, define the model outputs that are useful for MCMC
-        model = model[:timestep]
+        model = model[:timestep-1]
 
         elem_model = [ model['eps'][:,snindex['fe']] - model['eps'][:,snindex['h']],		# [Fe/H]
                 model['eps'][:,snindex['mg']] - model['eps'][:,snindex['fe']],		# [Mg/Fe]
@@ -251,7 +251,7 @@ def mcmc(nsteps):
 
         return np.asarray(elem_model), sfr, mstar_model
 
-    # TODO: Define observed data
+    # Define observed data
     elem_data, delem_data = getdata(galaxy='Scl')
     mstar_obs = 12.e5
     dmstar_obs = 5.e5
@@ -265,7 +265,6 @@ def mcmc(nsteps):
 
         # Get data from model
         elem_model, sfr, mstar_model = gce_model(parameters)
-        print('TEST')
         nstars = len(elem_data[0,:])
         nelems = len(elem_data[:,0])
 
@@ -277,21 +276,24 @@ def mcmc(nsteps):
             for t in range(len(sfr)):
 
                 # TODO: ignore NaNs!
+                if np.any(np.isnan(elem_model[:,t,0])):
+                    continue
 
                 # Multiply by probability of star forming
                 product = sfr[t]/mstar_model
         
                 # Loop over each element ratio
                 for elem in range(nelems):
-                    product *= 1./(np.sqrt(2.*np.pi)*delem_data[elem,star]) * np.exp(-(elem_data[elem,star] - elem_model[elem,t,0])**2./(2.*delem_data[elem,star]**2.))
+                    product *= 1./(np.sqrt(2.*np.pi)*delem_data[elem,star]**2.) * np.exp(-(elem_data[elem,star] - elem_model[elem,t,0])**2./(2.*delem_data[elem,star]**2.))
 
-                integral += product
+                integral += product * delta_t
 
-        L += -np.log(integral)
+            L += np.log(integral)
 
         L += 0.1 * nstars * ((mstar_obs - mstar_model)**2./(2.*dmstar_obs**2.) + mgas_obs**2./(2.*dmgas_obs**2.) 
              + np.log(2.*np.pi) + np.log(dmstar_obs) + np.log(dmgas_obs))
 
+        print(parameters)
         print(L)
 
         return L
@@ -313,13 +315,13 @@ def mcmc(nsteps):
         if np.isfinite(lp) and np.isfinite(ll):
             return lp + ll
         else:
-            return lp + ll
+            return -np.inf
         
     # Start by doing basic max-likelihood fit to get initial values
     nll = lambda *args: -lnlike(*args)
 
     # Put in initial guesses for parameters (based on results from Kirby+11)
-    result = op.minimize(nll, [700., 0.25, 5., 0.5, 0.75, 0.5])
+    result = op.minimize(nll, [0.7, 0.25, 5., 0.5, 1., 0.5]) # actual: [ 0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685]
     params_init = result["x"]
     print(result)
 

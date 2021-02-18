@@ -50,7 +50,7 @@ def gce_model(pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II
     model['mgas'][0] = 1.e6*pars[5]    # Initial gas mass (M_sun)
 
     # Initialize model
-    model['f_in'] = 1.e6 * f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)                                                                                
+    model['f_in'] = 1.e9 * f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)                                                                                
     model['abund'][0,0] = model['mgas'][0]*pristine[0]    # Set initial gas mass of H
     model['abund'][0,1] = model['mgas'][0]*pristine[1]    # Set initial gas mass of He
     model['mgal'][0] = model['mgas'][0]   # Set the initial galaxy mass to the initial gas mass    
