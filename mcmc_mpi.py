@@ -20,6 +20,7 @@ from getdata import getdata
 import sys
 import numpy as np
 import scipy.optimize as op
+from scipy.integrate import trapz
 import emcee
 
 # Packages for parallelization
@@ -240,7 +241,7 @@ def mcmc(nsteps):
         model = model[:timestep-1]
 
         elem_model = [ model['eps'][:,snindex['fe']] - model['eps'][:,snindex['h']],		# [Fe/H]
-                model['eps'][:,snindex['mg']] - model['eps'][:,snindex['fe']],		# [Mg/Fe]
+                model['eps'][:,snindex['mg']] - model['eps'][:,snindex['fe']] + 0.2,		# [Mg/Fe]
                 model['eps'][:,snindex['si']] - model['eps'][:,snindex['fe']],		# [Si/Fe]
                 model['eps'][:,snindex['ca']] - model['eps'][:,snindex['fe']]		# [Ca/Fe]
                 #model['eps'][:,snindex['c']] - model['eps'][:,snindex['fe']], 	# [C/Fe]
@@ -248,8 +249,9 @@ def mcmc(nsteps):
             ]
         sfr = model['mdot']
         mstar_model = model['mstar'][-1]
+        time = model['t']
 
-        return np.asarray(elem_model), sfr, mstar_model
+        return np.array(elem_model)[:,:,0], sfr, mstar_model, time
 
     # Define observed data
     elem_data, delem_data = getdata(galaxy='Scl')
@@ -259,42 +261,43 @@ def mcmc(nsteps):
     dmgas_obs = 0.4e3
 
     # Eq. 18: Log likelihood function
-    def lnlike(parameters):
+    def neglnlike(parameters):
 
         L = 0.
 
         # Get data from model
-        elem_model, sfr, mstar_model = gce_model(parameters)
+        elem_model, sfr, mstar_model, time = gce_model(parameters)
         nstars = len(elem_data[0,:])
         nelems = len(elem_data[:,0])
+
+        goodidx = np.where((time > 0.007) & (~np.any(np.isnan(elem_model),axis=0)))
+        sfr = sfr[goodidx]
+        time = time[goodidx]
+        elem_model = elem_model[:,goodidx]
 
         # Loop over each star
         for star in range(nstars):
 
-            # Integrate over time
-            integral = 0.
-            for t in range(len(sfr)):
+            # Probability of star forming
+            product = sfr/mstar_model
 
-                # TODO: ignore NaNs!
-                if np.any(np.isnan(elem_model[:,t,0])):
-                    continue
+            # Loop over each element ratio
+            for elem in range(nelems):
+                product *= 1./(np.sqrt(2.*np.pi)*delem_data[elem,star]**2.) * np.exp(-(elem_data[elem,star] - elem_model[elem,:])**2./(2.*delem_data[elem,star]**2.))[0,:]
 
-                # Multiply by probability of star forming
-                product = sfr[t]/mstar_model
-        
-                # Loop over each element ratio
-                for elem in range(nelems):
-                    product *= 1./(np.sqrt(2.*np.pi)*delem_data[elem,star]**2.) * np.exp(-(elem_data[elem,star] - elem_model[elem,t,0])**2./(2.*delem_data[elem,star]**2.))
+            # Integrate as function of time
+            integral = trapz(product, x=time)
 
-                integral += product * delta_t
-
-            L += np.log(integral)
+            if np.isfinite(integral) and integral > 0.:
+                L -= np.log(integral)
+            else:
+                L += 5
 
         L += 0.1 * nstars * ((mstar_obs - mstar_model)**2./(2.*dmstar_obs**2.) + mgas_obs**2./(2.*dmgas_obs**2.) 
              + np.log(2.*np.pi) + np.log(dmstar_obs) + np.log(dmgas_obs))
 
-        print(parameters)
-        print(L)
+        #print(parameters)
+        #print(L)
 
         return L
 
@@ -311,19 +314,28 @@ def mcmc(nsteps):
     # Define the full log-probability function
     def lnprob(parameters):
         lp = lnprior(parameters)
-        ll = lnlike(parameters)
+        ll = neglnlike(parameters)
         if np.isfinite(lp) and np.isfinite(ll):
-            return lp + ll
+            return lp - ll
         else:
             return -np.inf
-        
+
+    '''
+    print('actual values:', neglnlike([0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685]))
+    print('initial values:', neglnlike([0.7, 0.25, 5., 0.5, 1., 0.5]))
+    print('test:', neglnlike([0.75, 0.3, 5.2, 0.4, 0.8, 0.5]))
+    print('test:', neglnlike([1.60242507, 0.70558951, 4.99999637, 0.50080008, 1.00514811, 0.50992109]))
+    print('test:', neglnlike([2.5, 1., 10., 5., 1., 10.]))
+    print('test:', neglnlike([1, 0.5, 1, 1, 1, 1]))
+    return
+    '''
+
     # Start by doing basic max-likelihood fit to get initial values
-    nll = lambda *args: -lnlike(*args)
+    result = op.basinhopping(neglnlike, [1., 0.5, 5., 1., 1., 1.]) # actual: [ 0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685]
+    print(result)
 
     # Put in initial guesses for parameters (based on results from Kirby+11)
-    result = op.minimize(nll, [0.7, 0.25, 5., 0.5, 1., 0.5]) # actual: [ 0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685]
     params_init = result["x"]
-    print(result)
 
     '''
     # Sample the log-probability function using emcee - first, initialize the walkers
