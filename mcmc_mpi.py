@@ -348,8 +348,13 @@ def mcmc(nsteps):
     print('Starting sampler')
 
     # Run serial MCMC
-    #sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob)
-    #sampler.run_mcmc(pos, nsteps, progress=True)
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob)
+    sampler.run_mcmc(pos, nsteps, progress=True)
+
+    # Save the chain so we don't have to run this again
+    np.save('chain', sampler.chain, allow_pickle=True, fix_imports=True)
+
+    return 
 
     # Run parallel MCMC
     with Pool() as pool:
@@ -357,7 +362,6 @@ def mcmc(nsteps):
         sampler.run_mcmc(pos, nsteps, progress=True)
 
         # Save the chain so we don't have to run this again
-        print('Finish time:', multi_time)
         np.save('chain', sampler.chain, allow_pickle=True, fix_imports=True)
 
     '''
