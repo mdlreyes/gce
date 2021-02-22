@@ -22,7 +22,8 @@ import emcee
 from multiprocessing import Pool
 
 # Variables for MCMC run
-nsteps = 100
+nsteps = 10000
+nwalkers = 20
 parallel = True
 
 # Model prep!
@@ -339,7 +340,6 @@ params_init = [0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.4971
 
 # Sample the log-probability function using emcee - first, initialize the walkers
 ndim = len(params_init)
-nwalkers = 100
 pos = [params_init + 1e-4*np.random.randn(ndim) for i in range(nwalkers)]
 
 print('Starting sampler')

@@ -52,3 +52,7 @@ def plotmcmc(file='chain.npy', outfile='plots'):
         print(names[i]+' range:', percentile)
 
     return
+
+if __name__ == "__main__":
+
+    plotmcmc()
