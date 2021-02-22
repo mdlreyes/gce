@@ -9,7 +9,7 @@ import scipy
 import scipy.integrate
 import sys
 #Load other files
-#sys.path.insert(0, '/raid/gduggan/gce')
+sys.path.insert(0, '/raid/gduggan/gce')
 import params as gce_params
 import gce_yields
 import imf
