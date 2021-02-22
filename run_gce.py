@@ -19,7 +19,6 @@ def time_check(pars):
     #print('test AGB', model['AGB_rate'][50:100])
     #print('test z', model['z'][:50])
 
-
     t2=time.time()
     model, atomic = gce.gce_model(pars)
     print('Time for new model: %.2e'%(time.time()-t2))

@@ -4,11 +4,6 @@ mcmc_mpi.py
 Runs gce_fast on multiple processors
 """
 
-#Backend for python3 on stravinsky
-import matplotlib
-matplotlib.use('TkAgg')
-import matplotlib.pyplot as plt
-
 # Import stuff to run model
 from scipy.interpolate import interp1d
 import params
@@ -22,7 +17,6 @@ import numpy as np
 import scipy.optimize as op
 from scipy.integrate import trapz
 import emcee
-import corner
 
 # Packages for parallelization
 from multiprocessing import Pool

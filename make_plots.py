@@ -4,6 +4,15 @@ make_plots.py
 Make plots
 """
 
+#Backend for python3 on stravinsky
+import matplotlib
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
+
+# Import other packages
+import numpy as np
+import corner
+
 def plotmcmc(file='chain.npy', outfile='plots'):
 
     # Load file
