@@ -321,6 +321,7 @@ def mcmc(nsteps):
             return -np.inf
 
     '''
+    # Test likelihood function
     print('actual values:', neglnlike([0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685]))
     print('initial values:', neglnlike([0.7, 0.25, 5., 0.5, 1., 0.5]))
     print('test:', neglnlike([0.75, 0.3, 5.2, 0.4, 0.8, 0.5]))
@@ -328,32 +329,34 @@ def mcmc(nsteps):
     print('test:', neglnlike([2.5, 1., 10., 5., 1., 10.]))
     print('test:', neglnlike([1, 0.5, 1, 1, 1, 1]))
     return
-    '''
 
     # Start by doing basic max-likelihood fit to get initial values
     result = op.basinhopping(neglnlike, [1., 0.5, 5., 1., 1., 1.]) # actual: [ 0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685]
     print(result)
+    params_init = result["x"]
+    '''
 
     # Put in initial guesses for parameters (based on results from Kirby+11)
-    params_init = result["x"]
+    params_init = [0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685]
 
-    '''
     # Sample the log-probability function using emcee - first, initialize the walkers
     ndim = len(params_init)
     nwalkers = 100
     pos = [result["x"] + 1e-4*np.random.randn(ndim) for i in range(nwalkers)]
 
     # Run MCMC
-
     with Pool() as pool:
         sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, pool=pool)
         sampler.run_mcmc(pos, nsteps, progress=True)
         multi_time = end - start
-    '''
+
+        # Save the chain so we don't have to run this again
+        print('Finish time:', multi_time)
+        np.save('chain', sampler.chain, allow_pickle=True, fix_imports=True)
 
     '''
     # Plot walkers
-    fig, ax = plt.subplots(2,1,figsize=(8,8), sharex=True)
+    fig, ax = plt.subplots(6,1,figsize=(8,8), sharex=True)
     ax = ax.ravel()
 
     names = [r"$\theta$", r"$b_{\bot}$"]
