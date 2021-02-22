@@ -261,7 +261,7 @@ def mcmc(nsteps):
     dmgas_obs = 0.4e3
 
     # Eq. 18: Log likelihood function
-    def neglnlike(parameters):
+    def lnlike(parameters):
 
         L = 0.
 
@@ -299,7 +299,8 @@ def mcmc(nsteps):
         #print(parameters)
         #print(L)
 
-        return L
+        # Note that formula was for negative log-likelihood, so return log-likelihood just to be safe
+        return -L
 
     # Define the priors
     def lnprior(parameters):
@@ -314,9 +315,9 @@ def mcmc(nsteps):
     # Define the full log-probability function
     def lnprob(parameters):
         lp = lnprior(parameters)
-        ll = neglnlike(parameters)
+        ll = lnlike(parameters)
         if np.isfinite(lp) and np.isfinite(ll):
-            return lp - ll
+            return lp + ll
         else:
             return -np.inf
 
@@ -331,7 +332,7 @@ def mcmc(nsteps):
     return
 
     # Start by doing basic max-likelihood fit to get initial values
-    result = op.basinhopping(neglnlike, [1., 0.5, 5., 1., 1., 1.]) # actual: [ 0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685]
+    result = op.basinhopping(-lnlike, [1., 0.5, 5., 1., 1., 1.]) # actual: [ 0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685]
     print(result)
     params_init = result["x"]
     '''
@@ -342,13 +343,18 @@ def mcmc(nsteps):
     # Sample the log-probability function using emcee - first, initialize the walkers
     ndim = len(params_init)
     nwalkers = 100
-    pos = [result["x"] + 1e-4*np.random.randn(ndim) for i in range(nwalkers)]
+    pos = [params_init + 1e-4*np.random.randn(ndim) for i in range(nwalkers)]
 
-    # Run MCMC
+    print('Starting sampler')
+
+    # Run serial MCMC
+    #sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob)
+    #sampler.run_mcmc(pos, nsteps, progress=True)
+
+    # Run parallel MCMC
     with Pool() as pool:
         sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, pool=pool)
         sampler.run_mcmc(pos, nsteps, progress=True)
-        multi_time = end - start
 
         # Save the chain so we don't have to run this again
         print('Finish time:', multi_time)
