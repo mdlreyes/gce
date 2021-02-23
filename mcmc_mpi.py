@@ -253,6 +253,7 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
 
 # Define observed data
 elem_data, delem_data = getdata(galaxy='Scl')
+print(elem_data.shape)
 mstar_obs = 12.e5
 dmstar_obs = 5.e5
 mgas_obs = 3.2e3
@@ -281,7 +282,8 @@ def lnlike(parameters):
 
         # Loop over each element ratio
         for elem in range(nelems):
-            product *= 1./(np.sqrt(2.*np.pi)*delem_data[elem,star]**2.) * np.exp(-(elem_data[elem,star] - elem_model[elem,:])**2./(2.*delem_data[elem,star]**2.))[0,:]
+            if ~np.isclose(elem_data[elem,star],-999.):
+                product *= 1./(np.sqrt(2.*np.pi)*delem_data[elem,star]) * np.exp(-(elem_data[elem,star] - elem_model[elem,:])**2./(2.*delem_data[elem,star]**2.))[0,:]
 
         # Integrate as function of time
         integral = trapz(product, x=time)

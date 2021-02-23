@@ -31,13 +31,18 @@ def getdata(galaxy, c=False, ba=False, mn=False):
         newdata = data[i]
         newerrs = errs[i]
 
+        # Remove any rows where we don't have complete data for [Fe/H] and [alpha/Fe]
+        if ~np.any(np.isclose(data[i],-999.)): 
+            finaldata.append(newdata)
+            finalerrs.append(newerrs)
+            #finalnames.append(names[i])
+
         # Cross-match with carbon table if needed
         if c: 
             if names[i] in table_c['Name']:
                 c_idx = np.where(table_c['Name'] == names[i])
-                if ~np.isclose(table_c['[C/Fe]'][c_idx],-999.):
-                    newdata = np.concatenate((newdata,table_c['[C/Fe]'][c_idx]))
-                    newerrs = np.concatenate((newerrs,table_c['e_[C/Fe]'][c_idx]))
+                newdata = np.concatenate((newdata,table_c['[C/Fe]'][c_idx]))
+                newerrs = np.concatenate((newerrs,table_c['e_[C/Fe]'][c_idx]))
             else:
                 continue
 
@@ -59,12 +64,6 @@ def getdata(galaxy, c=False, ba=False, mn=False):
             else:
                 continue
 
-        # Remove any rows where we don't have complete data
-        if ~np.any(np.isclose(data[i],-999.)):
-            finaldata.append(newdata)
-            finalerrs.append(newerrs)
-            #finalnames.append(names[i])
-
     data = np.asarray(finaldata).T
     errs = np.asarray(finalerrs).T
     #names = np.asarray(finalnames)
@@ -74,5 +73,5 @@ def getdata(galaxy, c=False, ba=False, mn=False):
 if __name__ == "__main__":
 
     # Test to make sure script is working
-    data, errs = getdata('Scl', c=True, ba=True)
+    data, errs = getdata('Scl', c=False, ba=False)
     print(data.shape)
