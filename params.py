@@ -12,7 +12,7 @@ imf_model = 'kroupa93'
 #imf_model: 'kroupa01', 'kroupa93', 'chabrier03', 'salpeter55'
 r_process_keyword='none'
 # r_process_keyword: 'none', 'typical_SN_only', 'rare_event_only', 'both'
-AGB_source = 'kar16'
+AGB_source = 'cri15'#'kar16'
 # AGB_source: 'cri15', 'kar16'
 
 ##### multiplier of barium ejecta of each source

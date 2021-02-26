@@ -1,4 +1,6 @@
 """
+gce_fast.py
+
 This program is based on Gina Duggan's and Ivanna Escala's GCE model code. 
 The original version of the code (described in n Kirby+2011b) was written by E.N.K in IDL.
 
@@ -42,15 +44,15 @@ def gce_model(pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II
     model['t'] = t
 
     # Read parameters from pars
-    f_in_norm0 = pars[0]    # Normalization of gas inflow rate (10**-6 M_sun Gyr**-1)
+    f_in_norm0 = pars[0]*1.e9    # Normalization of gas inflow rate (M_sun Gyr**-1)
     f_in_t0 = pars[1]       # Exponential decay time for gas inflow (Gyr)           
     f_out = pars[2]*1.e3    # Strength of gas outflow due to supernovae (M_sun SN**-1) 
-    sfr_norm = pars[3]      # Normalization of SF law (10**-6 M_sun Gyr**-1)
+    sfr_norm = pars[3]      # Normalization of SF law (10**6 M_sun Gyr**-1)
     sfr_exp = pars[4]       # Exponent of SF law
-    model['mgas'][0] = 1.e6*pars[5]    # Initial gas mass (M_sun)
+    model['mgas'][0] = pars[5]*1.e6    # Initial gas mass (M_sun)
 
     # Initialize model
-    model['f_in'] = 1.e9 * f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)                                                                                
+    model['f_in'] = f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)                                                                                
     model['abund'][0,0] = model['mgas'][0]*pristine[0]    # Set initial gas mass of H
     model['abund'][0,1] = model['mgas'][0]*pristine[1]    # Set initial gas mass of He
     model['mgal'][0] = model['mgas'][0]   # Set the initial galaxy mass to the initial gas mass    
@@ -65,7 +67,7 @@ def gce_model(pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II
     # While (the age of the universe at a given timestep is less than the age of the universe at z = 0)
     # AND [ (less than 10 Myr has passed) 
     # OR (gas remains within the galaxy at a given time step AND the gas mass in iron at the previous timestep is subsolar) ]
-    while ((timestep < (n-1)) and ((timestep <= 10) or 
+    while ((timestep < (n-1)) and ((timestep*delta_t <= 0.010) or 
     ( (model['mgas'][timestep] > 0.0) and (model['eps'][timestep-1,snindex['fe']] < 0.0) ) )):
 
         if model['mgas'][timestep] < 0.: 
@@ -173,13 +175,19 @@ def gce_model(pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II
     #print('Full time loop: %.2e'%(time.time()-t1))
     print('why stop?', timestep, model['mgas'][timestep], model['eps'][timestep-1,snindex['fe']])
 
+    #print(model['abund'][50:100,snindex['ba']])
+    #print(model['z'][50:100])
+    print(SN_yield[snindex['he']]['weight_II'])
+    print(SN_yield[snindex['ba']]['weight_II'])
+    #print(model['eps'][50:100,snindex['ba']])
+
     return model[:timestep], SN_yield['atomic']
 
 def runmodel(scl_pars, plot=False):
 
     # Integration parameters
-    n = 1360           # number of timesteps in the model 
     delta_t = 0.001     # time step (Gyr)
+    n = int(13.6/delta_t)     # number of timesteps in the model 
     t = np.arange(n)*delta_t    # time passed in model array -- age universe (Gyr)
 
     # Load all sources of chemical yields

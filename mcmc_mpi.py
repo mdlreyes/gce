@@ -22,9 +22,13 @@ import emcee
 from multiprocessing import Pool
 
 # Variables for MCMC run
-nsteps = 10000
+nsteps = 1000
 nwalkers = 20
 parallel = True
+
+# Put in initial guesses for parameters (based on results from Kirby+11)
+params_init = [2.44926503e+00, 2.69992265e-01, 1.07547853e+01, 4.50716795e+00, 8.69993281e-01, 3.17499048e-03]
+#params_init = [0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685]
 
 # Model prep!
 
@@ -249,40 +253,60 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
     mstar_model = model['mstar'][-1]
     time = model['t']
 
-    return np.array(elem_model)[:,:,0], sfr, mstar_model, time
+    # Compute amount of leftover gas
+    leftovergas = model['mgas'][-1]
+    if (abs(model['mgas'][-2] - leftovergas) > 0.5*leftovergas) or (leftovergas < 0.): 
+        leftovergas = 0.0
+
+    return np.array(elem_model)[:,:,0], sfr, mstar_model, time, leftovergas
 
 # Define observed data
 elem_data, delem_data = getdata(galaxy='Scl')
-print(elem_data.shape)
+nelems, nstars = elem_data.shape
+print(nelems, nstars)
 mstar_obs = 12.e5
 dmstar_obs = 5.e5
 mgas_obs = 3.2e3
 dmgas_obs = 0.4e3
 
-# Eq. 18: Log likelihood function
-def lnlike(parameters):
+# Eq. 18: *Negative* log likelihood function
+def neglnlike(parameters):
 
-    L = 0.
+    # Don't even bother to compute likelihood if any of the parameters are negative
+    if np.any(np.asarray(parameters) < 0.):
+        return 1e10
 
     # Get data from model
-    elem_model, sfr, mstar_model, time = gce_model(parameters)
-    nstars = len(elem_data[0,:])
-    nelems = len(elem_data[:,0])
+    elem_model, sfr, mstar_model, time, leftovergas = gce_model(parameters)
 
-    goodidx = np.where((time > 0.007) & (~np.any(np.isnan(elem_model),axis=0)))
+    # Check if model runs all the way
+    if time[-1] < 0.9:
+        return 1e10
+    goodidx = np.where((time > 0.007) & (np.all(np.isfinite(elem_model),axis=0)))
+    if len(goodidx[0]) < 10:
+        return 1e10
     sfr = sfr[goodidx]
     time = time[goodidx]
     elem_model = elem_model[:,goodidx]
 
+    # Note that L is the *negative* log likelihood!
+    L = 0.
+
+    # Penalize models that don't have enough stars 
+    if mstar_model < 1000.0: 
+        L += 3e6
+
+    # Compute probability of star forming at a given time
+    prob = sfr/mstar_model
+    prob /= trapz(sfr/mstar_model, x=time) # Normalize?
+
     # Loop over each star
     for star in range(nstars):
 
-        # Probability of star forming
-        product = sfr/mstar_model
-
         # Loop over each element ratio
+        product = prob
         for elem in range(nelems):
-            if ~np.isclose(elem_data[elem,star],-999.):
+            if ~np.isclose(elem_data[elem,star],-999.) and delem_data[elem,star] < 0.4:
                 product *= 1./(np.sqrt(2.*np.pi)*delem_data[elem,star]) * np.exp(-(elem_data[elem,star] - elem_model[elem,:])**2./(2.*delem_data[elem,star]**2.))[0,:]
 
         # Integrate as function of time
@@ -293,14 +317,11 @@ def lnlike(parameters):
         else:
             L += 5
 
-    L += 0.1 * nstars * ((mstar_obs - mstar_model)**2./(2.*dmstar_obs**2.) + mgas_obs**2./(2.*dmgas_obs**2.) 
+    L += 0.1 * nstars * ((mstar_obs - mstar_model)**2./(2.*dmstar_obs**2.) + leftovergas**2./(2.*dmgas_obs**2.) 
             + np.log(2.*np.pi) + np.log(dmstar_obs) + np.log(dmgas_obs))
 
-    #print(parameters)
-    #print(L)
-
-    # Note that formula was for negative log-likelihood, so return log-likelihood just to be safe
-    return -L
+    #print(parameters, L)
+    return L
 
 # Define the priors
 def lnprior(parameters):
@@ -315,34 +336,32 @@ def lnprior(parameters):
 # Define the full log-probability function
 def lnprob(parameters):
     lp = lnprior(parameters)
-    ll = lnlike(parameters)
+    ll = neglnlike(parameters)
     if np.isfinite(lp) and np.isfinite(ll):
-        return lp + ll
+        return lp - ll
     else:
         return -np.inf
 
-'''
 # Test likelihood function
 print('actual values:', neglnlike([0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685]))
-print('initial values:', neglnlike([0.7, 0.25, 5., 0.5, 1., 0.5]))
-print('test:', neglnlike([0.75, 0.3, 5.2, 0.4, 0.8, 0.5]))
-print('test:', neglnlike([1.60242507, 0.70558951, 4.99999637, 0.50080008, 1.00514811, 0.50992109]))
-print('test:', neglnlike([2.5, 1., 10., 5., 1., 10.]))
-print('test:', neglnlike([1, 0.5, 1, 1, 1, 1]))
-return
+print('initial values:', neglnlike([2.6988, 0.27, 5.37, 4.46, 0.85, 0.]))
+print('values after powell:', neglnlike([2.44926503e+00, 2.69992265e-01, 1.07547853e+01, 4.50716795e+00, 8.69993281e-01, 3.17499048e-03])) 
 
+'''
 # Start by doing basic max-likelihood fit to get initial values
-result = op.basinhopping(-lnlike, [1., 0.5, 5., 1., 1., 1.]) # actual: [ 0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685]
+result = op.minimize(neglnlike, [2.6988, 0.27, 5.37, 4.46, 0.85, 0.], method='powell', options={'ftol':1e-6, 'maxiter':100000, 'direc':np.diag([0.01,0.05,1.0,0.01,0.01,0.01])}) 
 print(result)
 params_init = result["x"]
 '''
 
-# Put in initial guesses for parameters (based on results from Kirby+11)
-params_init = [0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685]
-
 # Sample the log-probability function using emcee - first, initialize the walkers
 ndim = len(params_init)
-pos = [params_init + 1e-4*np.random.randn(ndim) for i in range(nwalkers)]
+dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513] / np.sqrt(6.)
+pos = []
+for i in range(nwalkers):
+    a = params_init + dpar*np.random.randn(ndim)
+    a[a < 0.] = 0.
+    pos.append(a)
 
 print('Starting sampler')
 

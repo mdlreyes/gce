@@ -1,10 +1,3 @@
-"""
-gce_yields.py
-
-This program is based on Gina Duggan's code to read in yields for a GCE model.
-"""
-
-# Import useful packages
 import numpy as np
 import re
 
@@ -384,4 +377,3 @@ def initialize_yields_inclBa(yield_path='yields/', r_process_keyword='none', AGB
     
     return nel, eps_sun, SN_yield, AGB_yield, M_SN, M_HN, z_II, M_AGB, z_AGB#, perets
               
-def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source = 'cri15', verbose = False):
