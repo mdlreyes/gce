@@ -11,6 +11,7 @@ from matplotlib.ticker import MultipleLocator, AutoMinorLocator, MaxNLocator
 
 # Import other modules
 import gce_fast as gce
+from getdata import getdata
 
 #   using names used in the paper:  pars = [A_in/1e6,  tau_in,   A_out/1000,    A_star/1e6, alpha,    M_gas_0]
 scl_pars = [701.57967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685] #result of "restore, 'scl_sfr-law.sav'" in idl
@@ -93,6 +94,13 @@ def plotting_compare(model, atomic, title1, model2=[], atomic2=[], title2='', pl
     else: 
         print("Need to state plot labels!")
         return
+
+    # Open data
+    elem_data, delem_data = getdata(galaxy='Scl')
+    feh_obs = elem_data[0,:]
+    mgfe_obs = elem_data[1,:]
+    sife_obs = elem_data[2,:]
+    cafe_obs = elem_data[3,:]
     
     fe_plot_index = np.where(plot_atomic == 26)[0][0]
     h_plot_index = np.where(plot_atomic == 1)[0][0]
@@ -143,16 +151,18 @@ def plotting_compare(model, atomic, title1, model2=[], atomic2=[], title2='', pl
     mdot = []
     if single_plot == False: mdot2 = []
     for i in range(len(feh_plot)):
-        mask = (feh_plot[i] - feh_step/2. < feh) & (feh < feh_plot[i] + feh_step/2.)
-        mdot.append(sum(model['mdot'][mask]))
+        mask = np.where((feh_plot[i] - feh_step/2. < feh) & (feh < feh_plot[i] + feh_step/2.))[0]
+        mdot.append(np.sum(model['mdot'][mask]))
         if single_plot == False:
-            mask2 = (feh_plot[i] - feh_step/2. < feh2) & (feh2 < feh_plot[i] + feh_step/2.)
+            mask2 = np.where((feh_plot[i] - feh_step/2. < feh2) & (feh2 < feh_plot[i] + feh_step/2.))[0]
             mdot2.append(sum(model2['mdot'][mask2]))
     mdot = np.array(mdot)
     if single_plot == False: mdot2 = np.array(mdot2)
     gauss_sigma = 1
-    #axs[0].plot(feh_plot,mdot/np.sum(mdot)*100,'k.-')
-    axs[0].plot(feh_plot,scipy.ndimage.filters.gaussian_filter(mdot/np.sum(mdot)*100,gauss_sigma),'k-')
+    #axs[0].plot(feh_plot,mdot,'k.-')
+    obsmask = np.where((feh_obs > -3.5) & (feh_obs < 0.))[0]
+    axs[0].plot(feh_plot,scipy.ndimage.filters.gaussian_filter(mdot/np.sum(mdot)*len(feh_obs[obsmask]),gauss_sigma),'k-')
+    axs[0].hist(feh_obs[obsmask], bins=20)
     #axs[0].plot(feh,model['mdot']/np.max(model['mdot']),'k--')
     if single_plot == False:
         #axs[0].plot(feh_plot,mdot2/np.sum(mdot2)*100,'r.-')
@@ -190,8 +200,17 @@ def plotting_compare(model, atomic, title1, model2=[], atomic2=[], title2='', pl
             plot_index = len(labels)-1
         else:
             plot_index = np.arange(len(plot_atomic))[element_mask][i]
+            if i == 5:
+                axs[i].scatter(feh_obs, mgfe_obs, c='r', s=1/delem_data[1,:])
+            if i == 6:
+                axs[i].scatter(feh_obs, mgfe_obs, c='r', s=1/delem_data[2,:])
+            if i == 7:
+                axs[i].scatter(feh_obs, mgfe_obs, c='r', s=1/delem_data[3,:])
             #print i+1, plot_atomic[plot_index], labels[i], np.ma.masked_invalid(model['eps'][:,map_data_index_to_plot[plot_index]]-model['eps'][:,map_data_index_to_plot[fe_plot_index]]).sum()#, atomic[map_data_index_to_plot[plot_index]]
-            axs[i+1].plot(feh,model['eps'][:,map_data_index_to_plot[plot_index]]-model['eps'][:,map_data_index_to_plot[fe_plot_index]],'k.-',label=title1)
+            if i == 4:
+                axs[i+1].plot(feh,model['eps'][:,map_data_index_to_plot[plot_index]]-model['eps'][:,map_data_index_to_plot[fe_plot_index]]+0.2,'k.-',label=title1)
+            else:
+                axs[i+1].plot(feh,model['eps'][:,map_data_index_to_plot[plot_index]]-model['eps'][:,map_data_index_to_plot[fe_plot_index]],'k.-',label=title1)
             if single_plot == False:
                 axs[i+1].plot(feh2,model2['eps'][:,map_data_index_to_plot2[plot_index]]-model2['eps'][:,map_data_index_to_plot2[fe_plot_index]],'r.--',label=title2)
             elif i==0:

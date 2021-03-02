@@ -259,8 +259,10 @@ def initialize_yields_inclBa(yield_path='yields/', r_process_keyword='none', AGB
             'II_15', 'II_18', 'II_20', 'II_25', 'II_30', 'II_40'],dtype=None,
             skip_header=24, encoding='utf_8')
     mass_array = np.array(data[['II_13', 'II_15', 'II_18', 'II_20', 'II_25', 'II_30', 'II_40']].tolist())
+    #print(mass_array)
     elname = np.array([data['isotope'][j].strip('0123456789-*^') for j in range(len(data['isotope']))])     #array where the atomic name only remains
     isotope_array = np.array([re.sub("\D","",data['isotope'][k]) for k in range(len(data['isotope']))])
+    #print(isotope_array)
     mask = (elname != 'M_final_') & (elname != 'M_cut_')
     for i in np.arange(len(elname))[mask]:     
         wz = np.where(z_II == data['Metallicity'][i])[0]
@@ -270,6 +272,7 @@ def initialize_yields_inclBa(yield_path='yields/', r_process_keyword='none', AGB
             if isotope_array[i] == '': isotope = atom
             else: isotope = int(isotope_array[i])
             wa = np.where(SN_yield['atomic'] == atom)[0][0]
+            #print(isotope, atom)
             for mass_i in range(len(M_SN)):
                 SN_yield[wa]['weight_II'][wz[0],mass_i] = SN_yield[wa]['weight_II'][wz[0],mass_i]+isotope*mass_array[i,mass_i]     # add isotope mass * yield to SN_yield[atomic]['weight'][metallicity,mass]
                 SN_yield[wa]['II'][wz[0],mass_i] = SN_yield[wa]['II'][wz[0],mass_i]+mass_array[i,mass_i]                           # add yield to SN_yield[atomic]['AGB'][metallicity,mass]
@@ -309,6 +312,7 @@ def initialize_yields_inclBa(yield_path='yields/', r_process_keyword='none', AGB
             wa = np.where(SN_yield['atomic'] == atom)[0][0]
             SN_yield[wa]['weight_Ia'] = SN_yield[wa]['weight_Ia']+isotope*data['yield'][i]     # add isotope mass * yield to SN_yield[atomic]['weight'][metallicity,mass]
             SN_yield[wa]['Ia'] = SN_yield[wa]['Ia']+data['yield'][i]                           # add yield to SN_yield[atomic]['AGB'][metallicity,mass]    
+
     #then add yields with iwa99/tab3.txt
     iwa99file = yield_path+'iwa99/tab3.txt'
     data = np.genfromtxt(iwa99file, names = ['isotope','yield'],dtype=None,
@@ -321,9 +325,11 @@ def initialize_yields_inclBa(yield_path='yields/', r_process_keyword='none', AGB
             atom = iso_atomic[el_index[0]]
             if isotope_array[i] == '': isotope = atom
             else: isotope = int(isotope_array[i])
+
             wa = np.where(SN_yield['atomic'] == atom)[0][0]
             SN_yield[wa]['weight_Ia'] = SN_yield[wa]['weight_Ia']+isotope*data['yield'][i]     # add isotope mass * yield to SN_yield[atomic]['weight'][metallicity,mass]
             SN_yield[wa]['Ia'] = SN_yield[wa]['Ia']+data['yield'][i]                           # add yield to SN_yield[atomic]['AGB'][metallicity,mass]    
+        
     SN_yield['weight_II'][SN_yield['II']>0] = SN_yield['weight_II'][SN_yield['II']>0]/SN_yield['II'][SN_yield['II']>0]                                                     # divide (isotope mass * yield) by yield
     SN_yield['weight_HN'][SN_yield['HN']>0] = SN_yield['weight_HN'][SN_yield['HN']>0]/SN_yield['HN'][SN_yield['HN']>0]
     SN_yield['weight_Ia'][SN_yield['Ia']>0] = SN_yield['weight_Ia'][SN_yield['Ia']>0]/SN_yield['Ia'][SN_yield['Ia']>0]
@@ -377,3 +383,6 @@ def initialize_yields_inclBa(yield_path='yields/', r_process_keyword='none', AGB
     
     return nel, eps_sun, SN_yield, AGB_yield, M_SN, M_HN, z_II, M_AGB, z_AGB#, perets
               
+if __name__ == "__main__":
+
+    initialize_yields_inclBa()

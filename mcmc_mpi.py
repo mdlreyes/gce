@@ -8,7 +8,7 @@ Runs gce_fast on multiple processors
 from scipy.interpolate import interp1d
 import params
 import dtd
-import gce_yields
+import gce_yields_old as gce_yields
 import gce_plot
 from getdata import getdata
 
@@ -22,13 +22,14 @@ import emcee
 from multiprocessing import Pool
 
 # Variables for MCMC run
-nsteps = 1000
+nsteps = 100
 nwalkers = 20
 parallel = True
 
-# Put in initial guesses for parameters (based on results from Kirby+11)
-params_init = [2.44926503e+00, 2.69992265e-01, 1.07547853e+01, 4.50716795e+00, 8.69993281e-01, 3.17499048e-03]
-#params_init = [0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685]
+# Put in initial guesses for parameters 
+params_init = [0.66951658, 0.21648284, 3.96625663, 0.17007564, 1.81059811, 1.44096689]
+#params_init = [2.44926503e+00, 2.69992265e-01, 1.07547853e+01, 4.50716795e+00, 8.69993281e-01, 3.17499048e-03]
+#params_init = [0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685] #(based on results from Kirby+11)
 
 # Model prep!
 
@@ -242,7 +243,7 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
     # Once model is done, define the model outputs that are useful for MCMC
     model = model[:timestep-1]
 
-    elem_model = [ model['eps'][:,snindex['fe']] - model['eps'][:,snindex['h']],		# [Fe/H]
+    elem_model = [ model['eps'][:,snindex['fe']], #- model['eps'][:,snindex['h']],		# [Fe/H]
             model['eps'][:,snindex['mg']] - model['eps'][:,snindex['fe']] + 0.2,		# [Mg/Fe]
             model['eps'][:,snindex['si']] - model['eps'][:,snindex['fe']],		# [Si/Fe]
             model['eps'][:,snindex['ca']] - model['eps'][:,snindex['fe']]		# [Ca/Fe]
@@ -264,10 +265,10 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
 elem_data, delem_data = getdata(galaxy='Scl')
 nelems, nstars = elem_data.shape
 print(nelems, nstars)
-mstar_obs = 12.e5
-dmstar_obs = 5.e5
+mstar_obs = 10**6.08
+dmstar_obs = 1.27e5
 mgas_obs = 3.2e3
-dmgas_obs = 0.4e3
+dmgas_obs = 1.e3
 
 # Eq. 18: *Negative* log likelihood function
 def neglnlike(parameters):
@@ -280,8 +281,8 @@ def neglnlike(parameters):
     elem_model, sfr, mstar_model, time, leftovergas = gce_model(parameters)
 
     # Check if model runs all the way
-    if time[-1] < 0.9:
-        return 1e10
+    #if time[-1] < 0.9:
+    #    return 1e10
     goodidx = np.where((time > 0.007) & (np.all(np.isfinite(elem_model),axis=0)))
     if len(goodidx[0]) < 10:
         return 1e10
@@ -304,13 +305,13 @@ def neglnlike(parameters):
     for star in range(nstars):
 
         # Loop over each element ratio
-        product = prob
+        product = 1.
         for elem in range(nelems):
-            if ~np.isclose(elem_data[elem,star],-999.) and delem_data[elem,star] < 0.4:
+            if ~np.isclose(elem_data[elem,star],-999.) and delem_data[elem,star] > 0.0:
                 product *= 1./(np.sqrt(2.*np.pi)*delem_data[elem,star]) * np.exp(-(elem_data[elem,star] - elem_model[elem,:])**2./(2.*delem_data[elem,star]**2.))[0,:]
 
         # Integrate as function of time
-        integral = trapz(product, x=time)
+        integral = trapz(product*prob, x=time)
 
         if np.isfinite(integral) and integral > 0.:
             L -= np.log(integral)
@@ -345,14 +346,15 @@ def lnprob(parameters):
 # Test likelihood function
 print('actual values:', neglnlike([0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685]))
 print('initial values:', neglnlike([2.6988, 0.27, 5.37, 4.46, 0.85, 0.]))
-print('values after powell:', neglnlike([2.44926503e+00, 2.69992265e-01, 1.07547853e+01, 4.50716795e+00, 8.69993281e-01, 3.17499048e-03])) 
+print('values after powell:', neglnlike([0.66951658, 0.21648284, 3.96625663, 0.17007564, 1.81059811, 1.44096689])) 
+print('values after mcmc:', neglnlike([1.40, 0.26, 10.72, 4.11, 0.95, 0.37]))
 
-'''
+
 # Start by doing basic max-likelihood fit to get initial values
-result = op.minimize(neglnlike, [2.6988, 0.27, 5.37, 4.46, 0.85, 0.], method='powell', options={'ftol':1e-6, 'maxiter':100000, 'direc':np.diag([0.01,0.05,1.0,0.01,0.01,0.01])}) 
-print(result)
-params_init = result["x"]
-'''
+#result = op.minimize(neglnlike, [2.6988, 0.27, 5.37, 4.46, 0.85, 0.], method='powell', options={'ftol':1e-6, 'maxiter':100000, 'direc':np.diag([-0.05,0.05,1.0,0.01,0.01,0.01])}) 
+#print(result)
+#params_init = result["x"]
+
 
 # Sample the log-probability function using emcee - first, initialize the walkers
 ndim = len(params_init)
