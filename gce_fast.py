@@ -256,6 +256,6 @@ def runmodel(scl_pars, plot=False):
     print('test', atomic2)
     if plot:
         gce_plot.makeplots(model2, atomic2, title="Sculptor final", plot=True, skip_end_dots=-10, 
-        abunds=True, time=True, params=True)
+        abunds=True, time=False, params=False)
 
     return

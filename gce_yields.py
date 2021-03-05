@@ -9,8 +9,84 @@ import numpy as np
 from astropy.io import ascii
 import re
 
-def load_AGB(AGB_source, yield_path, eps_sun, atomic_num, atomic_names, atomic_weight):
-    """Reads in AGB yield file."""
+def load_II(II_source, yield_path, SN_yield, atomic_names, z_II, M_SN):
+    """Reads in II yield files."""
+
+    if II_source == 'nom06':
+        # Read in IISN yields from Nomoto+06
+        ii_table = ascii.read(yield_path+'nom06/tab1.txt')
+        elem_name = np.array([ii_table['Element'][j].strip('0123456789-*^') for j in range(len(ii_table['Element']))])  # Element names
+        mass_num = np.array([re.sub("\D","",ii_table['Element'][k]) for k in range(len(ii_table['Element']))])  # Mass numbers
+        mass_array = ii_table['P13', 'P15', 'P18', 'P20', 'P25', 'P30', 'P40']
+
+        for elem_idx, elem in enumerate(elem_name):
+            # Loop over each line in yield table
+            if elem == 'p':
+                elem = 'H'
+                isotope_mass = 1
+            elif elem == 'd':
+                elem = 'H'
+                isotope_mass = 2
+            elif (elem not in atomic_names): 
+                continue
+            else:
+                isotope_mass = int(mass_num[elem_idx])
+
+            # Get indices for storing yields in SN_yield table
+            wz = np.where(z_II == ii_table['Z'][elem_idx])[0][0]
+            wa = np.where(atomic_names == elem)[0][0]
+            
+            # Add yields to SN_yield table
+            for mass_idx, mass in enumerate(M_SN):
+                SN_yield[wa]['weight_II'][wz,mass_idx] += isotope_mass * mass_array['P'+str(int(mass))][elem_idx]     # Mass weighted by isotopic weight
+                SN_yield[wa]['II'][wz,mass_idx] += mass_array['P'+str(int(mass))][elem_idx]
+
+    return SN_yield
+
+def load_Ia(Ia_source, yield_path, SN_yield, atomic_names):
+    """Reads in Ia yield files."""
+
+    if Ia_source == 'iwa99':
+        # Read in He yields from Nomoto+06
+        ia_he_table = ascii.read(yield_path+'nom06/tab3.txt')
+        elem_name = np.array([ia_he_table['Element'][j].strip('0123456789-*^') for j in range(len(ia_he_table['Element']))])  
+        mass_num = np.array([re.sub("\D","",ia_he_table['Element'][k]) for k in range(len(ia_he_table['Element']))])  
+
+        for elem_idx, elem in enumerate(elem_name):
+            # Loop over each line in yield table
+            if elem == 'He':    
+                isotope_mass = int(mass_num[elem_idx])
+
+                # Get index for storing yields in SN_yield table
+                wa = np.where(atomic_names == elem)[0][0]
+
+                # Add yields to SN_yield table
+                SN_yield[wa]['weight_Ia'] += isotope_mass * ia_he_table['SNIa'][elem_idx]  # Mass weighted by isotopic weight
+                SN_yield[wa]['Ia'] += ia_he_table['SNIa'][elem_idx]                      
+        
+        # Read in other IaSN yields from Iwa+99
+        ia_file = ascii.read(yield_path+'iwa99/tab3.txt')
+        elem_name = np.array([ia_file['isotope'][j].strip('0123456789-*^') for j in range(len(ia_file['isotope']))])    
+        mass_num = np.array([re.sub("\D","",ia_file['isotope'][k]) for k in range(len(ia_file['isotope']))])
+
+        for elem_idx, elem in enumerate(elem_name): 
+            # Loop over each line in yield table   
+            if (elem not in atomic_names): 
+                continue
+            else:
+                isotope_mass = int(mass_num[elem_idx])
+
+            # Get index for storing yields in SN_yield table
+            wa = np.where(atomic_names == elem)[0][0]
+
+            # Add yields to SN_yield table
+            SN_yield[wa]['weight_Ia'] += isotope_mass * ia_file['W7'][elem_idx]  # Mass weighted by isotopic weight
+            SN_yield[wa]['Ia'] += ia_file['W7'][elem_idx]
+
+    return SN_yield
+
+def load_AGB(AGB_source, yield_path, atomic_num, atomic_names):
+    """Reads in AGB yield files."""
 
     if AGB_source == 'cri15':
         # Masses and metallicities from FRUITY files
@@ -65,13 +141,14 @@ def load_AGB(AGB_source, yield_path, eps_sun, atomic_num, atomic_names, atomic_w
     if AGB_source == 'kar16':
         pass
               
-def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source='cri15'):
+def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source='cri15', Ia_source='iwa99', II_source='nom06'):
     """Reads in yield tables.
 
     Args:
         yield_path (str): Path to folder with yields.
         r_process_keyword (str): How to handle r-process elements: 'none', 'typical_SN_only', 'rare_event_only', 'both'
         AGB_source (str): Source of AGB yields: 'cri15', 'kar16'
+        Ia_source (str): Source of Ia yields: 'iwa99', 'leu20'
 
     Returns:
         nel (int): Number of elements.
@@ -121,76 +198,16 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source
                                         ('Ia','float64'),('weight_Ia','float64')])
     SN_yield['atomic'] = atomic_num
 
-    # Read in IISN yields from Nomoto+06
-    ii_table = ascii.read(yield_path+'nom06/tab1.txt')
-    elem_name = np.array([ii_table['Element'][j].strip('0123456789-*^') for j in range(len(ii_table['Element']))])  # Element names
-    mass_num = np.array([re.sub("\D","",ii_table['Element'][k]) for k in range(len(ii_table['Element']))])  # Mass numbers
-    mass_array = ii_table['P13', 'P15', 'P18', 'P20', 'P25', 'P30', 'P40']
-
-    for elem_idx, elem in enumerate(elem_name):
-        # Loop over each line in yield table
-        if elem == 'p':
-            elem = 'H'
-            isotope_mass = 1
-        elif elem == 'd':
-            elem = 'H'
-            isotope_mass = 2
-        elif (elem not in atomic_names): 
-            continue
-        else:
-            isotope_mass = int(mass_num[elem_idx])
-
-        # Get indices for storing yields in SN_yield table
-        wz = np.where(z_II == ii_table['Z'][elem_idx])[0][0]
-        wa = np.where(atomic_names == elem)[0][0]
-        
-        # Add yields to SN_yield table
-        for mass_idx, mass in enumerate(M_SN):
-            SN_yield[wa]['weight_II'][wz,mass_idx] += isotope_mass * mass_array['P'+str(int(mass))][elem_idx]     # Mass weighted by isotopic weight
-            SN_yield[wa]['II'][wz,mass_idx] += mass_array['P'+str(int(mass))][elem_idx]
-
-    # Read in IaSN He yields from Nomoto+06
-    ia_he_table = ascii.read(yield_path+'nom06/tab3.txt')
-    elem_name = np.array([ia_he_table['Element'][j].strip('0123456789-*^') for j in range(len(ia_he_table['Element']))])  
-    mass_num = np.array([re.sub("\D","",ia_he_table['Element'][k]) for k in range(len(ia_he_table['Element']))])  
-
-    for elem_idx, elem in enumerate(elem_name):
-        # Loop over each line in yield table
-        if elem == 'He':    
-            isotope_mass = int(mass_num[elem_idx])
-
-            # Get index for storing yields in SN_yield table
-            wa = np.where(atomic_names == elem)[0][0]
-
-            # Add yields to SN_yield table
-            SN_yield[wa]['weight_Ia'] += isotope_mass * ia_he_table['SNIa'][elem_idx]  # Mass weighted by isotopic weight
-            SN_yield[wa]['Ia'] += ia_he_table['SNIa'][elem_idx]                      
-    
-    # Read in other IaSN yields from Iwa+99
-    ia_file = ascii.read(yield_path+'iwa99/tab3.txt')
-    elem_name = np.array([ia_file['isotope'][j].strip('0123456789-*^') for j in range(len(ia_file['isotope']))])    
-    mass_num = np.array([re.sub("\D","",ia_file['isotope'][k]) for k in range(len(ia_file['isotope']))])
-
-    for elem_idx, elem in enumerate(elem_name): 
-        # Loop over each line in yield table   
-        if (elem not in atomic_names): 
-            continue
-        else:
-            isotope_mass = int(mass_num[elem_idx])
-
-        # Get index for storing yields in SN_yield table
-        wa = np.where(atomic_names == elem)[0][0]
-
-        # Add yields to SN_yield table
-        SN_yield[wa]['weight_Ia'] += isotope_mass * ia_file['W7'][elem_idx]  # Mass weighted by isotopic weight
-        SN_yield[wa]['Ia'] += ia_file['W7'][elem_idx]                           
+    # Read in SN yield files
+    SN_yield = load_II(II_source, yield_path, SN_yield, atomic_names, z_II, M_SN)
+    SN_yield = load_Ia(Ia_source, yield_path, SN_yield, atomic_names)                           
     
     # Divide weighted mass by total yield mass to get average isotope mass
     SN_yield['weight_II'][SN_yield['II']>0] /= SN_yield['II'][SN_yield['II']>0]
     SN_yield['weight_Ia'][SN_yield['Ia']>0] /= SN_yield['Ia'][SN_yield['Ia']>0]
 
     # Read in AGB yield files
-    M_AGB, z_AGB, AGB_yield = load_AGB(AGB_source, yield_path, eps_sun, atomic_num, atomic_names, atomic_weight)
+    M_AGB, z_AGB, AGB_yield = load_AGB(AGB_source, yield_path, atomic_num, atomic_names)
 
     # Add in barium abundances from SNe/rare r-process events
     ba_idx = np.where((np.asarray(elem_atomic) == 56))[0][0]

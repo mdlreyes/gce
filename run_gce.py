@@ -49,4 +49,4 @@ if __name__ == "__main__":
     #lp.print_stats()
 
     # Run a single model
-    gce.runmodel(scl_pars, plot=True)
+    gce.runmodel(scl_init, plot=True)
