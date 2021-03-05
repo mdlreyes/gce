@@ -8,7 +8,7 @@ Runs gce_fast on multiple processors
 from scipy.interpolate import interp1d
 import params
 import dtd
-import gce_yields_old as gce_yields
+import gce_yields as gce_yields
 import gce_plot
 from getdata import getdata
 
@@ -22,14 +22,14 @@ import emcee
 from multiprocessing import Pool
 
 # Variables for MCMC run
-nsteps = 100
+nsteps = 500
 nwalkers = 20
 parallel = True
 
 # Put in initial guesses for parameters 
-params_init = [0.66951658, 0.21648284, 3.96625663, 0.17007564, 1.81059811, 1.44096689]
-#params_init = [2.44926503e+00, 2.69992265e-01, 1.07547853e+01, 4.50716795e+00, 8.69993281e-01, 3.17499048e-03]
-#params_init = [0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685] #(based on results from Kirby+11)
+params_init = [0.62424101, 0.2700047 , 5.38533987, 4.46, 0.85, 0.] # from Powell optimization
+#params_init = [2.6988, 0.27, 5.37, 4.46, 0.85, 0.] # from dsph_gce.dat
+#params_init = [0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685] # (based on results from Kirby+11)
 
 # Model prep!
 
@@ -39,19 +39,20 @@ delta_t = 0.001     # time step (Gyr)
 t = np.arange(n)*delta_t    # time passed in model array -- age universe (Gyr)
 
 # Load all sources of chemical yields
-nel, eps_sun, SN_yield, AGB_yield, M_SN, _, z_II, M_AGB, z_AGB = gce_yields.initialize_yields_inclBa(AGB_source = params.AGB_source)
+nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB = gce_yields.initialize_yields(AGB_source = params.AGB_source, r_process_keyword=params.r_process_keyword)
 
 # Get indices for each tracked element. Will fail if element is not contained in SN_yield.
 snindex = {'h':np.where(SN_yield['atomic'] == 1)[0],
         'he':np.where(SN_yield['atomic'] == 2)[0],
-        #'c':np.where(SN_yield['atomic'] == 6)[0],
+        'c':np.where(SN_yield['atomic'] == 6)[0],
         #'o':np.where(SN_yield['atomic'] == 8)[0],
         'mg':np.where(SN_yield['atomic'] == 12)[0],
         'si':np.where(SN_yield['atomic'] == 14)[0],
         'ca':np.where(SN_yield['atomic'] == 20)[0],
         'ti':np.where(SN_yield['atomic'] == 22)[0],
         'fe':np.where(SN_yield['atomic'] == 26)[0],
-        'ba':np.where(SN_yield['atomic'] == 56)[0]}
+        'ba':np.where(SN_yield['atomic'] == 56)[0],
+        'mn':np.where(SN_yield['atomic'] == 25)[0]}
 
 # Define parameters for pristine gas 
 pristine = np.zeros(nel)    # Pristine element fractions by mass (dimensionless)
@@ -88,11 +89,11 @@ n_intmass[idx_bad_agb] = 0.
 
 # Interpolate yield tables over mass
 f_ii_mass = interp1d(M_SN, yield_ii, axis=2, bounds_error=False, copy=False, assume_sorted=True)
-ii_yield_mass = f_ii_mass(m_himass) # Compute yields of masses of stars that will explode
+ii_yield_mass = f_ii_mass(m_himass)  # Compute yields of masses of stars that will explode
 ii_yield_mass[:,:,idx_bad] = 0.
 
 f_agb_mass = interp1d(M_AGB, yield_agb, axis=2, bounds_error=False, copy=False, assume_sorted=True)
-agb_yield_mass = f_agb_mass(m_intmass) # Compute yields of masses of stars that will produce AGB winds
+agb_yield_mass = f_agb_mass(m_intmass)  # Compute yields of masses of stars that will produce AGB winds
 agb_yield_mass[:,:,idx_bad_agb] = 0.
 
 # Interpolate yield tables over metallicity
@@ -246,9 +247,10 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
     elem_model = [ model['eps'][:,snindex['fe']], #- model['eps'][:,snindex['h']],		# [Fe/H]
             model['eps'][:,snindex['mg']] - model['eps'][:,snindex['fe']] + 0.2,		# [Mg/Fe]
             model['eps'][:,snindex['si']] - model['eps'][:,snindex['fe']],		# [Si/Fe]
-            model['eps'][:,snindex['ca']] - model['eps'][:,snindex['fe']]		# [Ca/Fe]
-            #model['eps'][:,snindex['c']] - model['eps'][:,snindex['fe']], 	# [C/Fe]
-            #model['eps'][:,snindex['ba']] - model['eps'][:,snindex['fe']],	# [Ba/Fe]
+            model['eps'][:,snindex['ca']] - model['eps'][:,snindex['fe']],		# [Ca/Fe]
+            model['eps'][:,snindex['c']] - model['eps'][:,snindex['fe']], 	# [C/Fe]
+            model['eps'][:,snindex['ba']] - model['eps'][:,snindex['fe']],	# [Ba/Fe]
+            model['eps'][:,snindex['mn']] - model['eps'][:,snindex['fe']]	# [Mn/Fe]
         ]
     sfr = model['mdot']
     mstar_model = model['mstar'][-1]
@@ -262,9 +264,9 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
     return np.array(elem_model)[:,:,0], sfr, mstar_model, time, leftovergas
 
 # Define observed data
-elem_data, delem_data = getdata(galaxy='Scl')
+elem_data, delem_data = getdata(galaxy='Scl', c=True, ba=True, mn=True)
 nelems, nstars = elem_data.shape
-print(nelems, nstars)
+print('Numbers:', nelems, nstars)
 mstar_obs = 10**6.08
 dmstar_obs = 1.27e5
 mgas_obs = 3.2e3
@@ -307,7 +309,7 @@ def neglnlike(parameters):
         # Loop over each element ratio
         product = 1.
         for elem in range(nelems):
-            if ~np.isclose(elem_data[elem,star],-999.) and delem_data[elem,star] > 0.0:
+            if ~np.isclose(elem_data[elem,star],-999.) and delem_data[elem,star] > 0.0 and delem_data[elem,star] < 0.4:
                 product *= 1./(np.sqrt(2.*np.pi)*delem_data[elem,star]) * np.exp(-(elem_data[elem,star] - elem_model[elem,:])**2./(2.*delem_data[elem,star]**2.))[0,:]
 
         # Integrate as function of time
@@ -346,15 +348,28 @@ def lnprob(parameters):
 # Test likelihood function
 print('actual values:', neglnlike([0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685]))
 print('initial values:', neglnlike([2.6988, 0.27, 5.37, 4.46, 0.85, 0.]))
-print('values after powell:', neglnlike([0.66951658, 0.21648284, 3.96625663, 0.17007564, 1.81059811, 1.44096689])) 
-print('values after mcmc:', neglnlike([1.40, 0.26, 10.72, 4.11, 0.95, 0.37]))
 
+# Original values
+#print('values after powell:', neglnlike([0.66951658, 0.21648284, 3.96625663, 0.17007564, 1.81059811, 1.44096689])) 
+#print('values after mcmc:', neglnlike([0.79, 0.20, 4.11, 0.25, 1.65, 1.72]))
 
+# With C
+#print('values after powell:', neglnlike([0.62424101, 0.2700047 , 5.38533987, 4.46, 0.85, 0.]))
+#print('values after mcmc:', neglnlike([1.07, 0.20, 5.61, 3.50, 0.98, 0.24]))
+
+# With C and Ba
+#print('values after powell:', neglnlike([2.13397027e+00, 1.43966768e-01, 5.37963529e+00, 4.42919559e+00, 8.50008897e-01, 2.44804337e-06]))
+#print('values after mcmc:', neglnlike([2.13, 0.14, 5.35, 4.44, 0.83, 0.03]))
+
+# With C and Ba and Mn
+print('values after powell:', neglnlike([2.55499278, 0.18554725, 8.6195177, 4.46000229, 0.85, 0.]))
+print('values after mcmc:', neglnlike([2.53, 0.19, 8.55, 4.47, 0.88, 0.05]))
+
+'''
 # Start by doing basic max-likelihood fit to get initial values
-#result = op.minimize(neglnlike, [2.6988, 0.27, 5.37, 4.46, 0.85, 0.], method='powell', options={'ftol':1e-6, 'maxiter':100000, 'direc':np.diag([-0.05,0.05,1.0,0.01,0.01,0.01])}) 
-#print(result)
-#params_init = result["x"]
-
+result = op.minimize(neglnlike, [2.6988, 0.27, 5.37, 4.46, 0.85, 0.], method='powell', options={'ftol':1e-6, 'maxiter':100000, 'direc':np.diag([-0.05,0.05,1.0,0.01,0.01,0.01])}) 
+print(result)
+params_init = result["x"]
 
 # Sample the log-probability function using emcee - first, initialize the walkers
 ndim = len(params_init)
@@ -383,3 +398,4 @@ else:
 
     # Save the chain so we don't have to run this again
     np.save('chain', sampler.chain, allow_pickle=True, fix_imports=True)
+'''

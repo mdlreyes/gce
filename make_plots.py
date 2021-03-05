@@ -39,7 +39,7 @@ def plotmcmc(file='chain.npy', outfile='plots'):
     plt.show()
 
     # Make corner plots
-    samples = chainfile[:,60:, :].reshape((-1, ndim))
+    samples = chainfile[:,100:, :].reshape((-1, ndim))
     cornerfig = corner.corner(samples, labels=names,
                                 quantiles=[0.16, 0.5, 0.84],
                                 show_titles=True, title_kwargs={"fontsize": 12})

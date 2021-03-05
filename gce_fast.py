@@ -18,7 +18,7 @@ import sys
 # Import other files
 import params
 import dtd
-import gce_yields_old as gce_yields
+import gce_yields as gce_yields
 import gce_plot
 
 def gce_model(pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB, snindex, pristine, n_wd, n_himass, f_ii_metallicity, n_intmass, f_agb_metallicity, agb_yield_mass):
@@ -191,19 +191,20 @@ def runmodel(scl_pars, plot=False):
     t = np.arange(n)*delta_t    # time passed in model array -- age universe (Gyr)
 
     # Load all sources of chemical yields
-    nel, eps_sun, SN_yield, AGB_yield, M_SN, _, z_II, M_AGB, z_AGB = gce_yields.initialize_yields_inclBa(AGB_source = params.AGB_source)
+    nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB = gce_yields.initialize_yields(AGB_source=params.AGB_source, r_process_keyword=params.r_process_keyword)
 
     # Get indices for each tracked element. Will fail if element is not contained in SN_yield.
     snindex = {'h':np.where(SN_yield['atomic'] == 1)[0],
             'he':np.where(SN_yield['atomic'] == 2)[0],
-            #'c':np.where(SN_yield['atomic'] == 6)[0],
+            'c':np.where(SN_yield['atomic'] == 6)[0],
             #'o':np.where(SN_yield['atomic'] == 8)[0],
             'mg':np.where(SN_yield['atomic'] == 12)[0],
             'si':np.where(SN_yield['atomic'] == 14)[0],
             'ca':np.where(SN_yield['atomic'] == 20)[0],
             'ti':np.where(SN_yield['atomic'] == 22)[0],
             'fe':np.where(SN_yield['atomic'] == 26)[0],
-            'ba':np.where(SN_yield['atomic'] == 56)[0]}
+            'ba':np.where(SN_yield['atomic'] == 56)[0],
+            'mn':np.where(SN_yield['atomic'] == 25)[0]}
 
     # Define parameters for pristine gas 
     pristine = np.zeros(nel)    # Pristine element fractions by mass (dimensionless)
@@ -252,7 +253,9 @@ def runmodel(scl_pars, plot=False):
     f_agb_metallicity = interp1d(z_AGB, agb_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
 
     model2, atomic2 = gce_model(scl_pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB, snindex, pristine, n_wd, n_himass, f_ii_metallicity, n_intmass, f_agb_metallicity, agb_yield_mass)
+    print('test', atomic2)
     if plot:
-        gce_plot.plotting_compare(model2, atomic2, title1="Sculptor final", plot=True, skip_end_dots=-10,eu_estimate=False)
+        gce_plot.makeplots(model2, atomic2, title="Sculptor final", plot=True, skip_end_dots=-10, 
+        abunds=True, time=True, params=True)
 
     return

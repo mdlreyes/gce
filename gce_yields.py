@@ -8,17 +8,70 @@ This program is based on Gina Duggan's code to read in yields for a GCE model.
 import numpy as np
 from astropy.io import ascii
 import re
-              
-def initialize_yields(yield_path='yields/', r_process_keyword='none', 
-    AGB_source='cri15', verbose=False):
 
+def load_AGB(AGB_source, yield_path, eps_sun, atomic_num, atomic_names, atomic_weight):
+    """Reads in AGB yield file."""
+
+    if AGB_source == 'cri15':
+        # Masses and metallicities from FRUITY files
+        M_cri = np.array([1.3,1.5,2.0,2.5,3.0,4.0,5.0,6.0])
+        z_cri = np.array([0.001,0.002,0.003,0.006,0.008,0.01,0.014,0.02])
+
+        # Define the output array of yields
+        cri15 = np.zeros(len(atomic_num),dtype=[('atomic','float64'),
+                        ('AGB','float64',(len(z_cri),len(M_cri))),
+                        ('weight','float64',(len(z_cri),len(M_cri)))])
+        cri15['atomic'] = atomic_num
+        
+        # Convert atomic names to lowercase to match FRUITY files
+        sub_string = [re.sub('[A-Z]+', lambda m: m.group(0).lower(), name) for name in atomic_names]
+
+        # Loop over each element file
+        cri15files = [yield_path + 'FRUITY/'+ sub_string[i]+'.txt' for i in range(len(sub_string))]
+        for elem_idx, filename in enumerate(cri15files): 
+
+            # Open file
+            data = ascii.read(filename)
+
+            # Get isotopes (for everything except hydrogen)
+            isotope_names = data.colnames[3:]
+            if elem_idx == 0:
+                isotope = [1]
+            else:
+                isotope = [int(re.findall(r'\d+', name)[0]) for name in isotope_names]
+                if atomic_num[elem_idx] == 56: isotope = np.array(isotope) + 100
+
+            # Compute yields and weights
+            if len(isotope) == 1:    
+                agb_yield = data[isotope_names[0]]
+                weight = np.zeros(len(agb_yield)) + isotope
+            else:    
+                iso_array = np.array(data[isotope_names])
+                iso_array = iso_array.view(np.float).reshape(iso_array.shape + (-1,))  # Convert structured array to ndarray
+                agb_yield = np.sum(iso_array,axis=1)                                      
+                weight = np.dot(iso_array,isotope)/agb_yield  # Average isotopic weight
+            
+            # Add to yield table
+            for idx in range(len(agb_yield)):
+                m_idx = np.where(M_cri == data['Mass'][idx])[0]
+                z_idx = np.where(z_cri == data['Metallicity'][idx])[0]
+                if len(m_idx) == 1 and len(z_idx) == 1:
+                    cri15[elem_idx]['AGB'][z_idx[0], m_idx[0]] = agb_yield[idx]
+                    cri15[elem_idx]['weight'][z_idx[0], m_idx[0]] = weight[idx]
+
+        return M_cri, z_cri, cri15
+
+    # TODO: Add Karakas+16 yields as an option!
+    if AGB_source == 'kar16':
+        pass
+              
+def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source='cri15'):
     """Reads in yield tables.
 
     Args:
         yield_path (str): Path to folder with yields.
         r_process_keyword (str): How to handle r-process elements: 'none', 'typical_SN_only', 'rare_event_only', 'both'
         AGB_source (str): Source of AGB yields: 'cri15', 'kar16'
-        verbose (bool): Keyword to print additional output.
 
     Returns:
         nel (int): Number of elements.
@@ -51,7 +104,7 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none',
                         'Ba','La','Eu'])
 
     # Extract info for the elements we want
-    elem_atomic = [1, 2, 6, 8, 12, 14, 20, 22, 26, 56] # 25, 
+    elem_atomic = [1, 2, 6, 12, 14, 20, 22, 25, 26, 56] #8, 
     nel = len(elem_atomic)
     elem_idx = np.where(np.isin(atomic_num, elem_atomic))[0]
 
@@ -137,10 +190,36 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none',
     SN_yield['weight_Ia'][SN_yield['Ia']>0] /= SN_yield['Ia'][SN_yield['Ia']>0]
 
     # Read in AGB yield files
+    M_AGB, z_AGB, AGB_yield = load_AGB(AGB_source, yield_path, eps_sun, atomic_num, atomic_names, atomic_weight)
 
     # Add in barium abundances from SNe/rare r-process events
+    ba_idx = np.where((np.asarray(elem_atomic) == 56))[0][0]
 
-    return nel, eps_sun
+    if r_process_keyword in ['typical_SN_only','both']:
+
+        # Barium yield for weak r-process event as a function of mass (Li+2014)
+        li14_weakr = [1.38e-8, 2.83e-8, 5.38e-8, 6.84e-8, 9.42e-8, 0, 0]
+
+        # Linearly interpolate to high-mass end
+        li14_weakr[-2] = li14_weakr[-3]*M_SN[-2]/M_SN[-3]
+        li14_weakr[-1] = li14_weakr[-2]*M_SN[-1]/M_SN[-2]
+
+        # Add to SNII yield arrays
+        for i in range(len(z_II)):
+            SN_yield['II'][ba_idx][i,:] = li14_weakr  # Assume no Z-dependence
+        SN_yield['weight_II'][ba_idx] = np.mean(AGB_yield['weight'][9])
+            
+    if r_process_keyword in ['rare_event_only','both']:   
+
+        # Note: this is the average barium yield for a main r-process event (Li+2014)
+        ba_yield = 2e-6
+
+        # Since NSM have a similar DTD as SN Ia, put yields in SNIa array as a proxy. 
+        # (Scale barium yield up and reduce rate of events proportionally to compare to models.)
+        SN_yield['Ia'][ba_idx] = ba_yield
+        SN_yield['weight_Ia'][ba_idx] = np.mean(AGB_yield['weight'][9])
+
+    return nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB
 
 if __name__ == "__main__":
 
