@@ -43,11 +43,11 @@ def load_II(II_source, yield_path, SN_yield, atomic_names, z_II, M_SN):
 
     return SN_yield
 
-def load_Ia(Ia_source, yield_path, SN_yield, atomic_names):
+def load_Ia(Ia_source, yield_path, SN_yield, atomic_names, z_II):
     """Reads in Ia yield files."""
 
     if Ia_source == 'iwa99':
-        # Read in He yields from Nomoto+06
+        # Iwa+99 doesn't have He, so read in He yields from Nomoto+06
         ia_he_table = ascii.read(yield_path+'nom06/tab3.txt')
         elem_name = np.array([ia_he_table['Element'][j].strip('0123456789-*^') for j in range(len(ia_he_table['Element']))])  
         mass_num = np.array([re.sub("\D","",ia_he_table['Element'][k]) for k in range(len(ia_he_table['Element']))])  
@@ -82,6 +82,34 @@ def load_Ia(Ia_source, yield_path, SN_yield, atomic_names):
             # Add yields to SN_yield table
             SN_yield[wa]['weight_Ia'] += isotope_mass * ia_file['W7'][elem_idx]  # Mass weighted by isotopic weight
             SN_yield[wa]['Ia'] += ia_file['W7'][elem_idx]
+
+    elif Ia_source == 'leu20':
+        # Read in Ia yields from Leung & Nomoto 2020
+        ia_table = ascii.read(yield_path+'leu20/tab6.txt', format='basic')
+        elem_name = np.array([ia_table['Isotope'][j].strip('0123456789-*^') for j in range(len(ia_table['Isotope']))])  
+        mass_num = np.array([re.sub("\D","",ia_table['Isotope'][k]) for k in range(len(ia_table['Isotope']))])  
+
+        # Get metallicity and yield arrays
+        z_arr = np.asarray(ia_table.colnames[1:], dtype='float')
+        yields = np.array(ia_table[ia_table.colnames[1:]])
+        yields = yields.view(np.float64).reshape(yields.shape + (-1,)) # Convert structured array to ndarray
+        
+        for elem_idx, elem in enumerate(elem_name): 
+            # Loop over each line in yield table   
+            if (elem not in atomic_names): 
+                continue
+            else:
+                isotope_mass = int(mass_num[elem_idx])
+
+            # Get index for storing yields in SN_yield table
+            wa = np.where(atomic_names == elem)[0][0]
+
+            # Interpolate as a function of metallicity (to match IISNe metallicities)
+            elem_yields = np.interp(z_II, z_arr, yields[elem_idx])
+
+            # Add yields to SN_yield table
+            SN_yield[wa]['weight_Ia'] += isotope_mass * elem_yields  # Mass weighted by isotopic weight
+            SN_yield[wa]['Ia'] += elem_yields
 
     return SN_yield
 
@@ -195,12 +223,12 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source
     z_II = np.array([0.0, 0.001, 0.004, 0.02])
     SN_yield = np.zeros(nel,dtype=[('atomic','float64'),('II','float64',(len(z_II),len(M_SN))),
                                         ('weight_II','float64',(len(z_II),len(M_SN))),
-                                        ('Ia','float64'),('weight_Ia','float64')])
+                                        ('Ia','float64',(len(z_II))),('weight_Ia','float64',(len(z_II)))])
     SN_yield['atomic'] = atomic_num
 
     # Read in SN yield files
     SN_yield = load_II(II_source, yield_path, SN_yield, atomic_names, z_II, M_SN)
-    SN_yield = load_Ia(Ia_source, yield_path, SN_yield, atomic_names)                           
+    SN_yield = load_Ia(Ia_source, yield_path, SN_yield, atomic_names, z_II)                           
     
     # Divide weighted mass by total yield mass to get average isotope mass
     SN_yield['weight_II'][SN_yield['II']>0] /= SN_yield['II'][SN_yield['II']>0]
@@ -240,4 +268,4 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source
 
 if __name__ == "__main__":
 
-    initialize_yields()
+    initialize_yields(Ia_source='leu20')

@@ -21,7 +21,7 @@ import dtd
 import gce_yields as gce_yields
 import gce_plot
 
-def gce_model(pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB, snindex, pristine, n_wd, n_himass, f_ii_metallicity, n_intmass, f_agb_metallicity, agb_yield_mass):
+def gce_model(pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB, snindex, pristine, n_wd, n_himass, f_ii_metallicity, n_intmass, f_agb_metallicity, agb_yield_mass, f_ia_metallicity):
     """Galactic chemical evolution model.
 
     Takes in additional parameters from params.py, reads yields using gce_yields.py, 
@@ -58,8 +58,9 @@ def gce_model(pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II
     model['mgal'][0] = model['mgas'][0]   # Set the initial galaxy mass to the initial gas mass    
 
     # Prep arrays to hold yields
-    M_II_arr = np.zeros((nel, n))                                       # Array of yields contributed by Type II SNe
-    M_AGB_arr = np.zeros((nel, n))                                      # Array of yields contributed by AGB stars
+    M_II_arr = np.zeros((nel, n))    # Array of yields contributed by Type II SNe
+    M_Ia_arr = np.zeros((nel, n))    # Array of yields contributed by Type Ia SNe
+    M_AGB_arr = np.zeros((nel, n))   # Array of yields contributed by AGB stars
 
     # Step through time!
     timestep = 0 
@@ -90,9 +91,12 @@ def gce_model(pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II
         n_ia = model['mdot'][timestep] * n_wd       # Number of Type Ia SNe that will explode in the future
         model['Ia_rate'][timestep:] += n_ia[:(n-timestep)]     # Put Type Ia rate in future array
 
-        # Eq. 11: Type Ia SNe yields IN CURRENT TIMESTEP
-        f_Ia = SN_yield['Ia']                    # Mass ejected from each SN Ia (M_sun SN**-1) 
-        M_Ia = f_Ia * model['Ia_rate'][timestep]    # Eq. 11: Mass returned to the ISM by Ia SNe
+        # Eq. 11: Type Ia SNe yields IN THE FUTURE
+        #f_Ia = SN_yield['Ia']                    # Mass ejected from each SN Ia (M_sun SN**-1) 
+        #M_Ia = f_Ia * model['Ia_rate'][timestep]    # Eq. 11: Mass returned to the ISM by Ia SNe
+        if model['z'][timestep] > 0.:
+            # Put Type Ia yields in future array
+            M_Ia_arr[:,timestep:] += n_ia[:(n-timestep)][None,:] * f_ia_metallicity(model['z'][timestep])[:,None]
 
         # Eq. 8: rate of Type II SNe that will explode IN THE FUTURE
         n_ii = model['mdot'][timestep] * n_himass   # Number of stars formed now that will explode in the future
@@ -129,7 +133,7 @@ def gce_model(pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II
 
         # Compute rate at which a given element is locked up in stars (M_sun Gyr**-1)
         # SFR - (gas returned from SNe and AGB stars)    
-        model['dstar_dt'][timestep,:] = (x_el)*model['mdot'][timestep] - M_II_arr[:,timestep] - M_AGB_arr[:,timestep] - M_Ia
+        model['dstar_dt'][timestep,:] = (x_el)*model['mdot'][timestep] - M_II_arr[:,timestep] - M_AGB_arr[:,timestep] - M_Ia_arr[:,timestep]
 
         # Compute change in gas mass (M_sun Gyr**-1) 
         # -(rate of locking stars up) - outflow + inflow                                                         
@@ -191,7 +195,9 @@ def runmodel(scl_pars, plot=False):
     t = np.arange(n)*delta_t    # time passed in model array -- age universe (Gyr)
 
     # Load all sources of chemical yields
-    nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB = gce_yields.initialize_yields(AGB_source=params.AGB_source, r_process_keyword=params.r_process_keyword)
+    nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB = gce_yields.initialize_yields(
+        Ia_source=params.Ia_source, II_source=params.II_source, 
+        AGB_source=params.AGB_source, r_process_keyword=params.r_process_keyword)
 
     # Get indices for each tracked element. Will fail if element is not contained in SN_yield.
     snindex = {'h':np.where(SN_yield['atomic'] == 1)[0],
@@ -249,10 +255,11 @@ def runmodel(scl_pars, plot=False):
     agb_yield_mass[:,:,idx_bad_agb] = 0.
 
     # Interpolate yield tables over metallicity
-    f_ii_metallicity = interp1d(z_II, ii_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
+    f_ii_metallicity = interp1d(z_II, ii_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True)
+    f_ia_metallicity = interp1d(z_II, SN_yield['Ia'], axis=1, bounds_error=False, copy=False, assume_sorted=True) 
     f_agb_metallicity = interp1d(z_AGB, agb_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
 
-    model2, atomic2 = gce_model(scl_pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB, snindex, pristine, n_wd, n_himass, f_ii_metallicity, n_intmass, f_agb_metallicity, agb_yield_mass)
+    model2, atomic2 = gce_model(scl_pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB, snindex, pristine, n_wd, n_himass, f_ii_metallicity, n_intmass, f_agb_metallicity, agb_yield_mass, f_ia_metallicity)
     print('test', atomic2)
     if plot:
         gce_plot.makeplots(model2, atomic2, title="Sculptor final", plot=True, skip_end_dots=-10, 

@@ -104,7 +104,7 @@ def makeplots(model, atomic, title, plot=False, dsph='Scl', skip_end_dots=-1, NS
 
         # Get [Fe/H] observed data to plot
         feh_obs = elem_data[0,:]
-        obsmask = np.where((feh_obs > -3.5) & (feh_obs < 0.))[0]
+        obsmask = np.where((feh_obs > -3.5) & (feh_obs < 0.) & (delem_data[0,:] < 0.4))[0]
         feh_obs = feh_obs[obsmask]
 
         # In top panel, plot metallicity distribution function
@@ -119,7 +119,7 @@ def makeplots(model, atomic, title, plot=False, dsph='Scl', skip_end_dots=-1, NS
             if label in obs_idx:
                 obs_data = elem_data[obs_idx[label],obsmask]
                 obs_errs = np.sqrt(delem_data[obs_idx[label],obsmask]**2. + syserr['Fe']**2. + syserr[label]**2.)
-                goodidx = np.where((feh_obs > -990) & (obs_data > -990))[0]
+                goodidx = np.where((feh_obs > -990) & (obs_data > -990) & (obs_errs < 0.4))[0]
                 axs[i+1].scatter(feh_obs[goodidx], obs_data[goodidx], c='r', s=1/(obs_errs[goodidx]), alpha=0.5)
             
             # Plot model [X/Fe]

@@ -20,7 +20,7 @@ r_process_keyword='both'
 AGB_source = 'cri15'
 
 # SNIa yield source: 'iwa99', 'leu20'
-Ia_source = 'iwa99'
+Ia_source = 'leu20'
 
 # SNII yield source: 'nom06'
 II_source = 'nom06'
