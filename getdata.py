@@ -42,7 +42,7 @@ def getdata(galaxy, c=False, ba=False, mn=False):
         if c: 
             if names[i] in table_c['Name']:
                 c_idx = np.where(table_c['Name'] == names[i])
-                newdata = np.concatenate((newdata,table_c['[C/Fe]'][c_idx]))
+                newdata = np.concatenate((newdata,table_c['[C/Fe]c'][c_idx]))
                 newerrs = np.concatenate((newerrs,table_c['e_[C/Fe]'][c_idx]))
             else:
                 newdata = np.concatenate((newdata,[-999.]))

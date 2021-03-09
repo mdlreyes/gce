@@ -16,7 +16,7 @@ imf_model = 'kroupa93'
 # r-process options: 'none', 'typical_SN_only', 'rare_event_only', 'both'
 r_process_keyword='both'
 
-# AGB yield source: 'cri15', 'kar16'
+# AGB yield source: 'cri15', 'kar'
 AGB_source = 'cri15'
 
 # SNIa yield source: 'iwa99', 'leu20'

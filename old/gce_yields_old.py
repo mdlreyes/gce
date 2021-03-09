@@ -202,6 +202,9 @@ def load_Karakas16(yield_path, eps_sun, eps_atomic_num, atomic_weight, verbose=F
     #if np.where(kar16['AGB']==0.0)[0].size != 0:
     #    print 'ERROR: not available (0.0 yield) metallicities, masses, elements: ', np.where(kar16['AGB']==0.0)
     #print kar16    
+
+    print(kar16['atomic'])
+    print(kar16['AGB'][0,1,:])
     return M_kar16, z_kar16, kar16
 
 def initialize_yields_inclBa(yield_path='yields/', r_process_keyword='none', AGB_source = 'cri15', verbose = False):
@@ -385,4 +388,4 @@ def initialize_yields_inclBa(yield_path='yields/', r_process_keyword='none', AGB
               
 if __name__ == "__main__":
 
-    initialize_yields_inclBa()
+    initialize_yields_inclBa(AGB_source='kar16')

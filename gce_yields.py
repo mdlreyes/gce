@@ -113,7 +113,7 @@ def load_Ia(Ia_source, yield_path, SN_yield, atomic_names, z_II):
 
     return SN_yield
 
-def load_AGB(AGB_source, yield_path, atomic_num, atomic_names):
+def load_AGB(AGB_source, yield_path, atomic_num, atomic_names, atomic_weight):
     """Reads in AGB yield files."""
 
     if AGB_source == 'cri15':
@@ -165,9 +165,107 @@ def load_AGB(AGB_source, yield_path, atomic_num, atomic_names):
 
         return M_cri, z_cri, cri15
 
-    # TODO: Add Karakas+16 yields as an option!
-    if AGB_source == 'kar16':
-        pass
+    if AGB_source == 'kar':
+        # Masses and metallicities from Karakas files
+        M_kar = np.array([1.00, 1.25, 1.50, 1.90, 2.00, 2.10, 2.25, 2.50, 
+                2.75, 3.00, 3.25, 3.50, 4.00, 4.50, 5.00, 5.50, 6.00, 7.00])
+        z_kar = np.array([0.0028, 0.007, 0.014, 0.03])
+
+        # Define the output array of yields
+        kar_temp = np.zeros((len(atomic_num),len(z_kar), len(M_kar)))
+        kar = np.zeros(len(atomic_num),dtype=[('atomic','float64'),
+                        ('AGB','float64',(len(z_kar),len(M_kar)-2)),
+                        ('weight','float64',(len(z_kar),len(M_kar)-2))])
+        kar['atomic'] = atomic_num
+        for elem in range(len(kar['atomic'])):
+            kar[elem]['weight'] = atomic_weight[elem]
+
+        # Get Karakas files
+        sub_string = ['007', '014', '03']
+        karfiles = [yield_path+'kar16/yield_z'+ sub_string[i] +'.dat' for i in range(len(sub_string))]
+        karfiles.insert(0,yield_path+'kar18/yields_z0028.dat')
+
+        # Loop over each file
+        for filename in karfiles:
+            with open(filename,'r') as karfile:  
+                for line in karfile:
+                    ln_list = line.split()
+
+                    if line.startswith("#"):
+                        
+                        if ln_list[1] == "Initial":
+
+                            # Bool to decide whether to use value
+                            use = True
+
+                            # Read in model parameters
+                            m_in = float(ln_list[4].strip(','))
+                            z_in = float(ln_list[7].strip(','))
+                            m_mix = float(ln_list[13].strip(','))
+                            
+                            # Get indices to store yields
+                            wm = np.where(M_kar == m_in)[0]
+                            wz = np.where(z_kar == z_in)[0]
+
+                            #if use: print(z_in, m_in, m_mix, wm, wz, use)
+
+                            # Deal with overshoot conditions
+                            if use and "N_ov" in ln_list:
+                                N_ov = float(ln_list[-1])
+                                if (z_in < 0.02 and N_ov != 0.0):
+                                    use = True
+                                elif (z_in > 0.02 and N_ov < 1.0):
+                                    use = True
+                                else: use = False
+                            else:
+                                N_ov = 0.0
+
+                            # Deal with M_mix conditions
+                            if use: 
+                                if z_in > 0.0028:
+                                    if (m_in >= 5.0 and ~np.isclose(m_mix, 0.0)) or \
+                                        (m_in < 5.0 and m_in > 4.0 and ~np.isclose(m_mix, 1.e-4)) or \
+                                        (m_in <= 4.0 and m_in > 3.0 and ~np.isclose(m_mix, 1.e-3)) or \
+                                        (z_in < 0.03 and m_in <= 3.0 and m_in > 1.25 and ~np.isclose(m_mix, 2.e-3)):
+                                        use = False
+                                # Note that z=0.0028 (from Kar+18) has slightly different conditions
+                                else:
+                                    if (m_in > 4.0 and ~np.isclose(m_mix, 0.0)) or \
+                                        (m_in < 4.5 and m_in > 3.75 and ~np.isclose(m_mix, 1.e-4)) or \
+                                        (m_in < 4.0 and m_in >= 3.0 and ~np.isclose(m_mix, 1.e-3)) or \
+                                        (m_in < 3.0 and m_in > 1.0 and ~np.isclose(m_mix, 2.e-3)):
+                                            use = False
+
+                                    # Add additional conditions for mass-loss prescriptions
+                                    if use and ((np.isclose(m_in, 3.75) and ln_list[-1] == 'B95') or
+                                        (np.isclose(m_in, 5.0) or np.isclose(m_in, 7.0)) and ln_list[-1] == 'VW93'):
+                                        use = False
+
+                    # Skip lines at the end of each table
+                    elif line.startswith("   "):
+                        pass
+
+                    # Store yields
+                    elif use & (len(wm) == 1) & (len(wz) == 1):
+                        elname, atom, masslost_in = ln_list[0], int(ln_list[1]), float(ln_list[-1])
+
+                        # Make sure the isotope, mass, and metallicity all exist in the output array
+                        if (atom in atomic_num):
+
+                            # Store yield in output array
+                            wa = np.where(np.asarray(atomic_num) == atom)[0][0]
+                            kar_temp[wa,wz[0],wm[0]] += masslost_in  
+
+        # Average non-zero yields for 1.9, 2, 2.1 -> 2.0
+        for metal in range(len(z_kar)):
+            if kar_temp[0,metal,3] != 0:
+                kar_temp[:,metal,4] = np.average([kar_temp[:,metal,3],kar_temp[:,metal,5]], axis=0)
+        kar_temp = np.delete(kar_temp, [3,5], 2)
+
+        # Put new yields in final array
+        kar['AGB'] = kar_temp
+
+        return M_kar, z_kar, kar
               
 def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source='cri15', Ia_source='iwa99', II_source='nom06'):
     """Reads in yield tables.
@@ -235,7 +333,7 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source
     SN_yield['weight_Ia'][SN_yield['Ia']>0] /= SN_yield['Ia'][SN_yield['Ia']>0]
 
     # Read in AGB yield files
-    M_AGB, z_AGB, AGB_yield = load_AGB(AGB_source, yield_path, atomic_num, atomic_names)
+    M_AGB, z_AGB, AGB_yield = load_AGB(AGB_source, yield_path, atomic_num, atomic_names, atomic_weight)
 
     # Add in barium abundances from SNe/rare r-process events
     ba_idx = np.where((np.asarray(elem_atomic) == 56))[0][0]
@@ -243,7 +341,7 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source
     if r_process_keyword in ['typical_SN_only','both']:
 
         # Barium yield for weak r-process event as a function of mass (Li+2014)
-        li14_weakr = [1.38e-8, 2.83e-8, 5.38e-8, 6.84e-8, 9.42e-8, 0, 0]
+        li14_weakr = 10. * np.asarray([1.38e-8, 2.83e-8, 5.38e-8, 6.84e-8, 9.42e-8, 0, 0])
 
         # Linearly interpolate to high-mass end
         li14_weakr[-2] = li14_weakr[-3]*M_SN[-2]/M_SN[-3]
@@ -268,4 +366,4 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source
 
 if __name__ == "__main__":
 
-    initialize_yields(Ia_source='leu20')
+    initialize_yields(AGB_source='kar')
