@@ -192,7 +192,6 @@ def load_AGB(AGB_source, yield_path, atomic_num, atomic_names, atomic_weight):
                     ln_list = line.split()
 
                     if line.startswith("#"):
-                        
                         if ln_list[1] == "Initial":
 
                             # Bool to decide whether to use value
@@ -206,8 +205,6 @@ def load_AGB(AGB_source, yield_path, atomic_num, atomic_names, atomic_weight):
                             # Get indices to store yields
                             wm = np.where(M_kar == m_in)[0]
                             wz = np.where(z_kar == z_in)[0]
-
-                            #if use: print(z_in, m_in, m_mix, wm, wz, use)
 
                             # Deal with overshoot conditions
                             if use and "N_ov" in ln_list:
@@ -261,6 +258,7 @@ def load_AGB(AGB_source, yield_path, atomic_num, atomic_names, atomic_weight):
             if kar_temp[0,metal,3] != 0:
                 kar_temp[:,metal,4] = np.average([kar_temp[:,metal,3],kar_temp[:,metal,5]], axis=0)
         kar_temp = np.delete(kar_temp, [3,5], 2)
+        M_kar = np.delete(M_kar, [3,5])
 
         # Put new yields in final array
         kar['AGB'] = kar_temp

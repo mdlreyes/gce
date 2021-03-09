@@ -192,6 +192,7 @@ def load_Karakas16(yield_path, eps_sun, eps_atomic_num, atomic_weight, verbose=F
         kar16[j]['weight'] = atomic_weight[np.where(eps_atomic_num == kar16['atomic'][j])[0][0]]       # divide (isotope mass * yield) by yield
    
     if verbose == True: print('kar16 z=0.001 yields: ', kar16['AGB'][:,0,:])    
+
     
     #print 'kar16:', kar16['atomic']
     #print kar16['AGB']

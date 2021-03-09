@@ -114,10 +114,7 @@ def gce_model(pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II
         # Eq. 13: AGB yields IN THE FUTURE
         if model['z'][timestep] > 0.:
             # Put AGB yields in future array
-            if model['z'][timestep] < min(z_AGB):
-                M_AGB_arr[:,timestep:] += n_agb[:(n-timestep)] * agb_yield_mass[:,0,:(n-timestep)]
-            else:
-                M_AGB_arr[:,timestep:] += n_agb[:(n-timestep)] * f_agb_metallicity(model['z'][timestep])[:,:(n-timestep)]
+            M_AGB_arr[:,timestep:] += n_agb[:(n-timestep)] * f_agb_metallicity(model['z'][timestep])[:,:(n-timestep)]
 
         # Eq. 15: outflows IN CURRENT TIMESTEP (depends on gas mass fraction x_el)
         if model['mgas'][timestep] > 0.0: 
@@ -181,8 +178,8 @@ def gce_model(pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II
 
     #print(model['abund'][50:100,snindex['ba']])
     #print(model['z'][50:100])
-    print(SN_yield[snindex['he']]['weight_II'])
-    print(SN_yield[snindex['ba']]['weight_II'])
+    #print(SN_yield[snindex['he']]['weight_II'])
+    #print(SN_yield[snindex['ba']]['weight_II'])
     #print(model['eps'][50:100,snindex['ba']])
 
     return model[:timestep], SN_yield['atomic']
@@ -225,12 +222,17 @@ def runmodel(scl_pars, plot=False):
     M_SN = np.concatenate(([params.M_SN_min], M_SN, [params.M_SN_max]))     # Concatenate mass list
 
     # Linearly extrapolate AGB yields to min/max progenitor masses
+    print(AGB_yield['AGB'].shape)
     agb_min = AGB_yield['AGB'][:,:,0] * params.M_AGB_min/M_AGB[0]        # Extrapolate yields to min progenitor mass
     agb_max = AGB_yield['AGB'][:,:,-1] * params.M_AGB_max/M_AGB[-1]      # Extrapolate yields to max progenitor mass
     yield_agb = np.concatenate((agb_min[...,None], AGB_yield['AGB'], agb_max[...,None]), axis=2)   # Concatenate yield tables
     M_AGB = np.concatenate(([params.M_AGB_min], M_AGB, [params.M_AGB_max])) # Concatenate mass list 
 
-    # TODO: Linearly extrapolate AGB yields to Z = 0
+    # Linearly extrapolate AGB yields to Z = 0
+    agb_z0 = yield_agb[:,0,:]+(0-z_AGB[0])*(yield_agb[:,1,:]-yield_agb[:,0,:])/(z_AGB[1]-z_AGB[0])
+    yield_agb = np.concatenate((agb_z0[:,None,:], yield_agb), axis=1)   # Concatenate yield tables
+    z_AGB = np.concatenate(([0],z_AGB))
+    print(yield_agb.shape, z_AGB.shape, M_AGB)
 
     # Prepare arrays for SNe and AGB calculations
     n_wd = dtd.dtd_ia(t, params.ia_model) * delta_t      # Fraction of stars that will explode as Type Ia SNe in future
@@ -260,7 +262,6 @@ def runmodel(scl_pars, plot=False):
     f_agb_metallicity = interp1d(z_AGB, agb_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
 
     model2, atomic2 = gce_model(scl_pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB, snindex, pristine, n_wd, n_himass, f_ii_metallicity, n_intmass, f_agb_metallicity, agb_yield_mass, f_ia_metallicity)
-    print('test', atomic2)
     if plot:
         gce_plot.makeplots(model2, atomic2, title="Sculptor final", plot=True, skip_end_dots=-10, 
         abunds=True, time=False, params=False)
