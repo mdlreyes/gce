@@ -58,8 +58,8 @@ def gce_model(pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II
     model['mgal'][0] = model['mgas'][0]   # Set the initial galaxy mass to the initial gas mass    
 
     # Prep arrays to hold yields
-    M_II_arr = np.zeros((nel, n))    # Array of yields contributed by Type II SNe
     M_Ia_arr = np.zeros((nel, n))    # Array of yields contributed by Type Ia SNe
+    M_II_arr = np.zeros((nel, n))    # Array of yields contributed by Type II SNe
     M_AGB_arr = np.zeros((nel, n))   # Array of yields contributed by AGB stars
 
     # Step through time!
@@ -130,7 +130,7 @@ def gce_model(pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II
 
         # Compute rate at which a given element is locked up in stars (M_sun Gyr**-1)
         # SFR - (gas returned from SNe and AGB stars)    
-        model['dstar_dt'][timestep,:] = (x_el)*model['mdot'][timestep] - M_II_arr[:,timestep] - M_AGB_arr[:,timestep] - M_Ia_arr[:,timestep]
+        model['dstar_dt'][timestep,:] = (x_el)*model['mdot'][timestep] - M_Ia_arr[:,timestep] - M_II_arr[:,timestep] - M_AGB_arr[:,timestep]
 
         # Compute change in gas mass (M_sun Gyr**-1) 
         # -(rate of locking stars up) - outflow + inflow                                                         
@@ -182,7 +182,7 @@ def gce_model(pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II
     #print(SN_yield[snindex['ba']]['weight_II'])
     #print(model['eps'][50:100,snindex['ba']])
 
-    return model[:timestep], SN_yield['atomic']
+    return model[:timestep-1], SN_yield['atomic']
 
 def runmodel(scl_pars, plot=False):
 
@@ -222,7 +222,6 @@ def runmodel(scl_pars, plot=False):
     M_SN = np.concatenate(([params.M_SN_min], M_SN, [params.M_SN_max]))     # Concatenate mass list
 
     # Linearly extrapolate AGB yields to min/max progenitor masses
-    print(AGB_yield['AGB'].shape)
     agb_min = AGB_yield['AGB'][:,:,0] * params.M_AGB_min/M_AGB[0]        # Extrapolate yields to min progenitor mass
     agb_max = AGB_yield['AGB'][:,:,-1] * params.M_AGB_max/M_AGB[-1]      # Extrapolate yields to max progenitor mass
     yield_agb = np.concatenate((agb_min[...,None], AGB_yield['AGB'], agb_max[...,None]), axis=2)   # Concatenate yield tables
@@ -232,7 +231,6 @@ def runmodel(scl_pars, plot=False):
     agb_z0 = yield_agb[:,0,:]+(0-z_AGB[0])*(yield_agb[:,1,:]-yield_agb[:,0,:])/(z_AGB[1]-z_AGB[0])
     yield_agb = np.concatenate((agb_z0[:,None,:], yield_agb), axis=1)   # Concatenate yield tables
     z_AGB = np.concatenate(([0],z_AGB))
-    print(yield_agb.shape, z_AGB.shape, M_AGB)
 
     # Prepare arrays for SNe and AGB calculations
     n_wd = dtd.dtd_ia(t, params.ia_model) * delta_t      # Fraction of stars that will explode as Type Ia SNe in future
@@ -257,8 +255,8 @@ def runmodel(scl_pars, plot=False):
     agb_yield_mass[:,:,idx_bad_agb] = 0.
 
     # Interpolate yield tables over metallicity
-    f_ii_metallicity = interp1d(z_II, ii_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True)
     f_ia_metallicity = interp1d(z_II, SN_yield['Ia'], axis=1, bounds_error=False, copy=False, assume_sorted=True) 
+    f_ii_metallicity = interp1d(z_II, ii_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True)
     f_agb_metallicity = interp1d(z_AGB, agb_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
 
     model2, atomic2 = gce_model(scl_pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB, snindex, pristine, n_wd, n_himass, f_ii_metallicity, n_intmass, f_agb_metallicity, agb_yield_mass, f_ia_metallicity)

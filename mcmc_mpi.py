@@ -34,13 +34,15 @@ params_init = [0.62424101, 0.2700047 , 5.38533987, 4.46, 0.85, 0.] # from Powell
 # Model prep!
 
 # Integration parameters
-n = 1360           # number of timesteps in the model 
 delta_t = 0.001     # time step (Gyr)
+n = int(13.6/delta_t)     # number of timesteps in the model 
 t = np.arange(n)*delta_t    # time passed in model array -- age universe (Gyr)
 
 # Load all sources of chemical yields
-nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB = gce_yields.initialize_yields(AGB_source = params.AGB_source, r_process_keyword=params.r_process_keyword)
-
+nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB = gce_yields.initialize_yields(
+    Ia_source=params.Ia_source, II_source=params.II_source, 
+    AGB_source=params.AGB_source, r_process_keyword=params.r_process_keyword)
+    
 # Get indices for each tracked element. Will fail if element is not contained in SN_yield.
 snindex = {'h':np.where(SN_yield['atomic'] == 1)[0],
         'he':np.where(SN_yield['atomic'] == 2)[0],
@@ -72,7 +74,10 @@ agb_max = AGB_yield[:]['AGB'][:,:,-1] * params.M_AGB_max/M_AGB[-1]      # Extrap
 yield_agb = np.concatenate((agb_min[...,None], AGB_yield[:]['AGB'], agb_max[...,None]), axis=2)   # Concatenate yield tables
 M_AGB = np.concatenate(([params.M_AGB_min], M_AGB, [params.M_AGB_max])) # Concatenate mass list 
 
-# TODO: Linearly extrapolate AGB yields to Z = 0
+# Linearly extrapolate AGB yields to Z = 0
+agb_z0 = yield_agb[:,0,:]+(0-z_AGB[0])*(yield_agb[:,1,:]-yield_agb[:,0,:])/(z_AGB[1]-z_AGB[0])
+yield_agb = np.concatenate((agb_z0[:,None,:], yield_agb), axis=1)   # Concatenate yield tables
+z_AGB = np.concatenate(([0],z_AGB))
 
 # Prepare arrays for SNe and AGB calculations
 n_wd = dtd.dtd_ia(t, params.ia_model) * delta_t      # Fraction of stars that will explode as Type Ia SNe in future
@@ -97,6 +102,7 @@ agb_yield_mass = f_agb_mass(m_intmass)  # Compute yields of masses of stars that
 agb_yield_mass[:,:,idx_bad_agb] = 0.
 
 # Interpolate yield tables over metallicity
+f_ia_metallicity = interp1d(z_II, SN_yield['Ia'], axis=1, bounds_error=False, copy=False, assume_sorted=True) 
 f_ii_metallicity = interp1d(z_II, ii_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
 f_agb_metallicity = interp1d(z_AGB, agb_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
 
@@ -113,20 +119,21 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
     model['t'] = t
 
     # Read parameters from pars
-    f_in_norm0 = pars[0]    # Normalization of gas inflow rate (10**-6 M_sun Gyr**-1)
+    f_in_norm0 = pars[0]*1.e9  # Normalization of gas inflow rate (10**-6 M_sun Gyr**-1)
     f_in_t0 = pars[1]       # Exponential decay time for gas inflow (Gyr)           
     f_out = pars[2]*1.e3    # Strength of gas outflow due to supernovae (M_sun SN**-1) 
     sfr_norm = pars[3]      # Normalization of SF law (10**-6 M_sun Gyr**-1)
     sfr_exp = pars[4]       # Exponent of SF law
-    model['mgas'][0] = 1.e6*pars[5]    # Initial gas mass (M_sun)
+    model['mgas'][0] = pars[5]*1.e6  # Initial gas mass (M_sun)
 
     # Initialize model
-    model['f_in'] = 1.e9 * f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)                                                                                
+    model['f_in'] = f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)                                                                                
     model['abund'][0,0] = model['mgas'][0]*pristine[0]    # Set initial gas mass of H
     model['abund'][0,1] = model['mgas'][0]*pristine[1]    # Set initial gas mass of He
     model['mgal'][0] = model['mgas'][0]   # Set the initial galaxy mass to the initial gas mass    
 
     # Prep arrays to hold yields
+    M_Ia_arr = np.zeros((nel, n))   # Array of yields contributed by Type Ia SNe
     M_II_arr = np.zeros((nel, n)) 	# Array of yields contributed by Type II SNe
     M_AGB_arr = np.zeros((nel, n))  # Array of yields contributed by AGB stars
 
@@ -136,7 +143,7 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
     # While (the age of the universe at a given timestep is less than the age of the universe at z = 0)
     # AND [ (less than 10 Myr has passed) 
     # OR (gas remains within the galaxy at a given time step AND the gas mass in iron at the previous timestep is subsolar) ]
-    while ((timestep < (n-1)) and ((timestep <= 10) or 
+    while ((timestep < (n-1)) and ((timestep*delta_t <= 0.010) or 
     ( (model['mgas'][timestep] > 0.0) and (model['eps'][timestep-1,snindex['fe']] < 0.0) ) )):
 
         if model['mgas'][timestep] < 0.: 
@@ -159,9 +166,10 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
         n_ia = model['mdot'][timestep] * n_wd       # Number of Type Ia SNe that will explode in the future
         model['Ia_rate'][timestep:] += n_ia[:(n-timestep)]     # Put Type Ia rate in future array
 
-        # Eq. 11: Type Ia SNe yields IN CURRENT TIMESTEP
-        f_Ia = SN_yield[:]['Ia']                    # Mass ejected from each SN Ia (M_sun SN**-1) 
-        M_Ia = f_Ia * model['Ia_rate'][timestep]    # Eq. 11: Mass returned to the ISM by Ia SNe
+        # Eq. 11: Type Ia SNe yields IN THE FUTURE
+        if model['z'][timestep] > 0.:
+            # Put Type Ia yields in future array
+            M_Ia_arr[:,timestep:] += n_ia[:(n-timestep)][None,:] * f_ia_metallicity(model['z'][timestep])[:,None]
 
         # Eq. 8: rate of Type II SNe that will explode IN THE FUTURE
         n_ii = model['mdot'][timestep] * n_himass   # Number of stars formed now that will explode in the future
@@ -179,10 +187,7 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
         # Eq. 13: AGB yields IN THE FUTURE
         if model['z'][timestep] > 0.:
             # Put AGB yields in future array
-            if model['z'][timestep] < min(z_AGB):
-                M_AGB_arr[:,timestep:] += n_agb[:(n-timestep)] * agb_yield_mass[:,0,:(n-timestep)]
-            else:
-                M_AGB_arr[:,timestep:] += n_agb[:(n-timestep)] * f_agb_metallicity(model['z'][timestep])[:,:(n-timestep)]
+            M_AGB_arr[:,timestep:] += n_agb[:(n-timestep)] * f_agb_metallicity(model['z'][timestep])[:,:(n-timestep)]
 
         # Eq. 15: outflows IN CURRENT TIMESTEP (depends on gas mass fraction x_el)
         if model['mgas'][timestep] > 0.0: 
@@ -198,7 +203,7 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
 
         # Compute rate at which a given element is locked up in stars (M_sun Gyr**-1)
         # SFR - (gas returned from SNe and AGB stars)    
-        model['dstar_dt'][timestep,:] = (x_el)*model['mdot'][timestep] - M_II_arr[:,timestep] - M_AGB_arr[:,timestep] - M_Ia
+        model['dstar_dt'][timestep,:] = (x_el)*model['mdot'][timestep] - M_Ia_arr[:,timestep] - M_II_arr[:,timestep] - M_AGB_arr[:,timestep] - M_Ia
 
         # Compute change in gas mass (M_sun Gyr**-1) 
         # -(rate of locking stars up) - outflow + inflow                                                         
@@ -248,9 +253,9 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
             model['eps'][:,snindex['mg']] - model['eps'][:,snindex['fe']] + 0.2,		# [Mg/Fe]
             model['eps'][:,snindex['si']] - model['eps'][:,snindex['fe']],		# [Si/Fe]
             model['eps'][:,snindex['ca']] - model['eps'][:,snindex['fe']],		# [Ca/Fe]
-            model['eps'][:,snindex['c']] - model['eps'][:,snindex['fe']], 	# [C/Fe]
-            model['eps'][:,snindex['ba']] - model['eps'][:,snindex['fe']],	# [Ba/Fe]
-            model['eps'][:,snindex['mn']] - model['eps'][:,snindex['fe']]	# [Mn/Fe]
+            model['eps'][:,snindex['c']] - model['eps'][:,snindex['fe']] 	# [C/Fe]
+            #model['eps'][:,snindex['ba']] - model['eps'][:,snindex['fe']],	# [Ba/Fe]
+            #model['eps'][:,snindex['mn']] - model['eps'][:,snindex['fe']]	# [Mn/Fe]
         ]
     sfr = model['mdot']
     mstar_model = model['mstar'][-1]
