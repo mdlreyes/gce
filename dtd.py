@@ -2,6 +2,11 @@ import numpy as np
 import scipy.integrate
 import sys
 
+# Backend for matplotlib on mahler
+import matplotlib
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
+
 def dtd_ia(t,ia_model): #(Gyr)
 
     if ia_model == 'maoz10':
@@ -16,8 +21,8 @@ def dtd_ia(t,ia_model): #(Gyr)
         
     elif ia_model == 'mannucci06':
         t_ia = 3.752e-2 #Gyr
-        prompt = 5.3e-5 #SNe Gyr^(-1) Msun^(-1)
-        delayed = 1.6e-2*np.exp(-((1.e3*t - 50)/10.)**2.) #SNe Gyr^(-1) Msun^(-1)
+        delayed = 5.3e-5 #SNe Gyr^(-1) Msun^(-1)
+        prompt = 1.6e-2*np.exp(-((1.e3*t - 50)/10.)**2.) #SNe Gyr^(-1) Msun^(-1)
         rate = prompt + delayed
         w = np.where(t <= t_ia)[0]
         if len(w) > 0: rate[w] = 0.0
@@ -79,3 +84,26 @@ def dtd_agb(t,imf_model):
     n_agb[~np.isfinite(m_agb)] = 0.
 
     return m_agb, n_agb
+
+def plot_dtd(imf_model='kroupa93'):
+    """Plot delay-time distributions."""
+
+    t = np.arange(0.001,13.6,0.001)
+
+    dtd_ia_maoz10 = dtd_ia(t, ia_model='maoz10')
+    dtd_ia_mannucci06 = dtd_ia(t, ia_model='mannucci06')
+
+    plt.loglog(t*1e9, dtd_ia_maoz10, 'k-', label='Type Ia (Maoz et al. 2010)')
+    plt.plot(t*1e9, dtd_ia_mannucci06, 'k--', label='Type Ia (Mannucci et al. 2006)')
+    #plt.plot(t, dtd_agb(t, imf_model)[0], 'b-', label='AGB')
+    #plt.plot(t, dtd_ii(t, imf_model)[0], 'r-', label='Type Ia')
+    plt.legend()
+    plt.xlabel('Delay time (yr)')
+    plt.ylabel('')
+    plt.xlim(0,1e8)
+    plt.show()
+
+    return
+
+if __name__ == "__main__":
+    plot_dtd()

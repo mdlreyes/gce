@@ -373,5 +373,3 @@ def plotting_compare(model, atomic, title1, model2=[], atomic2=[], title2='', pl
     #plt.setp([a.get_yticklabels()[-1].set_visible(False) for a in fig.axes[1:]])
     
     return
-    
-

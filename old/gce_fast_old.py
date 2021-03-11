@@ -9,8 +9,9 @@ import scipy
 import scipy.integrate
 import sys
 #Load other files
+sys.path.insert(0, '/Users/miadelosreyes/Documents/Research/MnDwarfs_DTD/code/gce-old')
 sys.path.insert(0, '/raid/gduggan/gce')
-import params as gce_params
+import gce_params
 import gce_yields_old as gce_yields
 import imf
 sys.path.insert(0, '/raid/gduggan/gce/dtd')

@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import corner
 
-def plotmcmc(file='chain.npy', outfile='plots'):
+def plotmcmc(file='chain.npy', outfile='plots', burnin=100):
 
     # Load file
     chainfile = np.load(file)
@@ -39,7 +39,7 @@ def plotmcmc(file='chain.npy', outfile='plots'):
     plt.show()
 
     # Make corner plots
-    samples = chainfile[:,100:, :].reshape((-1, ndim))
+    samples = chainfile[:,burnin:, :].reshape((-1, ndim))
     cornerfig = corner.corner(samples, labels=names,
                                 quantiles=[0.16, 0.5, 0.84],
                                 show_titles=True, title_kwargs={"fontsize": 12})
@@ -51,8 +51,10 @@ def plotmcmc(file='chain.npy', outfile='plots'):
         percentile = np.array([np.percentile(samples[:,i],16), np.percentile(samples[:,i],50), np.percentile(samples[:,i],84)])
         print(names[i]+' range:', percentile)
 
+    print(np.percentile(samples,50, axis=0))
+
     return
 
 if __name__ == "__main__":
 
-    plotmcmc()
+    plotmcmc(burnin=600)

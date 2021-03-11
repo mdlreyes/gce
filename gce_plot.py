@@ -118,16 +118,21 @@ def makeplots(model, atomic, title, plot=False, dsph='Scl', skip_end_dots=-1, NS
             # Plot observed [X/Fe]
             if label in obs_idx:
                 obs_data = elem_data[obs_idx[label],obsmask]
-                obs_errs = np.sqrt(delem_data[obs_idx[label],obsmask]**2. + syserr['Fe']**2. + syserr[label]**2.)
-                goodidx = np.where((feh_obs > -990) & (obs_data > -990) & (obs_errs < 0.4))[0]
-                axs[i+1].scatter(feh_obs[goodidx], obs_data[goodidx], c='r', s=1/(obs_errs[goodidx]), alpha=0.5)
+                obs_errs = delem_data[obs_idx[label],obsmask]
+                feh_errs = delem_data[obs_idx['Fe'],obsmask]
+                totalerrs = np.sqrt(delem_data[obs_idx[label],obsmask]**2. + delem_data[obs_idx['Fe'],obsmask]**2.)
+                goodidx = np.where((feh_obs > -990) & (obs_data > -990) & 
+                                (np.abs(obs_errs) < 0.4) & (np.abs(feh_errs) < 0.4))[0]
+                #axs[i+1].scatter(feh_obs[goodidx], obs_data[goodidx], c='r', s=0.8/(totalerrs[goodidx])**2., alpha=0.5)
+                axs[i+1].errorbar(feh_obs[goodidx], obs_data[goodidx], xerr=feh_errs[goodidx], yerr=obs_errs[goodidx], 
+                                color='r', linestyle='None', marker='o', markersize=3, alpha=0.5, linewidth=0.5)
             
             # Plot model [X/Fe]
             modeldata = model['eps'][:,snindex[label]] - model['eps'][:,snindex['Fe']]
             if i == 4:
                 # Add 0.2 to [Mg/Fe]
                 modeldata += 0.2
-            axs[i+1].plot(feh,modeldata,'k.-')
+            axs[i+1].plot(feh,modeldata,'k.-', zorder=100)
             
             # Add title and labels
             if i == 0:

@@ -16,11 +16,13 @@ from line_profiler import LineProfiler
 # Using names used in the paper:  pars = [A_in/1e9,  tau_in,   A_out/1000,    A_star/1e6, alpha,    M_gas_0]
 scl_pars = [0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685] #result of "restore, 'scl_sfr-law.sav'" in idl
 scl_init = [2.6988, 0.27, 5.37, 4.46, 0.85, 0.]
-scl_test_powell = [0.66951658, 0.21648284, 3.96625663, 0.17007564, 1.81059811, 1.44096689]
-scl_test_mcmc = [0.79, 0.20, 4.11, 0.25, 1.65, 1.72]
-scl_test_c = [1.07, 0.20, 5.61, 3.50, 0.98, 0.24]
-scl_test_ba = [2.13, 0.14, 5.35, 4.44, 0.83, 0.03]
-scl_test_mn = [2.53, 0.19, 8.55, 4.47, 0.88, 0.05]
+scl_test_powell = [0.91144016, 0.19617321, 4.42241379, 4.45999299, 1.97494677, 0.17709949]
+scl_test_mcmc = [1.01, 0.18, 4.30, 1.28, 0.74, 0.11]
+scl_test_mcmc_fromkirby_maoz10 = [1.01, 0.17, 4.31, 1.23, 0.76, 0.21]
+scl_test_mcmc_fromkirby_mannucci06 = [4.86509872, 0.05459378, 3.13738242, 4.87828528, 0.4670316, 0.17314514]
+#scl_test_c = [1.07, 0.20, 5.61, 3.50, 0.98, 0.24]
+#scl_test_ba = [2.13, 0.14, 5.35, 4.44, 0.83, 0.03]
+#scl_test_mn = [2.53, 0.19, 8.55, 4.47, 0.88, 0.05]
 #umi_pars = [1470.5896, 0.16522838, 11.038576, 1.2065735, 0.26234735, 0.53814755] #result of "restore, 'umi_sfr-law.sav'" in idl
 #for_pars = [2.4642364, 0.30686976, 1.5054730, 5.0189799, 0.98204341, 14.575519] #'old/for_sfr-law.sav'
 #for_pars = [2.46, 0.31, 1.51, 5.02, 0.98, 14.58] # from Kirby+11
@@ -32,7 +34,7 @@ def time_check(pars):
     print('Time for old model: %.2e'%(time.time()-t1))
 
     t2=time.time()
-    model, atomic = gce.gce_model(pars)
+    model, atomic = gce.runmodel(pars, plot=False)
     print('Time for new model: %.2e'%(time.time()-t2))
 
     return
@@ -44,9 +46,9 @@ if __name__ == "__main__":
 
     # Line profiling
     #lp = LineProfiler()
-    #lp_wrapper = lp(gce.gce_model)
+    #lp_wrapper = lp(gce.runmodel)
     #lp_wrapper(scl_pars)
     #lp.print_stats()
 
     # Run a single model
-    gce.runmodel(scl_init, plot=True)
+    gce.runmodel(scl_test_mcmc_fromkirby_mannucci06, plot=True, title="Mannucci+06 Ia DTD")

@@ -7,7 +7,25 @@ Compiles spectroscopic data from data/ folder.
 import numpy as np
 from astropy.io import ascii
 
-def getdata(galaxy, c=False, ba=False, mn=False):
+# Systematic errors
+# Fe/H and alpha/Fe calculated by Evan on 12/28/17
+# C/Fe from Kirby+15, Ba/Fe from Duggan+18, Mn/Fe from de los Reyes+20
+syserr = {'Fe':0.10103081, 'alpha':0.084143983, 'Mg':0.076933658,
+        'Si':0.099193360, 'Ca':0.11088295, 'Ti':0.10586739,
+        'C':0.100, 'Ba':0.100, 'Mn':0.100}
+
+def getdata(galaxy, c=False, ba=False, mn=False, outlier_reject=True):
+    """Compiles observed abundances from literature tables.
+
+    Args:
+        galaxy (string): dSph galaxy to get data from (options: 'Scl')
+        c, ba, mn (bool): Keywords to decide which elements to include 
+                        along with [Fe/H], [Mg/Fe], [Si/Fe], [Ca/Fe]
+        outlier_reject (bool): If 'True', do remove high-C and high-Ba outliers
+
+    Returns:
+        data, errs (array): Observed data and errors
+    """  
     
     # Open files
     table = ascii.read("data/kirby10.dat").filled(-999)
@@ -19,7 +37,10 @@ def getdata(galaxy, c=False, ba=False, mn=False):
     idx = np.where(table['dSph']=='Scl')
     names = table['Name'][idx]
     data = np.asarray([table['[Fe/H]'][idx], table['[Mg/Fe]'][idx], table['[Si/Fe]'][idx], table['[Ca/Fe]'][idx]]).T
-    errs = np.asarray([table['e_[Fe/H]'][idx], table['e_[Mg/Fe]'][idx], table['e_[Si/Fe]'][idx], table['e_[Ca/Fe]'][idx]]).T
+    errs = np.asarray([np.sqrt(table['e_[Fe/H]'][idx]**2. + syserr['Fe']**2.), 
+                    np.sqrt(table['e_[Mg/Fe]'][idx]**2. + syserr['Mg']**2.),
+                    np.sqrt(table['e_[Si/Fe]'][idx]**2. + syserr['Si']**2.),
+                    np.sqrt(table['e_[Ca/Fe]'][idx]**2. + syserr['Ca']**2.)]).T
 
     # Remove any rows where we don't have complete data for [Fe/H] and [alpha/Fe]
     '''
@@ -43,7 +64,7 @@ def getdata(galaxy, c=False, ba=False, mn=False):
             if names[i] in table_c['Name']:
                 c_idx = np.where(table_c['Name'] == names[i])
                 newdata = np.concatenate((newdata,table_c['[C/Fe]c'][c_idx]))
-                newerrs = np.concatenate((newerrs,table_c['e_[C/Fe]'][c_idx]))
+                newerrs = np.concatenate((newerrs,np.sqrt(table_c['e_[C/Fe]'][c_idx]**2. + syserr['C'])))
             else:
                 newdata = np.concatenate((newdata,[-999.]))
                 newerrs = np.concatenate((newerrs,[-999.]))
@@ -53,7 +74,7 @@ def getdata(galaxy, c=False, ba=False, mn=False):
             if names[i] in table_ba['Name']:
                 ba_idx = np.where(table_ba['Name'] == names[i])
                 newdata = np.concatenate((newdata,table_ba['[Ba/Fe]'][ba_idx]))
-                newerrs = np.concatenate((newerrs,table_ba['e_[Ba/Fe]'][ba_idx]))
+                newerrs = np.concatenate((newerrs,np.sqrt(table_ba['e_[Ba/Fe]'][ba_idx]**2. + syserr['Ba'])))
             else:
                 newdata = np.concatenate((newdata,[-999.]))
                 newerrs = np.concatenate((newerrs,[-999.]))
@@ -63,7 +84,7 @@ def getdata(galaxy, c=False, ba=False, mn=False):
             if names[i] in table_mn['ID']:
                 mn_idx = np.where(table_mn['ID'] == names[i])
                 newdata = np.concatenate((newdata,table_mn['MnFe'][mn_idx]))
-                newerrs = np.concatenate((newerrs,table_mn['e_MnFe'][mn_idx]))
+                newerrs = np.concatenate((newerrs,np.sqrt(table_mn['e_MnFe'][mn_idx]**2. + syserr['Mn'])))
             else:
                 newdata = np.concatenate((newdata,[-999.]))
                 newerrs = np.concatenate((newerrs,[-999.]))
@@ -73,7 +94,20 @@ def getdata(galaxy, c=False, ba=False, mn=False):
 
     data = np.asarray(finaldata).T
     errs = np.asarray(finalerrs).T
-    #names = np.asarray(finalnames)
+
+    # Do outlier rejection
+    if outlier_reject:
+        for i in range(len(names)):
+            if (names[i] in table_c['Name']) and (names[i] in table_ba['Name']):
+                c_idx = np.where(table_c['Name'] == names[i])
+                c_data = table_c['[C/Fe]c'][c_idx]
+
+                ba_idx = np.where(table_ba['Name'] == names[i])
+                ba_data = table_ba['[Ba/Fe]'][ba_idx]
+
+                if c_data > 0.2 and ba_data > 0.2:
+                    data = np.delete(data, i, axis=1)
+                    errs = np.delete(errs, i, axis=1)
 
     return data, errs
 

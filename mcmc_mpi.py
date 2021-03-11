@@ -22,20 +22,20 @@ import emcee
 from multiprocessing import Pool
 
 # Variables for MCMC run
-nsteps = 500
+nsteps = 1000
 nwalkers = 20
 parallel = True
 
 # Put in initial guesses for parameters 
-params_init = [0.62424101, 0.2700047 , 5.38533987, 4.46, 0.85, 0.] # from Powell optimization
+#params_init = [0.91144016, 0.19617321, 4.42241379, 4.45999299, 1.97494677, 0.17709949] # from Powell optimization
 #params_init = [2.6988, 0.27, 5.37, 4.46, 0.85, 0.] # from dsph_gce.dat
-#params_init = [0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685] # (based on results from Kirby+11)
+params_init = [0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685] # (based on results from Kirby+11)
 
 # Model prep!
 
 # Integration parameters
 delta_t = 0.001     # time step (Gyr)
-n = int(13.6/delta_t)     # number of timesteps in the model 
+n = int(1.36/delta_t)     # number of timesteps in the model 
 t = np.arange(n)*delta_t    # time passed in model array -- age universe (Gyr)
 
 # Load all sources of chemical yields
@@ -203,7 +203,7 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
 
         # Compute rate at which a given element is locked up in stars (M_sun Gyr**-1)
         # SFR - (gas returned from SNe and AGB stars)    
-        model['dstar_dt'][timestep,:] = (x_el)*model['mdot'][timestep] - M_Ia_arr[:,timestep] - M_II_arr[:,timestep] - M_AGB_arr[:,timestep] - M_Ia
+        model['dstar_dt'][timestep,:] = (x_el)*model['mdot'][timestep] - M_Ia_arr[:,timestep] - M_II_arr[:,timestep] - M_AGB_arr[:,timestep]
 
         # Compute change in gas mass (M_sun Gyr**-1) 
         # -(rate of locking stars up) - outflow + inflow                                                         
@@ -269,7 +269,7 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
     return np.array(elem_model)[:,:,0], sfr, mstar_model, time, leftovergas
 
 # Define observed data
-elem_data, delem_data = getdata(galaxy='Scl', c=True, ba=True, mn=True)
+elem_data, delem_data = getdata(galaxy='Scl', c=True) #, ba=True, mn=True)
 nelems, nstars = elem_data.shape
 print('Numbers:', nelems, nstars)
 mstar_obs = 10**6.08
@@ -359,23 +359,18 @@ print('initial values:', neglnlike([2.6988, 0.27, 5.37, 4.46, 0.85, 0.]))
 #print('values after mcmc:', neglnlike([0.79, 0.20, 4.11, 0.25, 1.65, 1.72]))
 
 # With C
-#print('values after powell:', neglnlike([0.62424101, 0.2700047 , 5.38533987, 4.46, 0.85, 0.]))
-#print('values after mcmc:', neglnlike([1.07, 0.20, 5.61, 3.50, 0.98, 0.24]))
-
-# With C and Ba
-#print('values after powell:', neglnlike([2.13397027e+00, 1.43966768e-01, 5.37963529e+00, 4.42919559e+00, 8.50008897e-01, 2.44804337e-06]))
-#print('values after mcmc:', neglnlike([2.13, 0.14, 5.35, 4.44, 0.83, 0.03]))
-
-# With C and Ba and Mn
-print('values after powell:', neglnlike([2.55499278, 0.18554725, 8.6195177, 4.46000229, 0.85, 0.]))
-print('values after mcmc:', neglnlike([2.53, 0.19, 8.55, 4.47, 0.88, 0.05]))
+print('values after powell:', neglnlike([0.91144016, 0.19617321, 4.42241379, 4.45999299, 1.97494677, 0.17709949]))
+print('values after mcmc:', neglnlike([1.01, 0.18, 4.30, 1.28, 0.74, 0.11]))
+print('values after mcmc (starting from kirby+11, Maoz+10 DTD):', neglnlike([1.01, 0.17, 4.31, 1.23, 0.76, 0.21]))
+print('values after mcmc (starting from Kirby+11, Mannucci+06 DTD):', neglnlike([4.86509872, 0.05459378, 3.13738242, 4.87828528, 0.4670316, 0.17314514]))
 
 '''
 # Start by doing basic max-likelihood fit to get initial values
 result = op.minimize(neglnlike, [2.6988, 0.27, 5.37, 4.46, 0.85, 0.], method='powell', options={'ftol':1e-6, 'maxiter':100000, 'direc':np.diag([-0.05,0.05,1.0,0.01,0.01,0.01])}) 
 print(result)
 params_init = result["x"]
-
+'''
+'''
 # Sample the log-probability function using emcee - first, initialize the walkers
 ndim = len(params_init)
 dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513] / np.sqrt(6.)
