@@ -8,13 +8,10 @@ Type Ia SNe DTD and IMF
 name = 'sfr-law'
 
 # Ia delay-time distribution: 'mannucci06', 'maoz10'
-ia_model = 'mannucci06'
+ia_model = 'maoz10'
 
 # Initial mass function: 'kroupa01', 'kroupa93', 'chabrier03', 'salpeter55'
 imf_model = 'kroupa93'
-
-# r-process options: 'none', 'typical_SN_only', 'rare_event_only', 'both'
-r_process_keyword='both'
 
 # AGB yield source: 'cri15', 'kar'
 AGB_source = 'kar'
@@ -25,12 +22,8 @@ Ia_source = 'leu20'
 # SNII yield source: 'nom06'
 II_source = 'nom06'
 
-# For delta_t = 0.001, the model runs for 13.6 Gyr    
-# Max number of time steps
-n = 13600.
-
-# Duration of a time step (Gyr)
-delta_t = 0.001
+# r-process options: 'none', 'typical_SN_only', 'rare_event_only', 'both'
+r_process_keyword='both'
 
 # Minimum and maximum AGB masses
 M_AGB_min = 0.865   # lower mass limit for AGB stars (M_sun)

@@ -8,11 +8,9 @@ Runs gce_fast on multiple processors
 from scipy.interpolate import interp1d
 import params
 import dtd
-import gce_yields as gce_yields
-import gce_plot
+import gce_yields
 from getdata import getdata
 
-import sys
 import numpy as np
 import scipy.optimize as op
 from scipy.integrate import trapz
@@ -288,8 +286,6 @@ def neglnlike(parameters):
     elem_model, sfr, mstar_model, time, leftovergas = gce_model(parameters)
 
     # Check if model runs all the way
-    #if time[-1] < 0.9:
-    #    return 1e10
     goodidx = np.where((time > 0.007) & (np.all(np.isfinite(elem_model),axis=0)))
     if len(goodidx[0]) < 10:
         return 1e10
@@ -351,26 +347,24 @@ def lnprob(parameters):
         return -np.inf
 
 # Test likelihood function
+'''
 print('actual values:', neglnlike([0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685]))
 print('initial values:', neglnlike([2.6988, 0.27, 5.37, 4.46, 0.85, 0.]))
-
-# Original values
-#print('values after powell:', neglnlike([0.66951658, 0.21648284, 3.96625663, 0.17007564, 1.81059811, 1.44096689])) 
-#print('values after mcmc:', neglnlike([0.79, 0.20, 4.11, 0.25, 1.65, 1.72]))
 
 # With C
 print('values after powell:', neglnlike([0.91144016, 0.19617321, 4.42241379, 4.45999299, 1.97494677, 0.17709949]))
 print('values after mcmc:', neglnlike([1.01, 0.18, 4.30, 1.28, 0.74, 0.11]))
 print('values after mcmc (starting from kirby+11, Maoz+10 DTD):', neglnlike([1.01, 0.17, 4.31, 1.23, 0.76, 0.21]))
 print('values after mcmc (starting from Kirby+11, Mannucci+06 DTD):', neglnlike([4.86509872, 0.05459378, 3.13738242, 4.87828528, 0.4670316, 0.17314514]))
-
 '''
+
 # Start by doing basic max-likelihood fit to get initial values
+'''
 result = op.minimize(neglnlike, [2.6988, 0.27, 5.37, 4.46, 0.85, 0.], method='powell', options={'ftol':1e-6, 'maxiter':100000, 'direc':np.diag([-0.05,0.05,1.0,0.01,0.01,0.01])}) 
 print(result)
 params_init = result["x"]
 '''
-'''
+
 # Sample the log-probability function using emcee - first, initialize the walkers
 ndim = len(params_init)
 dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513] / np.sqrt(6.)
@@ -398,4 +392,3 @@ else:
 
     # Save the chain so we don't have to run this again
     np.save('chain', sampler.chain, allow_pickle=True, fix_imports=True)
-'''

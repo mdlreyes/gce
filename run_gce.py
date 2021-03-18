@@ -51,4 +51,4 @@ if __name__ == "__main__":
     #lp.print_stats()
 
     # Run a single model
-    gce.runmodel(scl_test_mcmc_fromkirby_mannucci06, plot=True, title="Mannucci+06 Ia DTD")
+    model, atomic = gce.runmodel(scl_test_mcmc_fromkirby_maoz10, plot=True, title="Maoz+10 Ia DTD", amr="plots/amr_test")
