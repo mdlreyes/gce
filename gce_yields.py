@@ -9,10 +9,18 @@ import numpy as np
 from astropy.io import ascii
 import re
 
-def load_II(II_source, yield_path, SN_yield, atomic_names, z_II, M_SN):
+def load_II(II_source, yield_path, nel, atomic_names, atomic_num):
     """Reads in II yield files."""
 
     if II_source == 'nom06':
+        # Prep array to hold SN yields
+        M_SN = np.array([13.0, 15.0, 18.0, 20.0, 25.0, 30.0, 40.0])
+        z_II = np.array([0.0, 0.001, 0.004, 0.02])
+        SN_yield = np.zeros(nel,dtype=[('atomic','float64'),('II','float64',(len(z_II),len(M_SN))),
+                                            ('weight_II','float64',(len(z_II),len(M_SN))),
+                                            ('Ia','float64',(len(z_II))),('weight_Ia','float64',(len(z_II)))])
+        SN_yield['atomic'] = atomic_num
+
         # Read in IISN yields from Nomoto+06
         ii_table = ascii.read(yield_path+'nom06/tab1.txt')
         elem_name = np.array([ii_table['Element'][j].strip('0123456789-*^') for j in range(len(ii_table['Element']))])  # Element names
@@ -41,7 +49,109 @@ def load_II(II_source, yield_path, SN_yield, atomic_names, z_II, M_SN):
                 SN_yield[wa]['weight_II'][wz,mass_idx] += isotope_mass * mass_array['P'+str(int(mass))][elem_idx]     # Mass weighted by isotopic weight
                 SN_yield[wa]['II'][wz,mass_idx] += mass_array['P'+str(int(mass))][elem_idx]
 
-    return SN_yield
+    elif II_source == 'nom13':
+
+        # Prep array to hold SN yields
+        M_SN = np.array([13., 15., 18., 20., 25., 30., 40.])
+        z_II = np.array([0., 0.001, 0.004, 0.008, 0.02, 0.05])
+        SN_yield = np.zeros(nel,dtype=[('atomic','float64'),('II','float64',(len(z_II),len(M_SN))),
+                                            ('weight_II','float64',(len(z_II),len(M_SN))),
+                                            ('Ia','float64',(len(z_II))),('weight_Ia','float64',(len(z_II)))])
+        SN_yield['atomic'] = atomic_num
+
+        # Read in IISN yields from Nomoto+13
+        with open(yield_path+'nom13/yieldstable.txt','r') as nomfile:  
+            use = True
+            for line in nomfile:
+                ln_list = line.split()
+
+                # Get metallicity
+                if line.startswith("Z="):
+                    z_idx = np.where(z_II==float(ln_list[1]))[0]
+
+                # Read in all masses
+                elif ln_list[0] == 'M':
+                    if float(ln_list[1])==20:
+                        use = False
+                    else:
+                        use = True
+                        massdict = {}
+                        for colidx, mass in enumerate(ln_list[1:]):
+                            if float(mass) in M_SN:
+                                massdict[colidx+2] = np.where((M_SN==float(mass)))[0][0]
+
+                elif use and ln_list[0] in atomic_names:
+                    atom_idx = np.where(atomic_names == ln_list[0])
+                    for mass_idx in massdict.keys():
+                        col_idx = massdict[mass_idx]
+                        SN_yield['weight_II'][atom_idx, z_idx,col_idx] += float(ln_list[1]) * float(ln_list[mass_idx])     # Mass weighted by isotopic weight
+                        SN_yield['II'][atom_idx, z_idx,col_idx] += float(ln_list[mass_idx])
+
+    elif II_source == 'lim18': 
+
+        # Prep array to hold SN yields
+        M_SN = np.array([13., 15., 20., 25., 30., 40.]) #, 60., 80.])
+        feh_II = np.array([-3., -2., -1., 0.])
+        z_II = 10.**feh_II
+        SN_yield = np.zeros(nel,dtype=[('atomic','float64'),('II','float64',(len(z_II),len(M_SN))),
+                                            ('weight_II','float64',(len(z_II),len(M_SN))),
+                                            ('Ia','float64',(len(z_II))),('weight_Ia','float64',(len(z_II)))])
+        SN_yield['atomic'] = atomic_num
+
+        # Read in IISN yields from Limongi & Chieffi (2018)
+        ii_table = ascii.read(yield_path+'lim18/tab8.txt')
+
+        # Get element names and mass numbers
+        elem_name = []
+        mass_num = []
+        for elem in ii_table['Isotope']:  # Element names
+            match = re.match(r"([A-Za-z]+)([0-9]+)", elem, re.I)
+            if match:
+                items = match.groups()
+                elem_name.append(items[0])
+                mass_num.append(items[1])
+
+        elem_name = np.asarray(elem_name)
+        mass_num = np.asarray(mass_num)
+
+        mass_array = ii_table['13M', '15M', '20M', '25M', '30M', '40M'] #, '60M', '80M']
+
+        # Rotational velocity weights (from Prantzos+18, Fig 4)
+        # rotvelweights[metallicity, rotvel]
+        rotvel = np.array([0,150,300])
+        rotvelweights = np.array([[0.05, 0.72, 0.23],
+                                [0.50, 0.48, 0.02],
+                                [0.63, 0.36, 0.01],
+                                [0.67, 0.32, 0.01]])
+
+        # Loop over each element needed in final table
+        for elem_idx, elem in enumerate(atomic_names):
+            if (elem not in elem_name): 
+                continue
+            
+            # Loop over each metallicity
+            for z_idx, feh in enumerate(feh_II):
+                
+                # Loop over each rotational velocity
+                for vel_idx, vel in enumerate(rotvel):
+
+                    weight = rotvelweights[z_idx, vel_idx]
+
+                    # Find lines in table where everything matches up
+                    idx = np.where((elem_name==elem) & (ii_table['[Fe/H]']==int(feh)) & (ii_table['Vel']==int(vel)))[0]
+                    #print(idx, elem, feh, vel, weight)
+
+                    # Loop over all isotopes
+                    for i in idx:
+                        isotope_mass = float(mass_num[i])
+                        test = np.array(mass_array[i])
+                        test = test.view((float, len(test.dtype.names)))
+
+                        # Add yields to SN_yield table
+                        SN_yield['weight_II'][elem_idx, z_idx, :] += isotope_mass * weight * test     # Mass weighted by isotopic weight
+                        SN_yield['II'][elem_idx, z_idx, :] += weight * test
+
+    return SN_yield, M_SN, z_II
 
 def load_Ia(Ia_source, yield_path, SN_yield, atomic_names, z_II):
     """Reads in Ia yield files."""
@@ -305,7 +415,7 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source
                         'Ba','La','Eu'])
 
     # Extract info for the elements we want
-    elem_atomic = [1, 2, 6, 12, 14, 20, 22, 25, 26, 56] #8, 
+    elem_atomic = [1, 2, 6, 12, 14, 20, 22, 25, 26, 56, 63] #8, 
     nel = len(elem_atomic)
     elem_idx = np.where(np.isin(atomic_num, elem_atomic))[0]
 
@@ -314,16 +424,8 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source
     atomic_weight = atomic_weight[elem_idx]
     atomic_names = atomic_names[elem_idx]
 
-    # Prep array to hold SN yields
-    M_SN = np.array([13.0, 15.0, 18.0, 20.0, 25.0, 30.0, 40.0])
-    z_II = np.array([0.0, 0.001, 0.004, 0.02])
-    SN_yield = np.zeros(nel,dtype=[('atomic','float64'),('II','float64',(len(z_II),len(M_SN))),
-                                        ('weight_II','float64',(len(z_II),len(M_SN))),
-                                        ('Ia','float64',(len(z_II))),('weight_Ia','float64',(len(z_II)))])
-    SN_yield['atomic'] = atomic_num
-
     # Read in SN yield files
-    SN_yield = load_II(II_source, yield_path, SN_yield, atomic_names, z_II, M_SN)
+    SN_yield, M_SN, z_II = load_II(II_source, yield_path, nel, atomic_names, atomic_num)
     SN_yield = load_Ia(Ia_source, yield_path, SN_yield, atomic_names, z_II)                           
     
     # Divide weighted mass by total yield mass to get average isotope mass
@@ -333,35 +435,49 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source
     # Read in AGB yield files
     M_AGB, z_AGB, AGB_yield = load_AGB(AGB_source, yield_path, atomic_num, atomic_names, atomic_weight)
 
-    # Add in barium abundances from SNe/rare r-process events
+    # Add in Ba, Eu abundances from SNe/rare r-process events
     ba_idx = np.where((np.asarray(elem_atomic) == 56))[0][0]
+    eu_idx = np.where((np.asarray(elem_atomic) == 63))[0][0]
 
     if r_process_keyword in ['typical_SN_only','both']:
 
+        # Note: no Eu abundances from Li+2014?
+
         # Barium yield for weak r-process event as a function of mass (Li+2014)
-        li14_weakr = 10. * np.asarray([1.38e-8, 2.83e-8, 5.38e-8, 6.84e-8, 9.42e-8, 0, 0])
+        # These correspond to masses M_SN = [13.0, 15.0, 18.0, 20.0, 25.0, 30.0, 40.0]
+        ba_li14_weakr = 10. * np.asarray([1.38e-8, 2.83e-8, 5.38e-8, 6.84e-8, 9.42e-8, 0, 0])
 
         # Linearly interpolate to high-mass end
-        li14_weakr[-2] = li14_weakr[-3]*M_SN[-2]/M_SN[-3]
-        li14_weakr[-1] = li14_weakr[-2]*M_SN[-1]/M_SN[-2]
+        ba_li14_weakr[-2] = ba_li14_weakr[-3]*M_SN[-2]/M_SN[-3]
+        ba_li14_weakr[-1] = ba_li14_weakr[-2]*M_SN[-1]/M_SN[-2]
+
+        # Interpolate to match SN mass array
+        M_li14 = np.array([13.0, 15.0, 18.0, 20.0, 25.0, 30.0, 40.0])
+        ba_li14_weakr = np.interp(M_SN, M_li14, ba_li14_weakr)
 
         # Add to SNII yield arrays
         for i in range(len(z_II)):
-            SN_yield['II'][ba_idx][i,:] = li14_weakr  # Assume no Z-dependence
+            SN_yield['II'][ba_idx][i,:] = ba_li14_weakr  # Assume no Z-dependence
         SN_yield['weight_II'][ba_idx] = np.mean(AGB_yield['weight'][9])
+        SN_yield['weight_II'][eu_idx] = np.mean(AGB_yield['weight'][10])
             
     if r_process_keyword in ['rare_event_only','both']:   
 
-        # Note: this is the average barium yield for a main r-process event (Li+2014)
-        ba_yield = 2e-6
+        # Note: these are average Ba, Eu yields for a "main" r-process event (Li+2014)
+        ba_yield = 2.3e-6
+        eu_yield = 2.27e-7
 
         # Since NSM have a similar DTD as SN Ia, put yields in SNIa array as a proxy. 
-        # (Scale barium yield up and reduce rate of events proportionally to compare to models.)
+        # (Scale Ba and Eu yields up and reduce rate of events proportionally to compare to models.)
         SN_yield['Ia'][ba_idx] = ba_yield
+        SN_yield['Ia'][eu_idx] = eu_yield
         SN_yield['weight_Ia'][ba_idx] = np.mean(AGB_yield['weight'][9])
+        SN_yield['weight_Ia'][eu_idx] = np.mean(AGB_yield['weight'][10])
 
     return nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB
 
 if __name__ == "__main__":
 
-    initialize_yields(AGB_source='kar')
+    _, _, SN_yield, AGB_yield, _, _, _, _ = initialize_yields(II_source='lim18', r_process_keyword='both')
+
+    #print(SN_yield['II'])

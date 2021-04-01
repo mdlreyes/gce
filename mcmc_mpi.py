@@ -357,6 +357,8 @@ print('values after mcmc:', neglnlike([1.01, 0.18, 4.30, 1.28, 0.74, 0.11]))
 print('values after mcmc (starting from kirby+11, Maoz+10 DTD):', neglnlike([1.01, 0.17, 4.31, 1.23, 0.76, 0.21]))
 print('values after mcmc (starting from Kirby+11, Mannucci+06 DTD):', neglnlike([4.86509872, 0.05459378, 3.13738242, 4.87828528, 0.4670316, 0.17314514]))
 '''
+print('Fiducial 1:', neglnlike([0.95, 0.18, 4.34, 1.27, 0.76, 0.69]))
+print('Fiducial 2:', neglnlike([0.95, 0.18, 4.34, 2.78, 0.17, 5.24]))
 
 # Start by doing basic max-likelihood fit to get initial values
 '''

@@ -68,6 +68,9 @@ def makeplots(model, atomic, title, plot=False, dsph='Scl', skip_end_dots=-1, NS
     labels = []
     labels_h = []
     for idx, elem in enumerate(atomic):
+        if elem == 63:
+            snindex['Eu'] = idx
+            continue
         if elem not in [26, 1, 2, 22]:
             labels.append(elem_names[elem])
         if elem != 1:
@@ -150,6 +153,29 @@ def makeplots(model, atomic, title, plot=False, dsph='Scl', skip_end_dots=-1, NS
         plt.savefig((plot_path+title+'_feh.png').replace(' ',''))
         if plot==True: 
             plt.show()
+        else:
+            plt.close()
+
+        # Plot [Ba/Eu] vs [Fe/H] separately
+        if 63 in atomic:
+            fig = plt.figure(figsize=(5,3))
+            ax = plt.subplot()
+            modeldata = model['eps'][:,snindex['Ba']] - model['eps'][:,snindex['Eu']]
+            plt.plot(feh,modeldata,'k.-', zorder=100)
+            
+            # Add title and labels
+            plt.title(title)
+            plt.ylabel('[Ba/Eu]')
+            plt.xlabel('[Fe/H]')
+            plt.plot([-6,0],[0,0],':k')
+            plt.xlim([-3.5,0])
+            ax.text(0.05,0.9,'Karakas+18', transform=ax.transAxes, fontsize=12)
+
+            plt.savefig((plot_path+title+'_baeu.png').replace(' ',''), bbox_inches='tight')
+            if plot==True: 
+                plt.show()
+            else:
+                plt.close()
         
     # Plot abundances vs time
     if time:

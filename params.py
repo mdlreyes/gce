@@ -19,8 +19,8 @@ AGB_source = 'kar'
 # SNIa yield source: 'iwa99', 'leu20'
 Ia_source = 'leu20'
 
-# SNII yield source: 'nom06'
-II_source = 'nom06'
+# SNII yield source: 'nom06', 'nom13', 'lim18'
+II_source = 'lim18'
 
 # r-process options: 'none', 'typical_SN_only', 'rare_event_only', 'both'
 r_process_keyword='both'

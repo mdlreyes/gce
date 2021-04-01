@@ -20,9 +20,9 @@ scl_test_powell = [0.91144016, 0.19617321, 4.42241379, 4.45999299, 1.97494677, 0
 scl_test_mcmc = [1.01, 0.18, 4.30, 1.28, 0.74, 0.11]
 scl_test_mcmc_fromkirby_maoz10 = [1.01, 0.17, 4.31, 1.23, 0.76, 0.21]
 scl_test_mcmc_fromkirby_mannucci06 = [4.86509872, 0.05459378, 3.13738242, 4.87828528, 0.4670316, 0.17314514]
-#scl_test_c = [1.07, 0.20, 5.61, 3.50, 0.98, 0.24]
-#scl_test_ba = [2.13, 0.14, 5.35, 4.44, 0.83, 0.03]
-#scl_test_mn = [2.53, 0.19, 8.55, 4.47, 0.88, 0.05]
+scl_fiducial1 = [0.95, 0.18, 4.34, 1.27, 0.76, 0.69]
+scl_fiducialtest = [0.95, 0.18, 4.34, 1.27, 0.76, 0.]
+scl_fiducial2 = [0.95, 0.18, 4.34, 2.78, 0.17, 5.24]
 #umi_pars = [1470.5896, 0.16522838, 11.038576, 1.2065735, 0.26234735, 0.53814755] #result of "restore, 'umi_sfr-law.sav'" in idl
 #for_pars = [2.4642364, 0.30686976, 1.5054730, 5.0189799, 0.98204341, 14.575519] #'old/for_sfr-law.sav'
 #for_pars = [2.46, 0.31, 1.51, 5.02, 0.98, 14.58] # from Kirby+11
@@ -51,4 +51,4 @@ if __name__ == "__main__":
     #lp.print_stats()
 
     # Run a single model
-    model, atomic = gce.runmodel(scl_test_mcmc_fromkirby_maoz10, plot=True, title="Maoz+10 Ia DTD", amr="plots/amr_test")
+    model, atomic = gce.runmodel(scl_pars, plot=True, title="", amr="plots/amr_test")
