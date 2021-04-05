@@ -439,6 +439,9 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source
     ba_idx = np.where((np.asarray(elem_atomic) == 56))[0][0]
     eu_idx = np.where((np.asarray(elem_atomic) == 63))[0][0]
 
+    SN_yield['weight_II'][ba_idx] = np.mean(AGB_yield['weight'][9])
+    SN_yield['weight_II'][eu_idx] = np.mean(AGB_yield['weight'][10])
+
     if r_process_keyword in ['typical_SN_only','both']:
 
         # Note: no Eu abundances from Li+2014?
@@ -458,8 +461,6 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source
         # Add to SNII yield arrays
         for i in range(len(z_II)):
             SN_yield['II'][ba_idx][i,:] = ba_li14_weakr  # Assume no Z-dependence
-        SN_yield['weight_II'][ba_idx] = np.mean(AGB_yield['weight'][9])
-        SN_yield['weight_II'][eu_idx] = np.mean(AGB_yield['weight'][10])
             
     if r_process_keyword in ['rare_event_only','both']:   
 

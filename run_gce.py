@@ -51,4 +51,4 @@ if __name__ == "__main__":
     #lp.print_stats()
 
     # Run a single model
-    model, atomic = gce.runmodel(scl_pars, plot=True, title="", amr="plots/amr_test")
+    model, atomic = gce.runmodel(scl_fiducial1, plot=True, title="Fiducial 1 (DEIMOS)", amr="plots/amr_test")

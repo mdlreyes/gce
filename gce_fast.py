@@ -256,7 +256,7 @@ def runmodel(pars, plot=False, title="", amr=None):
 
     if plot:
         gce_plot.makeplots(model[:timestep-1], SN_yield['atomic'], title=title, plot=True, skip_end_dots=-10, 
-        abunds=True, time=True, params=True)
+        abunds=True, time=False, params=False, datasource='both')
 
     if amr is not None:
         modeldata = np.hstack((model['eps'][:timestep-1,snindex['fe']], model['t'][:timestep-1, None]))

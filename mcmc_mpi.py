@@ -20,8 +20,8 @@ import emcee
 from multiprocessing import Pool
 
 # Variables for MCMC run
-nsteps = 31250
-nwalkers = 32
+nsteps = 1000
+nwalkers = 20
 parallel = True
 
 # Put in initial guesses for parameters 
@@ -267,7 +267,7 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
     return np.array(elem_model)[:,:,0], sfr, mstar_model, time, leftovergas
 
 # Define observed data
-elem_data, delem_data = getdata(galaxy='Scl', c=True) #, ba=True, mn=True)
+elem_data, delem_data = getdata(galaxy='Scl', source='dart', c=True) #, ba=True, mn=True)
 nelems, nstars = elem_data.shape
 print('Numbers:', nelems, nstars)
 mstar_obs = 10**6.08
