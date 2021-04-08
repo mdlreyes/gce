@@ -13,17 +13,17 @@ ia_model = 'maoz10'
 # Initial mass function: 'kroupa01', 'kroupa93', 'chabrier03', 'salpeter55'
 imf_model = 'kroupa93'
 
-# AGB yield source: 'cri15', 'kar'
+# AGB yield source: 'cri15', 'kar' (do not use!)
 AGB_source = 'cri15'
 
 # SNIa yield source: 'iwa99', 'leu20'
 Ia_source = 'leu20'
 
 # SNII yield source: 'nom06', 'nom13', 'lim18'
-II_source = 'nom13'
+II_source = 'lim18'
 
 # r-process options: 'none', 'typical_SN_only', 'rare_event_only', 'both'
-r_process_keyword='rare_event_only'
+r_process_keyword='none'
 
 # Minimum and maximum AGB masses
 M_AGB_min = 0.865   # lower mass limit for AGB stars (M_sun)

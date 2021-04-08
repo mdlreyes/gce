@@ -57,4 +57,4 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100):
 
 if __name__ == "__main__":
 
-    plotmcmc(file='chain.npy', burnin=100)
+    plotmcmc(file='output/ccsn_nom13.npy', burnin=100)

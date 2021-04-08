@@ -215,7 +215,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
             plt.xlabel('[Fe/H]')
             plt.plot([-6,0],[0,0],':k')
             plt.xlim([-3.5,0])
-            agbtitle = {'kar18':'Karakas+18', 'cri15':'FRUITY'}
+            agbtitle = {'kar':'Karakas+18', 'cri15':'FRUITY'}
             ax.text(0.05, 0.9, agbtitle[paramfile.AGB_source], transform=ax.transAxes, fontsize=12)
 
             plt.savefig((plot_path+title+'_baeu.png').replace(' ',''), bbox_inches='tight')

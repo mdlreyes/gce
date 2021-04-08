@@ -74,13 +74,24 @@ def runmodel(pars, plot=False, title="", amr=None):
     yield_ii = np.concatenate((sn_min[...,None], SN_yield['II'], sn_max[...,None]), axis=2)   # Concatenate yield tables
     M_SN = np.concatenate(([params.M_SN_min], M_SN, [params.M_SN_max]))     # Concatenate mass list
 
-    print('test', yield_ii)
-
     # Linearly extrapolate AGB yields to min/max progenitor masses
     agb_min = AGB_yield['AGB'][:,:,0] * params.M_AGB_min/M_AGB[0]        # Extrapolate yields to min progenitor mass
     agb_max = AGB_yield['AGB'][:,:,-1] * params.M_AGB_max/M_AGB[-1]      # Extrapolate yields to max progenitor mass
     yield_agb = np.concatenate((agb_min[...,None], AGB_yield['AGB'], agb_max[...,None]), axis=2)   # Concatenate yield tables
     M_AGB = np.concatenate(([params.M_AGB_min], M_AGB, [params.M_AGB_max])) # Concatenate mass list 
+
+    # If needed, linearly extrapolate SN yields to Z=0
+    if ~np.isclose(z_II[0],0.):
+        ii_z0 = yield_ii[:,0,:]+(0-z_II[0])*(yield_ii[:,1,:]-yield_ii[:,0,:])/(z_II[1]-z_II[0])
+        yield_ii = np.concatenate((ii_z0[:,None,:], yield_ii), axis=1)   # Concatenate yield tables
+
+        ia_z0 = SN_yield['Ia'][:,0]+(0-z_II[0])*(SN_yield['Ia'][:,1]-SN_yield['Ia'][:,0])/(z_II[1]-z_II[0])
+        yield_ia = np.concatenate((ia_z0[:,None], SN_yield['Ia']), axis=1)   # Concatenate yield tables
+
+        weight_z0 = SN_yield['weight_II'][:,0,:]+(0-z_II[0])*(SN_yield['weight_II'][:,1,:]-SN_yield['weight_II'][:,0,:])/(z_II[1]-z_II[0])
+        weight_ii = np.concatenate((weight_z0[:,None,:], SN_yield['weight_II']), axis=1)   # Concatenate yield tables
+        
+        z_II = np.concatenate(([0],z_II))
 
     # Linearly extrapolate AGB yields to Z = 0
     agb_z0 = yield_agb[:,0,:]+(0-z_AGB[0])*(yield_agb[:,1,:]-yield_agb[:,0,:])/(z_AGB[1]-z_AGB[0])
@@ -110,7 +121,7 @@ def runmodel(pars, plot=False, title="", amr=None):
     agb_yield_mass[:,:,idx_bad_agb] = 0.
 
     # Interpolate yield tables over metallicity
-    f_ia_metallicity = interp1d(z_II, SN_yield['Ia'], axis=1, bounds_error=False, copy=False, assume_sorted=True) 
+    f_ia_metallicity = interp1d(z_II, yield_ia, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
     f_ii_metallicity = interp1d(z_II, ii_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True)
     f_agb_metallicity = interp1d(z_AGB, agb_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
 
@@ -227,7 +238,7 @@ def runmodel(pars, plot=False, title="", amr=None):
                 model['abund'][timestep,elem] = 0
                 model['eps'][timestep,elem] = np.nan
             else:
-                model['eps'][timestep,elem] = np.log10(model['abund'][timestep,elem]/np.interp(model['z'][timestep], z_II, SN_yield[elem]['weight_II'][:,3]) )
+                model['eps'][timestep,elem] = np.log10(model['abund'][timestep,elem]/np.interp(model['z'][timestep], z_II, weight_ii[elem,:,3]) )
 
         model['eps'][timestep] = 12.0 + model['eps'][timestep] - model['eps'][timestep,0] - eps_sun # Logarithmic number density relative to hydrogen, relative to sun
 
@@ -253,6 +264,8 @@ def runmodel(pars, plot=False, title="", amr=None):
         timestep += 1
 
     print('why stop?', timestep, model['mgas'][timestep], model['eps'][timestep-1,snindex['fe']])
+    #print('test Ba', model['abund'][:timestep-1, snindex['ba']])
+    #print('test Ba', model['eps'][:timestep-1, snindex['ba']])
 
     if plot:
         gce_plot.makeplots(model[:timestep-1], SN_yield['atomic'], title=title, plot=True, skip_end_dots=-10, 

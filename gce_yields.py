@@ -92,11 +92,24 @@ def load_II(II_source, yield_path, nel, atomic_names, atomic_num):
         # Prep array to hold SN yields
         M_SN = np.array([13., 15., 20., 25., 30., 40.]) #, 60., 80.])
         feh_II = np.array([-3., -2., -1., 0.])
-        z_II = 10.**feh_II
+        z_II = 10.**feh_II * 0.02 # Note that Z_sun = 0.02
         SN_yield = np.zeros(nel,dtype=[('atomic','float64'),('II','float64',(len(z_II),len(M_SN))),
                                             ('weight_II','float64',(len(z_II),len(M_SN))),
                                             ('Ia','float64',(len(z_II))),('weight_Ia','float64',(len(z_II)))])
         SN_yield['atomic'] = atomic_num
+
+        # For each elem, get list of all isotopes that need to be included
+        isolist = {'H':['H1','H2'],
+                    'He':['H3','He3','He4'],
+                    'C':['C12','C13','N13'],
+                    'Mg':['Na24','Mg24','Mg25','Mg26','Al25','Al26'],
+                    'Si':['Al28','Si28','Si29','Si30','P29','P30'],
+                    'Ca':['K42','Ca40','Ca42','Ca43','Ca44','Ca46','Ca48','Sc42','Sc43','Sc44','Ti44'],
+                    'Ti':['Ca47','Ca49','Sc46','Sc47','Sc48','Sc49','Ti46','Ti47','Ti48','Ti49','Ti50','V46','V47','V48','V49','Cr48','Cr49','Mn50'],
+                    'Mn':['Mn55','Fe55','Co55','Cr55'],
+                    'Fe':['Mn56','Mn57', 'Fe54','Fe56','Fe57','Fe58','Co56','Co57','Co58','Ni56','Ni57','Cu57','Cu58'],
+                    'Ba':['Xe135','Cs134','Cs135','Cs136','Cs137','Cs138','Ba134','Ba135','Ba136','Ba137','Ba138'],
+                    'Eu':[]}
 
         # Read in IISN yields from Limongi & Chieffi (2018)
         ii_table = ascii.read(yield_path+'lim18/tab8.txt')
@@ -124,6 +137,8 @@ def load_II(II_source, yield_path, nel, atomic_names, atomic_num):
                                 [0.63, 0.36, 0.01],
                                 [0.67, 0.32, 0.01]])
 
+        #print('rotvelweights', rotvelweights[0][1])
+
         # Loop over each element needed in final table
         for elem_idx, elem in enumerate(atomic_names):
             if (elem not in elem_name): 
@@ -137,15 +152,16 @@ def load_II(II_source, yield_path, nel, atomic_names, atomic_num):
 
                     weight = rotvelweights[z_idx, vel_idx]
 
-                    # Find lines in table where everything matches up
-                    idx = np.where((elem_name==elem) & (ii_table['[Fe/H]']==int(feh)) & (ii_table['Vel']==int(vel)))[0]
-                    #print(idx, elem, feh, vel, weight)
-
                     # Loop over all isotopes
-                    for i in idx:
-                        isotope_mass = float(mass_num[i])
-                        test = np.array(mass_array[i])
-                        test = test.view((float, len(test.dtype.names)))
+                    for i in range(len(isolist[elem])):
+
+                        # Find lines in table where everything matches up
+                        idx = np.where((ii_table['Isotope']==isolist[elem][i]) & (ii_table['[Fe/H]']==int(feh)) & (ii_table['Vel']==int(vel)))[0]
+                        #print(idx, elem, isolist[elem][i], feh, vel, weight)
+
+                        isotope_mass = float(mass_num[idx])
+                        test = np.array(mass_array[idx])
+                        test = test.view((float, len(test.dtype.names))).reshape(6,)
 
                         # Add yields to SN_yield table
                         SN_yield['weight_II'][elem_idx, z_idx, :] += isotope_mass * weight * test     # Mass weighted by isotopic weight
@@ -254,6 +270,7 @@ def load_AGB(AGB_source, yield_path, atomic_num, atomic_names, atomic_weight):
             else:
                 isotope = [int(re.findall(r'\d+', name)[0]) for name in isotope_names]
                 if atomic_num[elem_idx] == 56: isotope = np.array(isotope) + 100
+                if atomic_num[elem_idx] == 63: isotope = np.array(isotope) + 100
 
             # Compute yields and weights
             if len(isotope) == 1:    
@@ -381,7 +398,7 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source
     Args:
         yield_path (str): Path to folder with yields.
         r_process_keyword (str): How to handle r-process elements: 'none', 'typical_SN_only', 'rare_event_only', 'both'
-        AGB_source (str): Source of AGB yields: 'cri15', 'kar16'
+        AGB_source (str): Source of AGB yields: 'cri15', 'kar'
         Ia_source (str): Source of Ia yields: 'iwa99', 'leu20'
 
     Returns:
@@ -479,6 +496,8 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source
 
 if __name__ == "__main__":
 
-    _, _, SN_yield, AGB_yield, _, _, _, _ = initialize_yields(II_source='lim18', r_process_keyword='both')
-
-    #print(SN_yield['II'])
+    nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB = initialize_yields(II_source='lim18', r_process_keyword='none')
+    #print(SN_yield['weight_II'][0])
+    #print(SN_yield['II'][0,:,:]) # elem, Z, M
+    #print(z_II, M_SN)
+    #print(np.isclose(z_II,0))
