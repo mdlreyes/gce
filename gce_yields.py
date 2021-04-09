@@ -9,6 +9,36 @@ import numpy as np
 from astropy.io import ascii
 import re
 
+# Set up parameters
+# Atomic data
+eps_sun = np.array([12.00, 10.99, 3.31, 1.42, 2.88, 8.56, 8.05, 8.93, 4.56,
+                    8.09, 6.33, 7.58, 6.47, 7.55, 5.45, 7.21, 5.5, 6.56,
+                    5.12, 6.36, 3.10, 4.99, 4.00, 5.67, 5.39, 7.52, 4.92,
+                    6.25, 4.21, 4.60, 2.88, 3.41, 2.90, 2.13, 1.22, 0.51])
+atomic_weight = np.array([1.00794, 4.00602, 6.941, 9.012182, 10.811, 12.0107,
+                        14.0067, 15.9994, 18.9984032, 20.1797, 22.98976928,
+                        24.3050, 26.9815386, 28.0355, 30.973762, 32.065,
+                        35.453, 39.948, 39.0983, 40.078, 44.955912, 47.957,
+                        50.9415, 51.9951, 54.9438045, 55.845, 58.933195,
+                        58.6934, 63.546, 65.38, 69.723, 72.64, 87.62,
+                        137.522, 138.9055, 151.964])
+atomic_num = np.array([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,
+                    20,21,22,23,24,25,26,27,28,29,30,31,32,38,56,57,63])
+atomic_names = np.array(['H','He','Li','Be','B','C','N','O','F','Ne','Na',
+                    'Mg','Al','Si','P','S','Cl','Ar','K','Ca','Sc','Ti',
+                    'V','Cr','Mn','Fe','Co','Ni','Cu','Zn','Ga','Ge','Sr',
+                    'Ba','La','Eu'])
+
+# Extract info for the elements we want
+elem_atomic = [1, 2, 6, 12, 14, 20, 22, 25, 26, 56, 63] #8, 
+nel = len(elem_atomic)
+elem_idx = np.where(np.isin(atomic_num, elem_atomic))[0]
+
+eps_sun = eps_sun[elem_idx]
+atomic_num = elem_atomic
+atomic_weight = atomic_weight[elem_idx]
+atomic_names = atomic_names[elem_idx]
+
 def load_II(II_source, yield_path, nel, atomic_names, atomic_num):
     """Reads in II yield files."""
 
@@ -411,35 +441,6 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source
         M_AGB (array): AGB masses.
         z_AGB (array): AGB metallicities.
     """
-
-    # Atomic data
-    eps_sun = np.array([12.00, 10.99, 3.31, 1.42, 2.88, 8.56, 8.05, 8.93, 4.56,
-                        8.09, 6.33, 7.58, 6.47, 7.55, 5.45, 7.21, 5.5, 6.56,
-                        5.12, 6.36, 3.10, 4.99, 4.00, 5.67, 5.39, 7.52, 4.92,
-                        6.25, 4.21, 4.60, 2.88, 3.41, 2.90, 2.13, 1.22, 0.51])
-    atomic_weight = np.array([1.00794, 4.00602, 6.941, 9.012182, 10.811, 12.0107,
-                            14.0067, 15.9994, 18.9984032, 20.1797, 22.98976928,
-                            24.3050, 26.9815386, 28.0355, 30.973762, 32.065,
-                            35.453, 39.948, 39.0983, 40.078, 44.955912, 47.957,
-                            50.9415, 51.9951, 54.9438045, 55.845, 58.933195,
-                            58.6934, 63.546, 65.38, 69.723, 72.64, 87.62,
-                            137.522, 138.9055, 151.964])
-    atomic_num = np.array([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,
-                        20,21,22,23,24,25,26,27,28,29,30,31,32,38,56,57,63])
-    atomic_names = np.array(['H','He','Li','Be','B','C','N','O','F','Ne','Na',
-                        'Mg','Al','Si','P','S','Cl','Ar','K','Ca','Sc','Ti',
-                        'V','Cr','Mn','Fe','Co','Ni','Cu','Zn','Ga','Ge','Sr',
-                        'Ba','La','Eu'])
-
-    # Extract info for the elements we want
-    elem_atomic = [1, 2, 6, 12, 14, 20, 22, 25, 26, 56, 63] #8, 
-    nel = len(elem_atomic)
-    elem_idx = np.where(np.isin(atomic_num, elem_atomic))[0]
-
-    eps_sun = eps_sun[elem_idx]
-    atomic_num = elem_atomic
-    atomic_weight = atomic_weight[elem_idx]
-    atomic_names = atomic_names[elem_idx]
 
     # Read in SN yield files
     SN_yield, M_SN, z_II = load_II(II_source, yield_path, nel, atomic_names, atomic_num)

@@ -92,6 +92,10 @@ def runmodel(pars, plot=False, title="", amr=None):
         weight_ii = np.concatenate((weight_z0[:,None,:], SN_yield['weight_II']), axis=1)   # Concatenate yield tables
         
         z_II = np.concatenate(([0],z_II))
+    
+    else:
+        yield_ia = SN_yield['Ia']
+        weight_ii = SN_yield['weight_II']
 
     # Linearly extrapolate AGB yields to Z = 0
     agb_z0 = yield_agb[:,0,:]+(0-z_AGB[0])*(yield_agb[:,1,:]-yield_agb[:,0,:])/(z_AGB[1]-z_AGB[0])
@@ -269,7 +273,7 @@ def runmodel(pars, plot=False, title="", amr=None):
 
     if plot:
         gce_plot.makeplots(model[:timestep-1], SN_yield['atomic'], title=title, plot=True, skip_end_dots=-10, 
-        abunds=True, time=False, params=False, datasource='both')
+        abunds=True, time=True, params=True, datasource='both')
 
     if amr is not None:
         modeldata = np.hstack((model['eps'][:timestep-1,snindex['fe']], model['t'][:timestep-1, None]))

@@ -10,17 +10,17 @@ name = 'sfr-law'
 # Ia delay-time distribution: 'mannucci06', 'maoz10'
 ia_model = 'maoz10'
 
-# Initial mass function: 'kroupa01', 'kroupa93', 'chabrier03', 'salpeter55'
+# Initial mass function: 'kroupa93' ('kroupa01', 'chabrier03', 'salpeter55' - not yet implemented)
 imf_model = 'kroupa93'
 
-# AGB yield source: 'cri15', 'kar' (do not use!)
+# AGB yield source: 'cri15' ('kar' - note that Ba abundances are probably wrong!)
 AGB_source = 'cri15'
 
 # SNIa yield source: 'iwa99', 'leu20'
 Ia_source = 'leu20'
 
 # SNII yield source: 'nom06', 'nom13', 'lim18'
-II_source = 'lim18'
+II_source = 'nom13'
 
 # r-process options: 'none', 'typical_SN_only', 'rare_event_only', 'both'
 r_process_keyword='none'
