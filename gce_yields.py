@@ -497,8 +497,8 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source
 
 if __name__ == "__main__":
 
-    nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB = initialize_yields(II_source='lim18', r_process_keyword='none')
-    #print(SN_yield['weight_II'][0])
-    #print(SN_yield['II'][0,:,:]) # elem, Z, M
+    nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB = initialize_yields(AGB_source='kar', r_process_keyword='none')
+    print(AGB_yield['AGB'][-1])
+    print(SN_yield['atomic']) # elem, Z, M
     #print(z_II, M_SN)
     #print(np.isclose(z_II,0))

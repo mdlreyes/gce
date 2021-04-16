@@ -176,5 +176,6 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
 if __name__ == "__main__":
 
     # Test to make sure script is working
-    data, errs = getdata('Scl', source='dart', c=True, ba=True, mn=True, eu=True)
+    data, errs = getdata('Scl', source='dart', c=True) #, ba=True, mn=True, eu=True)
+    print(data.shape)
     print(data[:,0])

@@ -23,6 +23,7 @@ from multiprocessing import Pool
 nsteps = 1000
 nwalkers = 20
 parallel = True
+datasource = 'both'
 
 # Put in initial guesses for parameters 
 #params_init = [0.91144016, 0.19617321, 4.42241379, 4.45999299, 1.97494677, 0.17709949] # from Powell optimization
@@ -267,7 +268,19 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
     return np.array(elem_model)[:,:,0], sfr, mstar_model, time, leftovergas
 
 # Define observed data
-elem_data, delem_data = getdata(galaxy='Scl', source='dart', c=True) #, ba=True, mn=True)
+if datasource=='both':
+    elem_dart, delem_dart = getdata(galaxy='Scl', source='dart', c=True)
+    elem_deimos, delem_deimos = getdata(galaxy='Scl', source='deimos', c=True)
+
+    # Don't use [Fe/H] from DART?
+    elem_dart[0,:] = -999.
+
+    # Combine datasets
+    elem_data = np.hstack((elem_dart, elem_deimos))
+    delem_data = np.hstack((delem_dart, delem_deimos))
+
+else:  
+    elem_data, delem_data = getdata(galaxy='Scl', source=datasource, c=True) #, ba=True, mn=True)
 nelems, nstars = elem_data.shape
 print('Numbers:', nelems, nstars)
 mstar_obs = 10**6.08
