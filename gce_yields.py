@@ -1,13 +1,17 @@
 """
 gce_yields.py
 
-This program is based on Gina Duggan's code to read in yields for a GCE model.
+This program is based on Gina Duggan's code to read in model
+nucleosynthetic yields for a GCE model.
 """
 
 # Import useful packages
 import numpy as np
+from scipy.interpolate import interp1d
 from astropy.io import ascii
 import re
+import pandas as pd
+import os
 
 # Set up parameters
 # Atomic data
@@ -38,6 +42,25 @@ eps_sun = eps_sun[elem_idx]
 atomic_num = elem_atomic
 atomic_weight = atomic_weight[elem_idx]
 atomic_names = atomic_names[elem_idx]
+
+# Read in the data from Lugaro+12
+def readkaryields():
+    path = '/Users/miadelosreyes/Documents/Research/MnDwarfs_DTD/code/gce/yields/AGBdata/z0001models/elemental_yields/'
+    outfile = '/Users/miadelosreyes/Documents/Research/MnDwarfs_DTD/code/gce/yields/lug12/yields_z0001.dat'
+    
+    for filename in os.listdir(path):
+        if filename.startswith("yield"): 
+            # open both files
+            with open(path+filename,'r') as firstfile, open(outfile,'a') as secondfile:
+                
+                # read content from first file
+                for line in firstfile:
+                        
+                        # write content to second file
+                        secondfile.write(line)
+            continue
+    
+    return
 
 def load_II(II_source, yield_path, nel, atomic_names, atomic_num):
     """Reads in II yield files."""
@@ -239,6 +262,60 @@ def load_Ia(Ia_source, yield_path, SN_yield, atomic_names, z_II):
             SN_yield[wa]['weight_Ia'] += isotope_mass * ia_file['W7'][elem_idx]  # Mass weighted by isotopic weight
             SN_yield[wa]['Ia'] += ia_file['W7'][elem_idx]
 
+    elif Ia_source == 'leu18_ddt':
+        # Read in Ia yields from Leung & Nomoto 2018
+        ia_table = ascii.read(yield_path+'leu18/tab4.txt', delimiter='\t')
+        elem_name = np.array([ia_table['Isotopes'][j].strip('0123456789-*^') for j in range(len(ia_table['Isotopes']))])  
+        mass_num = np.array([re.sub("\D","",ia_table['Isotopes'][k]) for k in range(len(ia_table['Isotopes']))])  
+
+        # Get metallicity and yield arrays
+        z_arr = np.asarray([col[4:] for col in ia_table.colnames[1:7]], dtype='float')
+        yields = np.array(ia_table[ia_table.colnames[1:7]])
+        yields = yields.view(np.float64).reshape(yields.shape + (-1,)) # Convert structured array to ndarray
+
+        for elem_idx, elem in enumerate(elem_name): 
+            # Loop over each line in yield table   
+            if (elem not in atomic_names): 
+                continue
+            else:
+                isotope_mass = int(mass_num[elem_idx])
+
+            # Get index for storing yields in SN_yield table
+            wa = np.where(atomic_names == elem)[0][0]
+
+            # Interpolate as a function of metallicity (to match IISNe metallicities)
+            elem_yields = np.interp(z_II, z_arr, yields[elem_idx])
+
+            # Add yields to SN_yield table
+            SN_yield[wa]['weight_Ia'] += isotope_mass * elem_yields  # Mass weighted by isotopic weight
+            SN_yield[wa]['Ia'] += elem_yields
+    
+    elif Ia_source == 'leu18_def':
+        # Read in Ia yields from Leung & Nomoto 2018
+        ia_table = ascii.read(yield_path+'leu18/tab9.txt', delimiter='\t')
+        elem_name = np.array([ia_table['Isotopes'][j].strip('0123456789-*^') for j in range(len(ia_table['Isotopes']))])  
+        mass_num = np.array([re.sub("\D","",ia_table['Isotopes'][k]) for k in range(len(ia_table['Isotopes']))])  
+
+        # Get yield array
+        yields = np.array(ia_table['300-1-c3-1P'])
+
+        for elem_idx, elem in enumerate(elem_name): 
+            # Loop over each line in yield table   
+            if (elem not in atomic_names): 
+                continue
+            else:
+                isotope_mass = int(mass_num[elem_idx])
+
+            # Get index for storing yields in SN_yield table
+            wa = np.where(atomic_names == elem)[0][0]
+
+            # Interpolate as a function of metallicity (to match IISNe metallicities)
+            elem_yields = yields[elem_idx] * np.ones_like(z_II)
+
+            # Add yields to SN_yield table
+            SN_yield[wa]['weight_Ia'] += isotope_mass * elem_yields  # Mass weighted by isotopic weight
+            SN_yield[wa]['Ia'] += elem_yields
+
     elif Ia_source == 'leu20':
         # Read in Ia yields from Leung & Nomoto 2020
         ia_table = ascii.read(yield_path+'leu20/tab6.txt', format='basic')
@@ -266,6 +343,47 @@ def load_Ia(Ia_source, yield_path, SN_yield, atomic_names, z_II):
             # Add yields to SN_yield table
             SN_yield[wa]['weight_Ia'] += isotope_mass * elem_yields  # Mass weighted by isotopic weight
             SN_yield[wa]['Ia'] += elem_yields
+
+    elif Ia_source == 'shen18':
+        # Read in Ia yields from Shen et al. (2018)
+        z_arr = np.array([0.000,0.005,0.010,0.020])
+
+        # Create empty arrays to hold yields
+        yields = np.zeros((len(atomic_names),len(z_arr))) # shape (elems, Z)
+        weightedyields = np.zeros((len(atomic_names),len(z_arr)))
+
+        for z_idx in range(len(z_arr)):
+            data = pd.read_csv(yield_path+'shen18/shen18.txt',delimiter='\s+',skiprows=8*z_idx+3,nrows=5)
+            idx_mass = np.where(data['mass']==1.10)[0]
+            for col in data.columns:
+                # Get element name
+                if col == 'mass':
+                    continue
+                elem_name = col.strip('0123456789-*^')
+                mass_num = int(re.sub("\D","",col))
+                if (elem_name not in atomic_names):
+                    continue
+
+                # Get index for storing yields in SN_yield table
+                wa = np.where(atomic_names == elem_name)[0][0]
+
+                # Put into temp yield tables
+                yields[wa, z_idx] += data[col][idx_mass]
+                weightedyields[wa, z_idx] += data[col][idx_mass] * mass_num # Mass weighted by isotopic weight
+
+        # If needed, extrapolate over metallicity to match max(z_II)
+        if max(z_arr) < max(z_II):
+            weightedia_zmax = weightedyields[:,-1]+(max(z_II)-z_arr[-1])*(weightedyields[:,-1]-weightedyields[:,-2])/(z_arr[-1]-z_arr[-2])
+            weightedyields = np.concatenate((weightedyields, weightedia_zmax[:,None]), axis=1)   # Concatenate yield tables
+
+            ia_zmax = yields[:,-1]+(max(z_II)-z_arr[-1])*(yields[:,-1]-yields[:,-2])/(z_arr[-1]-z_arr[-2])
+            yields = np.concatenate((yields, ia_zmax[:,None]), axis=1)   # Concatenate yield tables
+
+            z_arr = np.concatenate((z_arr,[max(z_II)]))
+
+        # Interpolate to match z_II metallicities
+        SN_yield['weight_Ia'] = interp1d(z_arr,weightedyields,axis=1)(z_II)  # Mass weighted by isotopic weight
+        SN_yield['Ia'] = interp1d(z_arr,yields,axis=1)(z_II)
 
     return SN_yield
 
@@ -326,7 +444,7 @@ def load_AGB(AGB_source, yield_path, atomic_num, atomic_names, atomic_weight):
         # Masses and metallicities from Karakas files
         M_kar = np.array([1.00, 1.25, 1.50, 1.90, 2.00, 2.10, 2.25, 2.50, 
                 2.75, 3.00, 3.25, 3.50, 4.00, 4.50, 5.00, 5.50, 6.00, 7.00])
-        z_kar = np.array([0.0028, 0.007, 0.014, 0.03])
+        z_kar = np.array([0.0001, 0.0028, 0.007, 0.014, 0.03])
 
         # Define the output array of yields
         kar_temp = np.zeros((len(atomic_num),len(z_kar), len(M_kar)))
@@ -341,6 +459,7 @@ def load_AGB(AGB_source, yield_path, atomic_num, atomic_names, atomic_weight):
         sub_string = ['007', '014', '03']
         karfiles = [yield_path+'kar16/yield_z'+ sub_string[i] +'.dat' for i in range(len(sub_string))]
         karfiles.insert(0,yield_path+'kar18/yields_z0028.dat')
+        karfiles.insert(0,yield_path+'lug12/yields_z0001.dat')
 
         # Loop over each file
         for filename in karfiles:
@@ -497,8 +616,11 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source
 
 if __name__ == "__main__":
 
-    nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB = initialize_yields(AGB_source='kar', r_process_keyword='none')
-    print(AGB_yield['AGB'][-1])
-    print(SN_yield['atomic']) # elem, Z, M
-    #print(z_II, M_SN)
+    #readkaryields()
+
+    nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB = initialize_yields(II_source='nom13', r_process_keyword='none')
+    #print(AGB_yield['AGB'][-1, 0, :])
+    #print(z_AGB)
+    #print(SN_yield['Ia']) # elem, Z, M
+    print(z_II, M_SN)
     #print(np.isclose(z_II,0))

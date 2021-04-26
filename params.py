@@ -16,11 +16,12 @@ imf_model = 'kroupa93'
 # AGB yield source: 'cri15' ('kar' - note that Ba abundances are probably wrong!)
 AGB_source = 'cri15'
 
-# SNIa yield source: 'iwa99', 'leu20'
+# SNIa yield source: 
+# 'iwa99' (old), 'leu20' (subMCh with He shell), 'shen18' (subMCh with bare WD), 'leu18_ddt' (MCh DDT), 'leu18_def' (MCh pure def)
 Ia_source = 'leu20'
 
 # SNII yield source: 'nom06', 'nom13', 'lim18'
-II_source = 'nom13'
+II_source = 'lim18'
 
 # r-process options: 'none', 'typical_SN_only', 'rare_event_only', 'both'
 r_process_keyword='none'

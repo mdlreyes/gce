@@ -23,6 +23,7 @@ scl_test_mcmc_fromkirby_mannucci06 = [4.86509872, 0.05459378, 3.13738242, 4.8782
 scl_fiducial1 = [0.95, 0.18, 4.34, 1.27, 0.76, 0.69]
 scl_fiducialtest = [0.95, 0.18, 4.34, 1.27, 0.76, 0.]
 scl_fiducial2 = [0.95, 0.18, 4.34, 2.78, 0.17, 5.24]
+scl_fiducial_combined = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59]
 #umi_pars = [1470.5896, 0.16522838, 11.038576, 1.2065735, 0.26234735, 0.53814755] #result of "restore, 'umi_sfr-law.sav'" in idl
 #for_pars = [2.4642364, 0.30686976, 1.5054730, 5.0189799, 0.98204341, 14.575519] #'old/for_sfr-law.sav'
 #for_pars = [2.46, 0.31, 1.51, 5.02, 0.98, 14.58] # from Kirby+11
@@ -51,4 +52,4 @@ if __name__ == "__main__":
     #lp.print_stats()
 
     # Run a single model
-    model, atomic = gce.runmodel(scl_fiducial1, plot=True, title="Fiducial 1 (DEIMOS)", amr="plots/amr_test")
+    model, atomic = gce.runmodel(scl_fiducial1, plot=True, title="Fiducial (Limongi+18 CCSN)") #, amr="plots/amr_test")
