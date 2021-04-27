@@ -21,7 +21,7 @@ import dtd
 import gce_yields as gce_yields
 import gce_plot
 
-def runmodel(pars, plot=False, title="", amr=None):
+def runmodel(pars, plot=False, title="", amr=None, empirical=False):
     """Galactic chemical evolution model.
 
     Takes in additional parameters from params.py, reads yields using gce_yields.py, 
@@ -33,74 +33,18 @@ def runmodel(pars, plot=False, title="", amr=None):
         plot (bool): If True, run gce_plot function to make plots
         title (str): Title of output plots (if plot==True)
         amr (str): If not None, title of file to save age-metallicity relation
+        empirical (bool): If True, use empirical parameterizations of yields 
+                        rather than yield sets
 
     Returns:
         model (array): All outputs of model.
-        SN_yield['atomic'] (array): Atomic numbers of all tracked elements.
+        atomic (array): Atomic numbers of all tracked elements.
     """  
 
     # Integration parameters
     delta_t = 0.001     # time step (Gyr)
     n = int(1.36/delta_t)     # number of timesteps in the model 
     t = np.arange(n)*delta_t    # time passed in model array -- age universe (Gyr)
-
-    # Load all sources of chemical yields
-    nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB = gce_yields.initialize_yields(
-        Ia_source=params.Ia_source, II_source=params.II_source, 
-        AGB_source=params.AGB_source, r_process_keyword=params.r_process_keyword)
-
-    # Get indices for each tracked element. Will fail if element is not contained in SN_yield.
-    snindex = {'h':np.where(SN_yield['atomic'] == 1)[0],
-            'he':np.where(SN_yield['atomic'] == 2)[0],
-            'c':np.where(SN_yield['atomic'] == 6)[0],
-            #'o':np.where(SN_yield['atomic'] == 8)[0],
-            'mg':np.where(SN_yield['atomic'] == 12)[0],
-            'si':np.where(SN_yield['atomic'] == 14)[0],
-            'ca':np.where(SN_yield['atomic'] == 20)[0],
-            'ti':np.where(SN_yield['atomic'] == 22)[0],
-            'fe':np.where(SN_yield['atomic'] == 26)[0],
-            'ba':np.where(SN_yield['atomic'] == 56)[0],
-            'mn':np.where(SN_yield['atomic'] == 25)[0]}
-
-    # Define parameters for pristine gas 
-    pristine = np.zeros(nel)    # Pristine element fractions by mass (dimensionless)
-    pristine[0] = 0.7514        # Hydrogen from BBN                                                                                      
-    pristine[1] = 0.2486        # Helium from BBN
-    pristine=pristine
-
-    # Linearly extrapolate supernova yields to min/max progenitor masses
-    sn_min = SN_yield['II'][:,:,0] * params.M_SN_min/M_SN[0]             # Extrapolate yields to min progenitor mass
-    sn_max = SN_yield['II'][:,:,-1] * params.M_SN_max/M_SN[-1]           # Extrapolate yields to max progenitor mass
-    yield_ii = np.concatenate((sn_min[...,None], SN_yield['II'], sn_max[...,None]), axis=2)   # Concatenate yield tables
-    M_SN = np.concatenate(([params.M_SN_min], M_SN, [params.M_SN_max]))     # Concatenate mass list
-
-    # Linearly extrapolate AGB yields to min/max progenitor masses
-    agb_min = AGB_yield['AGB'][:,:,0] * params.M_AGB_min/M_AGB[0]        # Extrapolate yields to min progenitor mass
-    agb_max = AGB_yield['AGB'][:,:,-1] * params.M_AGB_max/M_AGB[-1]      # Extrapolate yields to max progenitor mass
-    yield_agb = np.concatenate((agb_min[...,None], AGB_yield['AGB'], agb_max[...,None]), axis=2)   # Concatenate yield tables
-    M_AGB = np.concatenate(([params.M_AGB_min], M_AGB, [params.M_AGB_max])) # Concatenate mass list 
-
-    # If needed, linearly extrapolate SN yields to Z=0
-    if ~np.isclose(z_II[0],0.):
-        ii_z0 = yield_ii[:,0,:]+(0-z_II[0])*(yield_ii[:,1,:]-yield_ii[:,0,:])/(z_II[1]-z_II[0])
-        yield_ii = np.concatenate((ii_z0[:,None,:], yield_ii), axis=1)   # Concatenate yield tables
-
-        ia_z0 = SN_yield['Ia'][:,0]+(0-z_II[0])*(SN_yield['Ia'][:,1]-SN_yield['Ia'][:,0])/(z_II[1]-z_II[0])
-        yield_ia = np.concatenate((ia_z0[:,None], SN_yield['Ia']), axis=1)   # Concatenate yield tables
-
-        weight_z0 = SN_yield['weight_II'][:,0,:]+(0-z_II[0])*(SN_yield['weight_II'][:,1,:]-SN_yield['weight_II'][:,0,:])/(z_II[1]-z_II[0])
-        weight_ii = np.concatenate((weight_z0[:,None,:], SN_yield['weight_II']), axis=1)   # Concatenate yield tables
-        
-        z_II = np.concatenate(([0],z_II))
-    
-    else:
-        yield_ia = SN_yield['Ia']
-        weight_ii = SN_yield['weight_II']
-
-    # Linearly extrapolate AGB yields to Z = 0
-    agb_z0 = yield_agb[:,0,:]+(0-z_AGB[0])*(yield_agb[:,1,:]-yield_agb[:,0,:])/(z_AGB[1]-z_AGB[0])
-    yield_agb = np.concatenate((agb_z0[:,None,:], yield_agb), axis=1)   # Concatenate yield tables
-    z_AGB = np.concatenate(([0],z_AGB))
 
     # Prepare arrays for SNe and AGB calculations
     n_wd = dtd.dtd_ia(t, params.ia_model) * delta_t      # Fraction of stars that will explode as Type Ia SNe in future
@@ -115,19 +59,85 @@ def runmodel(pars, plot=False, title="", amr=None):
     m_intmass[idx_bad_agb] = 0.
     n_intmass[idx_bad_agb] = 0.
 
-    # Interpolate yield tables over mass
-    f_ii_mass = interp1d(M_SN, yield_ii, axis=2, bounds_error=False, copy=False, assume_sorted=True)
-    ii_yield_mass = f_ii_mass(m_himass) # Compute yields of masses of stars that will explode
-    ii_yield_mass[:,:,idx_bad] = 0.
+    if empirical==False:
+        # Load all sources of chemical yields
+        nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB = gce_yields.initialize_yields(
+            Ia_source=params.Ia_source, II_source=params.II_source, 
+            AGB_source=params.AGB_source, r_process_keyword=params.r_process_keyword)
+        atomic = SN_yield['atomic']
 
-    f_agb_mass = interp1d(M_AGB, yield_agb, axis=2, bounds_error=False, copy=False, assume_sorted=True)
-    agb_yield_mass = f_agb_mass(m_intmass) # Compute yields of masses of stars that will produce AGB winds
-    agb_yield_mass[:,:,idx_bad_agb] = 0.
+        # Linearly extrapolate supernova yields to min/max progenitor masses
+        sn_min = SN_yield['II'][:,:,0] * params.M_SN_min/M_SN[0]             # Extrapolate yields to min progenitor mass
+        sn_max = SN_yield['II'][:,:,-1] * params.M_SN_max/M_SN[-1]           # Extrapolate yields to max progenitor mass
+        yield_ii = np.concatenate((sn_min[...,None], SN_yield['II'], sn_max[...,None]), axis=2)   # Concatenate yield tables
+        M_SN = np.concatenate(([params.M_SN_min], M_SN, [params.M_SN_max]))     # Concatenate mass list
 
-    # Interpolate yield tables over metallicity
-    f_ia_metallicity = interp1d(z_II, yield_ia, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
-    f_ii_metallicity = interp1d(z_II, ii_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True)
-    f_agb_metallicity = interp1d(z_AGB, agb_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
+        # Linearly extrapolate AGB yields to min/max progenitor masses
+        agb_min = AGB_yield['AGB'][:,:,0] * params.M_AGB_min/M_AGB[0]        # Extrapolate yields to min progenitor mass
+        agb_max = AGB_yield['AGB'][:,:,-1] * params.M_AGB_max/M_AGB[-1]      # Extrapolate yields to max progenitor mass
+        yield_agb = np.concatenate((agb_min[...,None], AGB_yield['AGB'], agb_max[...,None]), axis=2)   # Concatenate yield tables
+        M_AGB = np.concatenate(([params.M_AGB_min], M_AGB, [params.M_AGB_max])) # Concatenate mass list 
+
+        # If needed, linearly extrapolate SN yields to Z=0
+        if ~np.isclose(z_II[0],0.):
+            ii_z0 = yield_ii[:,0,:]+(0-z_II[0])*(yield_ii[:,1,:]-yield_ii[:,0,:])/(z_II[1]-z_II[0])
+            yield_ii = np.concatenate((ii_z0[:,None,:], yield_ii), axis=1)   # Concatenate yield tables
+
+            ia_z0 = SN_yield['Ia'][:,0]+(0-z_II[0])*(SN_yield['Ia'][:,1]-SN_yield['Ia'][:,0])/(z_II[1]-z_II[0])
+            yield_ia = np.concatenate((ia_z0[:,None], SN_yield['Ia']), axis=1)   # Concatenate yield tables
+
+            weight_z0 = SN_yield['weight_II'][:,0,:]+(0-z_II[0])*(SN_yield['weight_II'][:,1,:]-SN_yield['weight_II'][:,0,:])/(z_II[1]-z_II[0])
+            weight_ii = np.concatenate((weight_z0[:,None,:], SN_yield['weight_II']), axis=1)   # Concatenate yield tables
+            
+            z_II = np.concatenate(([0],z_II))
+        
+        else:
+            yield_ia = SN_yield['Ia']
+            weight_ii = SN_yield['weight_II']
+
+        # Linearly extrapolate AGB yields to Z = 0
+        agb_z0 = yield_agb[:,0,:]+(0-z_AGB[0])*(yield_agb[:,1,:]-yield_agb[:,0,:])/(z_AGB[1]-z_AGB[0])
+        yield_agb = np.concatenate((agb_z0[:,None,:], yield_agb), axis=1)   # Concatenate yield tables
+        z_AGB = np.concatenate(([0],z_AGB))
+
+        # Interpolate yield tables over mass
+        f_ii_mass = interp1d(M_SN, yield_ii, axis=2, bounds_error=False, copy=False, assume_sorted=True)
+        ii_yield_mass = f_ii_mass(m_himass) # Compute yields of masses of stars that will explode
+        ii_yield_mass[:,:,idx_bad] = 0.
+
+        f_agb_mass = interp1d(M_AGB, yield_agb, axis=2, bounds_error=False, copy=False, assume_sorted=True)
+        agb_yield_mass = f_agb_mass(m_intmass) # Compute yields of masses of stars that will produce AGB winds
+        agb_yield_mass[:,:,idx_bad_agb] = 0.
+
+        # Interpolate yield tables over metallicity
+        f_ia_metallicity = interp1d(z_II, yield_ia, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
+        f_ii_metallicity = interp1d(z_II, ii_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True)
+        f_agb_metallicity = interp1d(z_AGB, agb_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
+
+        #print('yields', f_ii_metallicity(0)[np.where(atomic == 6)[0],:25])
+        #return
+
+    # Get empirical yields
+    else:
+        nel, eps_sun, atomic, weight, f_ia_metallicity, f_ii_metallicity, f_agb_metallicity = gce_yields.initialize_empirical(
+            Ia_source=params.Ia_source, II_source=params.II_source, 
+            AGB_source=params.AGB_source, r_process_keyword=params.r_process_keyword,
+            II_mass=m_himass, AGB_mass=m_intmass)
+
+        #print('empirical', f_ii_metallicity(0)[np.where(atomic == 6)[0],:25])
+        #return
+
+    # Get indices for each tracked element. Will fail if element is not contained in SN_yield.
+    snindex = {'h':np.where(atomic == 1)[0],
+            'he':np.where(atomic == 2)[0],
+            'c':np.where(atomic == 6)[0],
+            'mg':np.where(atomic == 12)[0],
+            'si':np.where(atomic == 14)[0],
+            'ca':np.where(atomic == 20)[0],
+            'ti':np.where(atomic == 22)[0],
+            'fe':np.where(atomic == 26)[0],
+            'ba':np.where(atomic == 56)[0],
+            'mn':np.where(atomic == 25)[0]}
 
     # Create array to hold model outputs
     model = np.zeros(n, dtype=[('t','float64'),('f_in','float64'),('mgas','float64'),\
@@ -144,6 +154,13 @@ def runmodel(pars, plot=False, title="", amr=None):
     sfr_norm = pars[3]      # Normalization of SF law (10**6 M_sun Gyr**-1)
     sfr_exp = pars[4]       # Exponent of SF law
     model['mgas'][0] = pars[5]*1.e6    # Initial gas mass (M_sun)
+    print(model['mgas'][0])
+
+    # Define parameters for pristine gas 
+    pristine = np.zeros(nel)    # Pristine element fractions by mass (dimensionless)
+    pristine[0] = 0.7514        # Hydrogen from BBN                                                                                      
+    pristine[1] = 0.2486        # Helium from BBN
+    pristine=pristine
 
     # Initialize model
     model['f_in'] = f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)                                                                                
@@ -177,6 +194,8 @@ def runmodel(pars, plot=False, title="", amr=None):
         else:
             # Otherwise, if the gas is depleted, the gas mass is zero
             model['z'][timestep] =  0.0
+
+        #print(model['z'][timestep], model['mgas'][timestep], model['abund'][timestep-1,snindex['h']], model['abund'][timestep-1,snindex['he']])
 
         # Eq. 5: SFR (Msun Gyr**-1) set by generalization of K-S law                                                            
         model['mdot'][timestep] = sfr_norm * model['mgas'][timestep]**sfr_exp / 1.e6**(sfr_exp-1.0)
@@ -242,7 +261,10 @@ def runmodel(pars, plot=False, title="", amr=None):
                 model['abund'][timestep,elem] = 0
                 model['eps'][timestep,elem] = np.nan
             else:
-                model['eps'][timestep,elem] = np.log10(model['abund'][timestep,elem]/np.interp(model['z'][timestep], z_II, weight_ii[elem,:,3]) )
+                if empirical==False:
+                    model['eps'][timestep,elem] = np.log10(model['abund'][timestep,elem]/np.interp(model['z'][timestep], z_II, weight_ii[elem,:,3]) )
+                else:
+                    model['eps'][timestep,elem] = np.log10(model['abund'][timestep,elem]/weight[elem])
 
         model['eps'][timestep] = 12.0 + model['eps'][timestep] - model['eps'][timestep,0] - eps_sun # Logarithmic number density relative to hydrogen, relative to sun
 
@@ -272,14 +294,14 @@ def runmodel(pars, plot=False, title="", amr=None):
     #print('test Ba', model['eps'][:timestep-1, snindex['ba']])
 
     if plot:
-        gce_plot.makeplots(model[:timestep-1], SN_yield['atomic'], title=title, plot=True, skip_end_dots=-10, 
+        gce_plot.makeplots(model[:timestep-1], atomic, title=title, plot=True, skip_end_dots=-10, 
         abunds=True, time=False, params=False, datasource='both')
 
     if amr is not None:
         modeldata = np.hstack((model['eps'][:timestep-1,snindex['fe']], model['t'][:timestep-1, None]))
         np.save(amr, modeldata)
 
-    return model[:timestep-1], SN_yield['atomic']
+    return model[:timestep-1], atomic
 
     '''
     model2, atomic2 = gce_model(pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB, snindex, pristine, n_wd, n_himass, f_ii_metallicity, n_intmass, f_agb_metallicity, agb_yield_mass, f_ia_metallicity)

@@ -136,7 +136,7 @@ def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False
                 yields[2,:,:] = np.tile(Cyields, (len(Z),1)) # C
                 yields[3,:,:] = np.tile(1e-5 * normal(M, 13, 19, 6.24), (len(Z),1)) # Mg
                 yields[4,:,:] = np.tile(1e-5 * (28*M**(-0.34) - 8.38), (len(Z),1)) # Si
-                yields[5,:,:] = np.array([[normal(mass, 40, 17.5-3000*metal, 3) for metal in Z] for mass in M]).T # Ca
+                yields[5,:,:] = np.array([[1e-6 * normal(mass, 40, 17.5-3000*metal, 3) for metal in Z] for mass in M]).T # Ca
                 
         # Ia yields
         elif yieldsource in ['leu18_ddt','leu18_def','shen18','leu20']:
@@ -397,4 +397,4 @@ def plotyields(yieldtype, fit=None, func=None, empirical=False):
 if __name__ == "__main__":
 
     # Plot yield sets
-    plotyields('AGB', empirical=True)
+    plotyields('CCSN', empirical=True)

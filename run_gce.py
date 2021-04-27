@@ -52,4 +52,4 @@ if __name__ == "__main__":
     #lp.print_stats()
 
     # Run a single model
-    model, atomic = gce.runmodel(scl_fiducial1, plot=True, title="Fiducial (Limongi+18 CCSN)") #, amr="plots/amr_test")
+    model, atomic = gce.runmodel(scl_fiducial1, plot=True, title="Fiducial 1 (empirical)", empirical=True) #, amr="plots/amr_test")
