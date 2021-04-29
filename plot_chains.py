@@ -13,17 +13,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 import corner
 
-def plotmcmc(file='chain.npy', outfile='plots', burnin=100):
+def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False):
 
     # Load file
     chainfile = np.load(file)
     nwalkers, nsteps, ndim = np.shape(chainfile)
 
     # Plot walkers
-    fig, ax = plt.subplots(ndim,1,figsize=(8,8), sharex=True)
+    fig, ax = plt.subplots(ndim,1,figsize=(12,12), sharex=True)
     ax = ax.ravel()
 
     names = [r"$A_{\mathrm{in}}$", r"$\tau_{\mathrm{in}}$", r"$A_{\mathrm{out}}$", r"$A_{\star}$", r"$\alpha$", r"$M_{\mathrm{gas},0}$"]
+    if empiricalfit:
+        names += [r"$\mathrm{Fe}_{\mathrm{Ia}}$", r"$\mathrm{expC}_{\mathrm{II}}$", r"$\mathrm{normMg}_{\mathrm{II}}$", r"$\mathrm{normCa}_{\mathrm{II}}$", r"$\mathrm{normC}_{\mathrm{AGB}}$"]
     for i in range(ndim):
         for j in range(nwalkers):
             chain = chainfile[j,:,i]
@@ -57,4 +59,4 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100):
 
 if __name__ == "__main__":
 
-    plotmcmc(file='chain.npy', burnin=60)
+    plotmcmc(file='chain.npy', burnin=800, empiricalfit=True)

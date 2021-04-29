@@ -219,34 +219,36 @@ def runmodel(pars, plot=False, title="", amr=None, empirical=False, empiricalfit
                 M_Ia_arr[:,timestep:] += n_ia[:(n-timestep)][None,:] * f_ia_metallicity(model['z'][timestep])[:,None]
 
         # Eq. 8: rate of Type II SNe that will explode IN THE FUTURE
+        goodidxnew = goodidx
         n_ii = model['mdot'][timestep] * n_himass   # Number of stars formed now that will explode in the future
         if timestep + goodidx[-1] + 1 > n:
             n_ii = n_ii[:-timestep]
-            goodidx = goodidx[:-1]
-        model['II_rate'][timestep+goodidx] += n_ii  # Put Type II rate in future array
+            goodidxnew = goodidx[:-timestep]
+        model['II_rate'][timestep+goodidxnew] += n_ii  # Put Type II rate in future array
 
         # Eq. 7: Type II SNe yields IN THE FUTURE
         if model['z'][timestep] > 0.:
             # Put Type II yields in future array
             if empiricalfit:
-                M_II_arr[:,timestep+goodidx] += n_ii * f_ii_metallicity(model['z'][timestep], cexp_ii, mgnorm_ii, canorm_ii)[:,:len(n_ii)]
+                M_II_arr[:,timestep+goodidxnew] += n_ii * f_ii_metallicity(model['z'][timestep], cexp_ii, mgnorm_ii, canorm_ii)[:,:len(n_ii)]
             else:
-                M_II_arr[:,timestep+goodidx] += n_ii * f_ii_metallicity(model['z'][timestep])[:,:len(n_ii)]
+                M_II_arr[:,timestep+goodidxnew] += n_ii * f_ii_metallicity(model['z'][timestep])[:,:len(n_ii)]
 
         # Rate of AGB stars that will explode IN THE FUTURE
+        goodidxnew = goodidx_agb
         n_agb = model['mdot'][timestep] * n_intmass   # Number of stars formed now that will produce AGB winds in the future
         if timestep + goodidx_agb[-1] + 1 > n:
             n_agb = n_agb[:-timestep]
-            goodidx_agb = goodidx_agb[:-1]
-        model['AGB_rate'][timestep+goodidx_agb] += n_agb  # Put AGB rate in future array
+            goodidxnew = goodidx_agb[:-timestep]
+        model['AGB_rate'][timestep+goodidxnew] += n_agb  # Put AGB rate in future array
 
         # Eq. 13: AGB yields IN THE FUTURE
         if model['z'][timestep] > 0.:
             # Put AGB yields in future array
             if empiricalfit:
-                M_II_arr[:,timestep+goodidx_agb] += n_agb * f_agb_metallicity(model['z'][timestep], cexp_ii, mgnorm_ii, canorm_ii)[:,:len(n_agb)]
+                M_II_arr[:,timestep+goodidxnew] += n_agb * f_agb_metallicity(model['z'][timestep], cexp_ii, mgnorm_ii, canorm_ii)[:,:len(n_agb)]
             else:
-                M_II_arr[:,timestep+goodidx_agb] += n_agb * f_agb_metallicity(model['z'][timestep])[:,:len(n_agb)]
+                M_II_arr[:,timestep+goodidxnew] += n_agb * f_agb_metallicity(model['z'][timestep])[:,:len(n_agb)]
 
         # Eq. 15: outflows IN CURRENT TIMESTEP (depends on gas mass fraction x_el)
         if model['mgas'][timestep] > 0.0: 

@@ -21,7 +21,7 @@ import emcee
 from multiprocessing import Pool
 
 # Variables for MCMC run
-nsteps = 1000
+nsteps = 1e5
 nwalkers = 32
 parallel = True
 datasource = 'both'
@@ -203,26 +203,30 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
             M_Ia_arr[:,timestep:] += n_ia[:(n-timestep)][None,:] * f_ia_metallicity(model['z'][timestep], fe_ia)[:,None]
 
         # Eq. 8: rate of Type II SNe that will explode IN THE FUTURE
+        goodidxnew = goodidx
         n_ii = model['mdot'][timestep] * n_himass   # Number of stars formed now that will explode in the future
-        if timestep + len(n_ii) > n:
-            n_ii = n_ii[0:(n-timestep)]
-        model['II_rate'][timestep+goodidx] += n_ii  # Put Type II rate in future array
+        if timestep + goodidx[-1] + 1 > n:
+            n_ii = n_ii[:-timestep]
+            goodidxnew = goodidx[:-timestep]
+        model['II_rate'][timestep+goodidxnew] += n_ii  # Put Type II rate in future array
 
         # Eq. 7: Type II SNe yields IN THE FUTURE
         if model['z'][timestep] > 0.:
             # Put Type II yields in future array
-            M_II_arr[:,timestep+goodidx] += n_ii * f_ii_metallicity(model['z'][timestep], cexp_ii, mgnorm_ii, canorm_ii)
-
+            M_II_arr[:,timestep+goodidxnew] += n_ii * f_ii_metallicity(model['z'][timestep], cexp_ii, mgnorm_ii, canorm_ii)[:,:len(n_ii)]
+            
         # Rate of AGB stars that will explode IN THE FUTURE
+        goodidxnew = goodidx_agb
         n_agb = model['mdot'][timestep] * n_intmass   # Number of stars formed now that will produce AGB winds in the future
-        model['AGB_rate'][(timestep+goodidx_agb[0]):] += n_agb[:(n-(timestep+goodidx_agb[0]))]  # Put AGB rate in future array
-        #model['AGB_rate'][timestep+goodidx_agb] += n_agb  # Put AGB rate in future array
+        if timestep + goodidx_agb[-1] + 1 > n:
+            n_agb = n_agb[:-timestep]
+            goodidxnew = goodidx_agb[:-timestep]
+        model['AGB_rate'][timestep+goodidxnew] += n_agb  # Put AGB rate in future array
 
         # Eq. 13: AGB yields IN THE FUTURE
         if model['z'][timestep] > 0.:
             # Put AGB yields in future array
-            M_AGB_arr[:,(timestep+goodidx_agb[0]):] += n_agb[:(n-(timestep+goodidx_agb[0]))] * f_agb_metallicity(model['z'][timestep], cnorm_agb)[:,:(n-(timestep+goodidx_agb[0]))]
-            #M_AGB_arr[:,timestep+goodidx_agb] += n_agb * f_agb_metallicity(model['z'][timestep])
+            M_II_arr[:,timestep+goodidxnew] += n_agb * f_agb_metallicity(model['z'][timestep], cexp_ii, mgnorm_ii, canorm_ii)[:,:len(n_agb)]
 
         # Eq. 15: outflows IN CURRENT TIMESTEP (depends on gas mass fraction x_el)
         if model['mgas'][timestep] > 0.0: 
@@ -416,8 +420,8 @@ print('Fiducial 2:', neglnlike([0.95, 0.18, 4.34, 2.78, 0.17, 5.24]))
 result = op.minimize(neglnlike, [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, -1., 1., 0., 0.6], method='powell', options={'ftol':1e-6, 'maxiter':100000, 'direc':np.diag([-0.05,0.05,1.0,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01])}) 
 print(result)
 params_init = result["x"]
-
 '''
+
 # Sample the log-probability function using emcee - first, initialize the walkers
 ndim = len(params_init)
 dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513, 0.001, 0.001, 0.001, 0.001, 0.001] / np.sqrt(6.)
