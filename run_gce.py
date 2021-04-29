@@ -9,6 +9,7 @@ import sys
 sys.path.insert(1, 'old')
 
 import gce_fast as gce
+import gce_modified as gce_modified
 import gce_fast_old as gce_old
 import time
 from line_profiler import LineProfiler
@@ -38,18 +39,32 @@ def time_check(pars):
     model, atomic = gce.runmodel(pars, plot=False)
     print('Time for new model: %.2e'%(time.time()-t2))
 
+    t3=time.time()
+    model, atomic = gce.runmodel(pars, plot=False, empirical=True)
+    print('Time for empirical yields model: %.2e'%(time.time()-t3))
+
     return
 
 if __name__ == "__main__":
 
     # Time check
-    #time_check(scl_pars)
+    #time_check(scl_fiducial1)
 
     # Line profiling
-    #lp = LineProfiler()
-    #lp_wrapper = lp(gce.runmodel)
-    #lp_wrapper(scl_pars)
-    #lp.print_stats()
+    '''
+    lp = LineProfiler()
+    lp_wrapper = lp(gce.runmodel)
+    lp_wrapper(scl_fiducial1, empirical=True)
+    lp.print_stats()
+    '''
 
     # Run a single model
     model, atomic = gce.runmodel(scl_fiducial1, plot=True, title="Fiducial 1 (empirical)", empirical=True) #, amr="plots/amr_test")
+
+    # Run model with input SFH
+    #model, atomic = gce_modified.runmodel(scl_fiducial1, plot=True, title="Fiducial (Karakas+18)", empirical=True, amr="plots/amr_test")
+
+    # Run a single model with empirical yield fits
+    #scl_test_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6]
+    #scl_test_powell = [0.94060355, 0.28939645, 6.59792896, 0.91587929, 0.84587929, 0.61587929, 0.82587929, -0.97412071,  1.02587929,  0.02587929, 0.62587929]
+    #model, atomic = gce.runmodel(scl_test_powell, plot=True, title="Fiducial 1 (empirical yield Powell)", empirical=True, empiricalfit=True)

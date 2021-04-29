@@ -1,7 +1,8 @@
 """
 mcmc_mpi.py
 
-Runs gce_fast on multiple processors
+Runs gce_fast on multiple processors.
+A mnodified version that uses empirical yields as free parameters.
 """
 
 # Import stuff to run model
@@ -20,16 +21,14 @@ import emcee
 from multiprocessing import Pool
 
 # Variables for MCMC run
-nsteps = 100
-nwalkers = 20
+nsteps = 1000
+nwalkers = 32
 parallel = True
 datasource = 'both'
 empirical = True
 
 # Put in initial guesses for parameters 
-#params_init = [0.91144016, 0.19617321, 4.42241379, 4.45999299, 1.97494677, 0.17709949] # from Powell optimization
-#params_init = [2.6988, 0.27, 5.37, 4.46, 0.85, 0.] # from dsph_gce.dat
-params_init = [0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685] # (based on results from Kirby+11)
+params_init = [0.94060355, 0.28939645, 6.59792896, 0.91587929, 0.84587929, 0.61587929, 0.82587929, -0.97412071,  1.02587929,  0.02587929, 0.62587929] # from Powell optimization
 
 # Model prep!
 
@@ -111,7 +110,7 @@ else:
     nel, eps_sun, atomic, weight, f_ia_metallicity, f_ii_metallicity, f_agb_metallicity = gce_yields.initialize_empirical(
         Ia_source=params.Ia_source, II_source=params.II_source, AGB_source=params.AGB_source, 
         r_process_keyword=params.r_process_keyword,
-        II_mass=m_himass, AGB_mass=m_intmass)
+        II_mass=m_himass, AGB_mass=m_intmass, fit=True)
 
 # Get indices for each tracked element. Will fail if element is not contained in SN_yield.
 snindex = {'h':np.where(atomic == 1)[0],
@@ -150,6 +149,13 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
     sfr_norm = pars[3]      # Normalization of SF law (10**-6 M_sun Gyr**-1)
     sfr_exp = pars[4]       # Exponent of SF law
     model['mgas'][0] = pars[5]*1.e6  # Initial gas mass (M_sun)
+
+    # Additional free parameters from yields
+    fe_ia = pars[6]         # Fe yield from IaSNe
+    cexp_ii = pars[7]       # C exponent for CCSN yields
+    mgnorm_ii = pars[8]     # Mg normalization for CCSN yields
+    canorm_ii = pars[9]     # Ca normalization for CCSN yields
+    cnorm_agb = pars[10]    # C normalization for AGB yields
 
     # Initialize model
     model['f_in'] = f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)                                                                                
@@ -194,16 +200,18 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
         # Eq. 11: Type Ia SNe yields IN THE FUTURE
         if model['z'][timestep] > 0.:
             # Put Type Ia yields in future array
-            M_Ia_arr[:,timestep:] += n_ia[:(n-timestep)][None,:] * f_ia_metallicity(model['z'][timestep])[:,None]
+            M_Ia_arr[:,timestep:] += n_ia[:(n-timestep)][None,:] * f_ia_metallicity(model['z'][timestep], fe_ia)[:,None]
 
         # Eq. 8: rate of Type II SNe that will explode IN THE FUTURE
         n_ii = model['mdot'][timestep] * n_himass   # Number of stars formed now that will explode in the future
+        if timestep + len(n_ii) > n:
+            n_ii = n_ii[0:(n-timestep)]
         model['II_rate'][timestep+goodidx] += n_ii  # Put Type II rate in future array
 
         # Eq. 7: Type II SNe yields IN THE FUTURE
         if model['z'][timestep] > 0.:
             # Put Type II yields in future array
-            M_II_arr[:,timestep+goodidx] += n_ii * f_ii_metallicity(model['z'][timestep])
+            M_II_arr[:,timestep+goodidx] += n_ii * f_ii_metallicity(model['z'][timestep], cexp_ii, mgnorm_ii, canorm_ii)
 
         # Rate of AGB stars that will explode IN THE FUTURE
         n_agb = model['mdot'][timestep] * n_intmass   # Number of stars formed now that will produce AGB winds in the future
@@ -213,7 +221,7 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
         # Eq. 13: AGB yields IN THE FUTURE
         if model['z'][timestep] > 0.:
             # Put AGB yields in future array
-            M_AGB_arr[:,(timestep+goodidx_agb[0]):] += n_agb[:(n-(timestep+goodidx_agb[0]))] * f_agb_metallicity(model['z'][timestep])[:,:(n-(timestep+goodidx_agb[0]))]
+            M_AGB_arr[:,(timestep+goodidx_agb[0]):] += n_agb[:(n-(timestep+goodidx_agb[0]))] * f_agb_metallicity(model['z'][timestep], cnorm_agb)[:,:(n-(timestep+goodidx_agb[0]))]
             #M_AGB_arr[:,timestep+goodidx_agb] += n_agb * f_agb_metallicity(model['z'][timestep])
 
         # Eq. 15: outflows IN CURRENT TIMESTEP (depends on gas mass fraction x_el)
@@ -374,10 +382,11 @@ def neglnlike(parameters):
 # Define the priors
 def lnprior(parameters):
 
-    f_in_norm0, f_in_t0, f_out, sfr_norm, sfr_exp, mgas0 = parameters
+    f_in_norm0, f_in_t0, f_out, sfr_norm, sfr_exp, mgas0, fe_ia, cexp_ii, mgnorm_ii, canorm_ii, cnorm_agb = parameters
 
     # Define uniform priors, based on values in Table 2 of Kirby+11
-    if (0. < f_in_norm0 < 5.) and (0. < f_in_t0 < 1.) and (0. < f_out < 20.) and (0. < sfr_norm < 10.) and (0. < sfr_exp < 2.) and (0. < mgas0 < 20.):
+    if (0. < f_in_norm0 < 5.) and (0. < f_in_t0 < 1.) and (0. < f_out < 20.) and (0. < sfr_norm < 10.) and (0. < sfr_exp < 2.) and (0. < mgas0 < 20.) and \
+        (0.4 < fe_ia < 0.9) and (-2. < cexp_ii < 0.) and (0. < mgnorm_ii < 2.) and (0. < canorm_ii < 0.1) and (0.4 < cnorm_agb < 0.8):
         return 0.0
     return -np.inf
 
@@ -404,18 +413,18 @@ print('Fiducial 1:', neglnlike([0.95, 0.18, 4.34, 1.27, 0.76, 0.69]))
 print('Fiducial 2:', neglnlike([0.95, 0.18, 4.34, 2.78, 0.17, 5.24]))
 
 # Start by doing basic max-likelihood fit to get initial values
-result = op.minimize(neglnlike, [2.6988, 0.27, 5.37, 4.46, 0.85, 0.], method='powell', options={'ftol':1e-6, 'maxiter':100000, 'direc':np.diag([-0.05,0.05,1.0,0.01,0.01,0.01])}) 
+result = op.minimize(neglnlike, [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, -1., 1., 0., 0.6], method='powell', options={'ftol':1e-6, 'maxiter':100000, 'direc':np.diag([-0.05,0.05,1.0,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01])}) 
 print(result)
 params_init = result["x"]
-'''
 
+'''
 # Sample the log-probability function using emcee - first, initialize the walkers
 ndim = len(params_init)
-dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513] / np.sqrt(6.)
+dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513, 0.001, 0.001, 0.001, 0.001, 0.001] / np.sqrt(6.)
 pos = []
 for i in range(nwalkers):
     a = params_init + dpar*np.random.randn(ndim)
-    a[a < 0.] = 0.
+    #a[a < 0.] = 0.
     pos.append(a)
 
 print('Starting sampler')

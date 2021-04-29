@@ -21,7 +21,7 @@ import dtd
 import gce_yields as gce_yields
 import gce_plot
 
-def runmodel(pars, plot=False, title="", amr=None, empirical=False):
+def runmodel(pars, plot=False, title="", amr=None, empirical=False, empiricalfit=False):
     """Galactic chemical evolution model.
 
     Takes in additional parameters from params.py, reads yields using gce_yields.py, 
@@ -34,7 +34,9 @@ def runmodel(pars, plot=False, title="", amr=None, empirical=False):
         title (str): Title of output plots (if plot==True)
         amr (str): If not None, title of file to save age-metallicity relation
         empirical (bool): If True, use empirical parameterizations of yields 
-                        rather than yield sets
+                        rather than literature yield sets
+        empiricalfit (bool): If True, use additional parameters to set yields
+                        (note: pars must include these additional parameters!)
 
     Returns:
         model (array): All outputs of model.
@@ -50,14 +52,14 @@ def runmodel(pars, plot=False, title="", amr=None, empirical=False):
     n_wd = dtd.dtd_ia(t, params.ia_model) * delta_t      # Fraction of stars that will explode as Type Ia SNe in future
 
     m_himass, n_himass = dtd.dtd_ii(t, params.imf_model)       # Mass and fraction of stars that will explode in the future
-    idx_bad = np.where((m_himass < params.M_SN_min) | (m_himass > params.M_SN_max)) # Limit to timesteps where stars between 10-100 M_sun will explode
-    m_himass[idx_bad] = 0.
-    n_himass[idx_bad] = 0.
+    goodidx = np.where((m_himass > params.M_SN_min) & (m_himass < params.M_SN_max))[0]  # Limit to timesteps where stars will explode as CCSN
+    m_himass = m_himass[goodidx]    
+    n_himass = n_himass[goodidx]
 
     m_intmass, n_intmass = dtd.dtd_agb(t, params.imf_model)    # Mass and fraction of stars that become AGBs in the future
-    idx_bad_agb = np.where((m_intmass < params.M_AGB_min) | (m_intmass > params.M_AGB_max)) # Limit to timesteps where stars between 0.865-10 M_sun will become AGB stars
-    m_intmass[idx_bad_agb] = 0.
-    n_intmass[idx_bad_agb] = 0.
+    goodidx_agb = np.where((m_intmass > params.M_AGB_min) & (m_intmass < params.M_AGB_max))[0] # Limit to timesteps where stars between 0.865-10 M_sun will become AGB stars
+    m_intmass = m_intmass[goodidx_agb]
+    n_intmass = n_intmass[goodidx_agb]
 
     if empirical==False:
         # Load all sources of chemical yields
@@ -103,26 +105,21 @@ def runmodel(pars, plot=False, title="", amr=None, empirical=False):
         # Interpolate yield tables over mass
         f_ii_mass = interp1d(M_SN, yield_ii, axis=2, bounds_error=False, copy=False, assume_sorted=True)
         ii_yield_mass = f_ii_mass(m_himass) # Compute yields of masses of stars that will explode
-        ii_yield_mass[:,:,idx_bad] = 0.
 
         f_agb_mass = interp1d(M_AGB, yield_agb, axis=2, bounds_error=False, copy=False, assume_sorted=True)
         agb_yield_mass = f_agb_mass(m_intmass) # Compute yields of masses of stars that will produce AGB winds
-        agb_yield_mass[:,:,idx_bad_agb] = 0.
 
         # Interpolate yield tables over metallicity
         f_ia_metallicity = interp1d(z_II, yield_ia, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
         f_ii_metallicity = interp1d(z_II, ii_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True)
         f_agb_metallicity = interp1d(z_AGB, agb_yield_mass, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
 
-        #print('yields', f_ii_metallicity(0)[np.where(atomic == 6)[0],:25])
-        #return
-
     # Get empirical yields
     else:
         nel, eps_sun, atomic, weight, f_ia_metallicity, f_ii_metallicity, f_agb_metallicity = gce_yields.initialize_empirical(
-            Ia_source=params.Ia_source, II_source=params.II_source, 
-            AGB_source=params.AGB_source, r_process_keyword=params.r_process_keyword,
-            II_mass=m_himass, AGB_mass=m_intmass)
+            Ia_source=params.Ia_source, II_source=params.II_source, AGB_source=params.AGB_source, 
+            r_process_keyword=params.r_process_keyword,
+            II_mass=m_himass, AGB_mass=m_intmass, fit=empiricalfit)
 
         #print('empirical', f_ii_metallicity(0)[np.where(atomic == 6)[0],:25])
         #return
@@ -154,7 +151,14 @@ def runmodel(pars, plot=False, title="", amr=None, empirical=False):
     sfr_norm = pars[3]      # Normalization of SF law (10**6 M_sun Gyr**-1)
     sfr_exp = pars[4]       # Exponent of SF law
     model['mgas'][0] = pars[5]*1.e6    # Initial gas mass (M_sun)
-    print(model['mgas'][0])
+
+    if empiricalfit:
+        # Additional free parameters from yields
+        fe_ia = pars[6]         # Fe yield from IaSNe
+        cexp_ii = pars[7]       # C exponent for CCSN yields
+        mgnorm_ii = pars[8]     # Mg normalization for CCSN yields
+        canorm_ii = pars[9]     # Ca normalization for CCSN yields
+        cnorm_agb = pars[10]    # C normalization for AGB yields
 
     # Define parameters for pristine gas 
     pristine = np.zeros(nel)    # Pristine element fractions by mass (dimensionless)
@@ -209,25 +213,40 @@ def runmodel(pars, plot=False, title="", amr=None, empirical=False):
         #M_Ia = f_Ia * model['Ia_rate'][timestep]    # Eq. 11: Mass returned to the ISM by Ia SNe
         if model['z'][timestep] > 0.:
             # Put Type Ia yields in future array
-            M_Ia_arr[:,timestep:] += n_ia[:(n-timestep)][None,:] * f_ia_metallicity(model['z'][timestep])[:,None]
+            if empiricalfit:
+                M_Ia_arr[:,timestep:] += n_ia[:(n-timestep)][None,:] * f_ia_metallicity(model['z'][timestep], fe_ia)[:,None]
+            else:
+                M_Ia_arr[:,timestep:] += n_ia[:(n-timestep)][None,:] * f_ia_metallicity(model['z'][timestep])[:,None]
 
         # Eq. 8: rate of Type II SNe that will explode IN THE FUTURE
         n_ii = model['mdot'][timestep] * n_himass   # Number of stars formed now that will explode in the future
-        model['II_rate'][timestep:] += n_ii[:(n-timestep)]  # Put Type II rate in future array
+        if timestep + goodidx[-1] + 1 > n:
+            n_ii = n_ii[:-timestep]
+            goodidx = goodidx[:-1]
+        model['II_rate'][timestep+goodidx] += n_ii  # Put Type II rate in future array
 
         # Eq. 7: Type II SNe yields IN THE FUTURE
         if model['z'][timestep] > 0.:
             # Put Type II yields in future array
-            M_II_arr[:,timestep:] += n_ii[:(n-timestep)] * f_ii_metallicity(model['z'][timestep])[:,:(n-timestep)]
+            if empiricalfit:
+                M_II_arr[:,timestep+goodidx] += n_ii * f_ii_metallicity(model['z'][timestep], cexp_ii, mgnorm_ii, canorm_ii)[:,:len(n_ii)]
+            else:
+                M_II_arr[:,timestep+goodidx] += n_ii * f_ii_metallicity(model['z'][timestep])[:,:len(n_ii)]
 
         # Rate of AGB stars that will explode IN THE FUTURE
         n_agb = model['mdot'][timestep] * n_intmass   # Number of stars formed now that will produce AGB winds in the future
-        model['AGB_rate'][timestep:] += n_agb[:(n-timestep)]  # Put AGB rate in future array
+        if timestep + goodidx_agb[-1] + 1 > n:
+            n_agb = n_agb[:-timestep]
+            goodidx_agb = goodidx_agb[:-1]
+        model['AGB_rate'][timestep+goodidx_agb] += n_agb  # Put AGB rate in future array
 
         # Eq. 13: AGB yields IN THE FUTURE
         if model['z'][timestep] > 0.:
             # Put AGB yields in future array
-            M_AGB_arr[:,timestep:] += n_agb[:(n-timestep)] * f_agb_metallicity(model['z'][timestep])[:,:(n-timestep)]
+            if empiricalfit:
+                M_II_arr[:,timestep+goodidx_agb] += n_agb * f_agb_metallicity(model['z'][timestep], cexp_ii, mgnorm_ii, canorm_ii)[:,:len(n_agb)]
+            else:
+                M_II_arr[:,timestep+goodidx_agb] += n_agb * f_agb_metallicity(model['z'][timestep])[:,:len(n_agb)]
 
         # Eq. 15: outflows IN CURRENT TIMESTEP (depends on gas mass fraction x_el)
         if model['mgas'][timestep] > 0.0: 
@@ -295,7 +314,7 @@ def runmodel(pars, plot=False, title="", amr=None, empirical=False):
 
     if plot:
         gce_plot.makeplots(model[:timestep-1], atomic, title=title, plot=True, skip_end_dots=-10, 
-        abunds=True, time=False, params=False, datasource='both')
+        abunds=True, time=False, params=True, datasource='both')
 
     if amr is not None:
         modeldata = np.hstack((model['eps'][:timestep-1,snindex['fe']], model['t'][:timestep-1, None]))

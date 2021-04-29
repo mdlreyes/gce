@@ -1,0 +1,30 @@
+fiducial.npy
+    > ia_model = 'maoz10'
+    > imf_model = 'kroupa93'
+    > AGB_source = 'kar'
+    > Ia_source = 'leu20'
+    > II_source = 'nom06'
+    > datasource = 'deimos'
+    > 1e6 steps over 32 walkers
+
+fiducial_long.npy
+    > same params as fiducial.npy, except 1e7 steps over 32 walkers
+
+fiducial_combinedsample.npy
+    > same params as fiducial.npy, except datasource = 'both'
+
+agb_fruity.npy
+    > same params as fiducial.npy, except AGB_source = 'cri15'
+
+ccsn_nom13.npy
+    > same params as fiducial.npy, except II_source = 'nom13'
+
+empiricaltest_combinedsample.npy
+    > ia_model = 'maoz10'
+    > imf_model = 'kroupa93'
+    > using parameterized versions of all the following:
+        > AGB_source = 'cri15'
+        > Ia_source = 'leu20'
+        > II_source = 'nom13'
+    > datasource = 'both'
+    > 1e6 steps over 32 walkers

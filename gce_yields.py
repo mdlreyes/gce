@@ -616,15 +616,19 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source
 
     return nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB
 
-def initialize_empirical(yield_path='yields/', r_process_keyword='none', imfweight='kroupa93', 
-    AGB_source='cri15', Ia_source='leu20', II_source='nom06', II_mass=None, AGB_mass=None):
+def initialize_empirical(yield_path='yields/', r_process_keyword='none', imfweight='kroupa93',
+        AGB_source='cri15', Ia_source='leu20', II_source='nom06', 
+        II_mass=None, AGB_mass=None, fit=False): 
     """Reads in yield tables.
 
     Args:
         yield_path (str): Path to folder with yields.
         r_process_keyword (str): How to handle r-process elements: 'none', 'typical_SN_only', 'rare_event_only', 'both'
         AGB_source (str): Source of AGB yields: 'cri15', 'kar'
-        Ia_source (str): Source of Ia yields: 'iwa99', 'leu20'
+        Ia_source (str): Source of Ia yields: 'leu20', 'leu18_ddt', 'leu18_def', 'shen18'
+        II_source (str): Source of II yields: 'nom13', 'lim18'
+        II_mass, AGB_mass (float array): Masses for which to compute yields
+        fit (bool): If True, try fitting yield parameters
 
     Returns:
         nel (int): Number of elements.
@@ -636,80 +640,138 @@ def initialize_empirical(yield_path='yields/', r_process_keyword='none', imfweig
         f_agb_metallicity (func): Function that takes Z as input, outputs AGB yields
     """
 
-    # Ia yield function
-    def f_ia_metallicity(metallicity):
-        # Default Ia yields
-        yields = np.array([0., 0., 1.e-3, 1.e-2, 0.15, 2.e-2, 1.e-3, 1., 0.8, 0., 0.])
-            
-        # Put in Mn yields
-        mnyields = {'leu18_ddt':7.e-3, 'leu18_def':8.e-3, 'leu20':2.e-3, 'shen18':0.5e-3}
-        yields[7] = mnyields[Ia_source]
+    # Constant for normal distribution
+    normpdfc = np.sqrt(2*np.pi)
 
-        # Pure deflagration yields
-        if Ia_source=='leu18_def':
-            yields[2] = 0.36   # C
-            yields[5] = 0.15e-2  # Ca
-            yields[8] = 0.45   # Fe
+    # Use set yield parameters
+    if fit==False:
+        # Ia yield function
+        def f_ia_metallicity(metallicity):
+            # Default Ia yields
+            yields = np.array([0., 0., 1.e-3, 1.e-2, 0.15, 2.e-2, 1.e-3, 1., 0.8, 0., 0.])
+                
+            # Put in Mn yields
+            mnyields = {'leu18_ddt':7.e-3, 'leu18_def':8.e-3, 'leu20':2.e-3, 'shen18':0.5e-3}
+            yields[7] = mnyields[Ia_source]
 
-        return yields
+            # Pure deflagration yields
+            if Ia_source=='leu18_def':
+                yields[2] = 0.36   # C
+                yields[5] = 0.15e-2  # Ca
+                yields[8] = 0.45   # Fe
 
-    # CCSN yield function
-    def f_ii_metallicity(metallicity):
-        yields = np.zeros((nel,len(II_mass)))
-        dN_dM = imf.imf(II_mass, imfweight)
+            return yields
 
-        # Common yields
-        yields[0,:] = 1e-3 * (255 * II_mass**(-1.88) - 0.1)  # H
-        yields[1,:] = 1e-3 * (45 * II_mass**(-1.35) - 0.2)  # He
-        yields[6,:] = 1e-8 * (1000 * II_mass**(-2.3))  # Ti
-        yields[7,:] = 1e-7 * (30 * II_mass**(-1.32) - 0.25)  # Mn
-        yields[8,:] = 1e-5 * (2722 * II_mass**(-2.77))  # Fe
+        # CCSN yield function
+        def f_ii_metallicity(metallicity):
+            yields = np.zeros((nel,len(II_mass)))
+            dN_dM = imf.imf(II_mass, imfweight)
 
-        if II_source=='nom13':
-            yields[2,:] = 1e-5 * (100 * II_mass**(-1.35))  # C
-            yields[3,:] = 1e-5 * (261 * II_mass**(-1.8) + 0.33)  # Mg
+            # Common yields
+            yields[0,:] = 1e-3 * (255 * II_mass**(-1.88) - 0.1)  # H
+            yields[1,:] = 1e-3 * (45 * II_mass**(-1.35) - 0.2)  # He
+            yields[6,:] = 1e-8 * (1000 * II_mass**(-2.3))  # Ti
+            yields[7,:] = 1e-7 * (30 * II_mass**(-1.32) - 0.25)  # Mn
+            yields[8,:] = 1e-5 * (2722 * II_mass**(-2.77))  # Fe
+
+            if II_source=='nom13':
+                yields[2,:] = 1e-5 * (100 * II_mass**(-1.35))  # C
+                yields[3,:] = 1e-5 * (261 * II_mass**(-1.8) + 0.33)  # Mg
+                yields[4,:] = 1e-5 * (2260 * II_mass**(-2.83) + 0.8)  # Si
+                yields[5,:] = 1e-6 * (15.4 * II_mass**(-1) + 0.06)  # Ca
+            elif II_source=='lim18':
+                yields[2,:] = 1e-5 * (100 * II_mass**(-1.35))  # C
+                yields[2,np.where(II_mass > 30)] = 0.
+                yields[3,:] = 1e-5 * 13*np.exp(-((II_mass-19)/6.24)**2/2)/(6.24*normpdfc) #norm.pdf(II_mass, loc=19, scale=6.24)  # Mg
+                yields[4,:] = 1e-5 * (28 * II_mass**(-0.34) - 8.38)  # Si
+                yields[5,:] = 1e-6 * 40*np.exp(-((II_mass-(17.5-3000*metallicity))/3)**2/2)/(3*normpdfc) #norm.pdf(II_mass, loc=(17.5-3000*metallicity), scale=3)  # Ca
+
+            yields /= dN_dM
+            return yields
+
+        def f_agb_metallicity(metallicity):
+            yields = np.zeros((nel,len(AGB_mass)))
+            dN_dM = imf.imf(AGB_mass, imfweight)
+
+            # Common yields
+            yields[0] = 1e-1 * (1.1 * AGB_mass**(-0.9) - 0.15)  # H
+            yields[1] = 1e-2 * (4 * AGB_mass**(-1.07) - 0.22)  # He
+            yields[3] = 1e-5 * ((400*metallicity + 1.1) * AGB_mass**(0.08 - 340*metallicity) + (360*metallicity - 1.27))  # Mg
+            yields[4] = 1e-5 * ((800*metallicity) * AGB_mass**(-0.9) - (0.03 + 80*metallicity))  # Si
+            yields[5] = 1e-6 * ((-0.1 + 800*metallicity) * AGB_mass**(-0.96) - (80*metallicity))  # Ca
+            yields[6] = 1e-8 * ((3400*metallicity) * AGB_mass**(-0.88) - (480*metallicity))  # Ti
+            yields[7] = 1e-7 * ((1500*metallicity) * AGB_mass**(-0.95) - (160*metallicity))  # Mn
+            yields[8] = 1e-5 * ((1500*metallicity) * AGB_mass**(-0.95) - (160*metallicity))  # Fe
+
+            if AGB_source=='cri15':
+                yields[2] = 1e-3 * 0.89*np.exp(-((AGB_mass-1.9)/0.58)**2/2)/(0.58*normpdfc) #norm.pdf(AGB_mass, loc=1.9, scale=0.58)  # C
+                yields[9] = 1e-8 * (400*metallicity - 0.1)*np.exp(-((AGB_mass-2)/0.5)**2/2)/(0.5*normpdfc) #norm.pdf(AGB_mass, loc=2, scale=0.5)  # Ba
+                yields[10] = 1e-11 * (2000*metallicity - 0.6)*np.exp(-((AGB_mass-2)/0.65)**2/2)/(0.65*normpdfc) #norm.pdf(AGB_mass, loc=2, scale=0.65)  # Eu
+            elif AGB_source=='kar':
+                yields[2] = 1e-3 * (1.68-220*metallicity)*np.exp(-((AGB_mass-2)/0.6)**2/2)/(0.6*normpdfc) #norm.pdf(AGB_mass, loc=2, scale=0.6)  # C
+                yields[3] += 1e-5 * (0.78-300*metallicity)*np.exp(-((AGB_mass-2.3)/0.14)**2/2)/(0.14*normpdfc) #norm.pdf(AGB_mass, loc=2.3, scale=0.14)  # Mg
+                yields[9] = 1e-8 * (1000*metallicity + 0.2)*np.exp(-((AGB_mass-2.3)/(0.75-100*metallicity))**2/2)/((0.75-100*metallicity)*normpdfc) #norm.pdf(AGB_mass, loc=2.3, scale=(0.75-100*metallicity))  # Ba
+                yields[10] = 1e-11 * (3400*metallicity + 0.4)*np.exp(-((AGB_mass-2.2)/0.65)**2/2)/(0.65*normpdfc) #norm.pdf(AGB_mass, loc=2.2, scale=0.65)  # Eu
+
+            yields /= dN_dM
+            return yields
+
+    # Return functions with free parameters
+    else:
+        # Ia yield function
+        def f_ia_metallicity(metallicity, fe_ia, mn_ia=2e-3):
+            yields = np.array([0., 0., 1.e-3, 1.e-2, 0.15, 2.e-2, 1.e-3, 1., 0.8, 0., 0.])
+            yields[7] = mn_ia  # Mn
+            yields[8] = fe_ia  # Fe
+            return yields
+
+        # CCSN yield function
+        def f_ii_metallicity(metallicity, cexp_ii, mgnorm_ii, canorm_ii):
+            yields = np.zeros((nel,len(II_mass)))
+            dN_dM = imf.imf(II_mass, imfweight)
+
+            # Common yields
+            yields[0,:] = 1e-3 * (255 * II_mass**(-1.88) - 0.1)  # H
+            yields[1,:] = 1e-3 * (45 * II_mass**(-1.35) - 0.2)  # He
             yields[4,:] = 1e-5 * (2260 * II_mass**(-2.83) + 0.8)  # Si
-            yields[5,:] = 1e-6 * (15.4 * II_mass**(-1) + 0.06)  # Ca
-        elif II_source=='lim18':
-            yields[2,:] = 1e-5 * (100* II_mass **(-1))
-            yields[2, np.where(II_mass>30)] = 0.  # C
-            yields[3,:] = 1e-5 * 13*norm.pdf(II_mass, loc=19, scale=6.24)  # Mg
-            yields[4,:] = 1e-5 * (28 * II_mass**(-0.34) - 8.38)  # Si
-            yields[5,:] = 1e-6 * 40*norm.pdf(II_mass, loc=(17.5-3000*metallicity), scale=3)  # Ca
+            yields[5,:] = 1e-6 * (15.4* II_mass**(-1) + 0.06)  # Ca
+            yields[6,:] = 1e-8 * (1000 * II_mass**(-2.3))  # Ti
+            yields[7,:] = 1e-7 * (30 * II_mass**(-1.32) - 0.25)  # Mn
+            yields[8,:] = 1e-5 * (2722 * II_mass**(-2.77))  # Fe
 
-        yields /= dN_dM
-        yields[~np.isfinite(yields)] = 0.
-        return yields
+            # Yields with parameters to vary
+            yields[2,:] = 1e-5 * (100 * II_mass**(cexp_ii))  # C
+            yields[3,:] = 1e-5 * (mgnorm_ii + 13*np.exp(-((II_mass-19)/6.24)**2/2)/(6.24*normpdfc))  # Mg
+            yields[5,:] += canorm_ii * 1e-6 * (40-10000*metallicity)*np.exp(-((II_mass-15)/3)**2/2)/(3*normpdfc)  # Ca
 
-    def f_agb_metallicity(metallicity):
-        yields = np.zeros((nel,len(AGB_mass)))
-        dN_dM = imf.imf(AGB_mass, imfweight)
+            yields /= dN_dM
+            return yields
 
-        # Common yields
-        yields[0,:] = 1e-1 * (1.1 * AGB_mass**(-0.9) - 0.15)  # H
-        yields[1,:] = 1e-2 * (4 * AGB_mass**(-1.07) - 0.22)  # He
-        yields[3,:] = 1e-5 * ((400*metallicity + 1.1) * AGB_mass**(0.08 - 340*metallicity) + (360*metallicity - 1.27))  # Mg
-        yields[4,:] = 1.e-5 * ((800*metallicity) * AGB_mass**(-0.9) - (0.03 + 80*metallicity))  # Si
-        yields[5,:] = 1.e-6 * ((-0.1 + 800*metallicity) * AGB_mass**(-0.96) - (80*metallicity))  # Ca
-        yields[6,:] = 1.e-8 * ((3400*metallicity) * AGB_mass**(-0.88) - (480*metallicity))  # Ti
-        yields[7,:] = 1.e-7 * ((1500*metallicity) * AGB_mass**(-0.95) - (160*metallicity))  # Mn
-        yields[8,:] = 1.e-5 * ((1500*metallicity) * AGB_mass**(-0.95) - (160*metallicity))  # Fe
+        def f_agb_metallicity(metallicity, cnorm_agb, banorm_agb=0.33, bamean_agb=-0.3, eunorm_agb=0.5, eumean_agb=-0.2):
+            yields = np.zeros((nel,len(AGB_mass)))
+            dN_dM = imf.imf(AGB_mass, imfweight)
 
-        if AGB_source=='cri15':
-            yields[2,:] = 1e-3 * 0.89*norm.pdf(AGB_mass, loc=1.9, scale=0.58)  # C
-            yields[9,:] = 1e-8 * (400*metallicity - 0.1)*norm.pdf(AGB_mass, loc=2, scale=0.5)  # Ba
-            yields[10,:] = 1e-11 * (2000*metallicity - 0.6)*norm.pdf(AGB_mass, loc=2, scale=0.65)  # Eu
-        elif AGB_source=='kar':
-            yields[2,:] = 1e-3 * (1.68-220*metallicity)*norm.pdf(AGB_mass, loc=2, scale=0.6)  # C
-            yields[3,:] += 1e-5 * (0.78-300*metallicity)*norm.pdf(AGB_mass, loc=2.3, scale=0.14)  # Mg
-            yields[9,:] = 1e-8 * (1000*metallicity + 0.2)*norm.pdf(AGB_mass, loc=2.3, scale=(0.75-100*metallicity))  # Ba
-            yields[10,:] = 1e-11 * (3400*metallicity + 0.4)*norm.pdf(AGB_mass, loc=2.2, scale=0.65)  # Eu
+            # Common yields
+            yields[0] = 1e-1 * (1.1 * AGB_mass**(-0.9) - 0.15)  # H
+            yields[1] = 1e-2 * (4 * AGB_mass**(-1.07) - 0.22)  # He
+            yields[3] = 1e-5 * ((400*metallicity + 1.1) * AGB_mass**(0.08 - 340*metallicity) + (360*metallicity - 1.27))  # Mg
+            yields[4] = 1e-5 * ((800*metallicity) * AGB_mass**(-0.9) - (0.03 + 80*metallicity))  # Si
+            yields[5] = 1e-6 * ((-0.1 + 800*metallicity) * AGB_mass**(-0.96) - (80*metallicity))  # Ca
+            yields[6] = 1e-8 * ((3400*metallicity) * AGB_mass**(-0.88) - (480*metallicity))  # Ti
+            yields[7] = 1e-7 * ((1500*metallicity) * AGB_mass**(-0.95) - (160*metallicity))  # Mn
+            yields[8] = 1e-5 * ((1500*metallicity) * AGB_mass**(-0.95) - (160*metallicity))  # Fe
 
-        yields /= dN_dM
-        yields[~np.isfinite(yields)] = 0.
-        return yields
+            # Yields with parameters to vary
+            yields[2,:] = cnorm_agb * 1e-3 * (1.68-220*metallicity)*np.exp(-((AGB_mass-2)/0.6)**2/2)/(0.6*normpdfc)  # C
+            yields[9,:] = banorm_agb * 1e-8 * (1000*metallicity + 0.2)*np.exp(-((AGB_mass-(2.3+bamean_agb))/(0.75-100*metallicity))**2/2)/((0.75-100*metallicity)*normpdfc)  # Ba
+            yields[10,:] = eunorm_agb * 1e-11 * (3400*metallicity + 0.4)*np.exp(-((AGB_mass-(2.2+eumean_agb))/0.65)**2/2)/(0.65*normpdfc)  # Eu
+
+            yields /= dN_dM
+            return yields
 
     return nel, eps_sun, np.asarray(atomic_num), atomic_weight, f_ia_metallicity, f_ii_metallicity, f_agb_metallicity
+
+
 
 if __name__ == "__main__":
 

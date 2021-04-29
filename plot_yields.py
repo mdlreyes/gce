@@ -121,6 +121,7 @@ def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False
             # Common yields
             yields[0,:,:] = np.tile(1e-3 * (255*M**(-1.88) - 0.1), (len(Z),1)) # H
             yields[1,:,:] = np.tile(1e-3 * (45*M**(-1.35) - 0.2), (len(Z),1)) # He
+            yields[4,:,:] = np.tile(1e-5 * (2260*M**(-2.83) + 0.8), (len(Z),1)) # Si
             yields[6,:,:] = np.tile(1e-8 * (1000*M**(-2.3)), (len(Z),1)) # Ti
             yields[7,:,:] = np.tile(1e-7 * (30*M**(-1.32) - 0.25), (len(Z),1)) # Mn
             yields[8,:,:] = np.tile(1e-5 * (2722*M**(-2.77)), (len(Z),1)) # Fe
@@ -128,16 +129,20 @@ def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False
             if yieldsource=='nom13':
                 yields[2,:,:] = np.tile(1e-5 * (100*M**(-1.35)), (len(Z),1)) # C
                 yields[3,:,:] = np.tile(1e-5 * (261*M**(-1.8) + 0.33), (len(Z),1)) # Mg
-                yields[4,:,:] = np.tile(1e-5 * (2260*M**(-2.83) + 0.8), (len(Z),1)) # Si
+                #yields[4,:,:] = np.tile(1e-5 * (2260*M**(-2.83) + 0.8), (len(Z),1)) # Si
                 yields[5,:,:] = np.tile(1e-6 * (15.4*M**(-1) + 0.06), (len(Z),1)) # Ca
             elif yieldsource=='lim18':
                 Cyields = 1e-5 * (100*M**(-1))
                 Cyields[np.where(M>30)] = 0.
                 yields[2,:,:] = np.tile(Cyields, (len(Z),1)) # C
                 yields[3,:,:] = np.tile(1e-5 * normal(M, 13, 19, 6.24), (len(Z),1)) # Mg
-                yields[4,:,:] = np.tile(1e-5 * (28*M**(-0.34) - 8.38), (len(Z),1)) # Si
+                #yields[4,:,:] = np.tile(1e-5 * (28*M**(-0.34) - 8.38), (len(Z),1)) # Si
                 yields[5,:,:] = np.array([[1e-6 * normal(mass, 40, 17.5-3000*metal, 3) for metal in Z] for mass in M]).T # Ca
-                
+            elif yieldsource=='fit':
+                yields[2,:,:] = np.tile(1e-5 * (100*M**(c1)), (len(Z),1)) # C
+                yields[3,:,:] = np.tile(1e-5 * (c2 + normal(M, 13, 19, 6.24)), (len(Z),1)) # Mg
+                yields[5,:,:] += np.array([[c3 * 1e-6 * normal(mass, 40-10000*metal, 15, 3) for metal in Z] for mass in M]).T # Ca
+
         # Ia yields
         elif yieldsource in ['leu18_ddt','leu18_def','shen18','leu20']:
             M = None
@@ -152,6 +157,10 @@ def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False
                 yields[0] = 0.36   # C
                 yields[3] = 0.15e-2  # Ca
                 yields[6] = 0.45   # Fe
+
+            if yieldsource=='fit':
+                yields[5] = c1  # Mn
+                yields[6] = c2  # Fe
 
             # Create final yield table
             print(yields.shape, len(Z))
@@ -183,6 +192,10 @@ def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False
                 yields[3,:,:] += np.array([[1e-5 * normal(mass, (0.78-300*metal), 2.3, 0.14) for metal in Z] for mass in M]).T # Mg
                 yields[9,:,:] = np.array([[1e-8 * normal(mass, (1000*metal + 0.2), 2.3, (0.75-100*metal)) for metal in Z] for mass in M]).T # Ba
                 yields[10,:,:] = np.array([[1e-11 * normal(mass, (3400*metal + 0.4), 2.2, 0.65) for metal in Z] for mass in M]).T # Eu
+            elif yieldsource=='fit':
+                yields[2,:,:] = c1*np.tile((1e-3 * normal(M, (1.68-220*metal), 2, 0.6)), (len(Z),1)) # C
+                yields[9,:,:] = c2*np.array([[1e-8 * normal(mass, (1000*metal + 0.2), 2.3-c3, (0.75-100*metal)) for metal in Z] for mass in M]).T # Ba
+                yields[10,:,:] = c4*np.array([[1e-11 * normal(mass, (3400*metal + 0.4), 2.2-c5, 0.65) for metal in Z] for mass in M]).T # Eu
 
         else:
             raise ValueError('yieldsource is not valid!')
@@ -397,4 +410,4 @@ def plotyields(yieldtype, fit=None, func=None, empirical=False):
 if __name__ == "__main__":
 
     # Plot yield sets
-    plotyields('CCSN', empirical=True)
+    plotyields('AGB', empirical=True)
