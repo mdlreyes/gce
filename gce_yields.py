@@ -740,7 +740,7 @@ def initialize_empirical(yield_path='yields/', r_process_keyword='none', imfweig
             yields[8,:] = 1e-5 * (2722 * II_mass**(-2.77))  # Fe
 
             # Yields with parameters to vary
-            yields[2,:] = 1e-5 * (100 * II_mass**(cexp_ii))  # C
+            yields[2,:] = 1e-5 * (100 * II_mass**(-cexp_ii))  # C
             yields[3,:] = 1e-5 * (mgnorm_ii + 13*np.exp(-((II_mass-19)/6.24)**2/2)/(6.24*normpdfc))  # Mg
             yields[5,:] += canorm_ii * 1e-6 * (40-10000*metallicity)*np.exp(-((II_mass-15)/3)**2/2)/(3*normpdfc)  # Ca
 

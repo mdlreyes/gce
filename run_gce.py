@@ -25,6 +25,7 @@ scl_fiducial1 = [0.95, 0.18, 4.34, 1.27, 0.76, 0.69]
 scl_fiducialtest = [0.95, 0.18, 4.34, 1.27, 0.76, 0.]
 scl_fiducial2 = [0.95, 0.18, 4.34, 2.78, 0.17, 5.24]
 scl_fiducial_combined = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59]
+scl_fiducialcombined_powell = [1.05416462, 0.16, 4.01234049, 0.89, 0.82, 0.59145898]
 #umi_pars = [1470.5896, 0.16522838, 11.038576, 1.2065735, 0.26234735, 0.53814755] #result of "restore, 'umi_sfr-law.sav'" in idl
 #for_pars = [2.4642364, 0.30686976, 1.5054730, 5.0189799, 0.98204341, 14.575519] #'old/for_sfr-law.sav'
 #for_pars = [2.46, 0.31, 1.51, 5.02, 0.98, 14.58] # from Kirby+11
@@ -59,12 +60,13 @@ if __name__ == "__main__":
     '''
 
     # Run a single model
-    model, atomic = gce.runmodel(scl_fiducial1, plot=True, title="Fiducial 1 (empirical)", empirical=True) #, amr="plots/amr_test")
+    #model, atomic = gce.runmodel(scl_fiducialcombined_powell, plot=True, title="Powell (initial fiducial)", empirical=False) #, amr="plots/amr_test")
 
     # Run model with input SFH
     #model, atomic = gce_modified.runmodel(scl_fiducial1, plot=True, title="Fiducial (Karakas+18)", empirical=True, amr="plots/amr_test")
 
     # Run a single model with empirical yield fits
     #scl_test_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6]
-    #scl_test_powell = [0.94060355, 0.28939645, 6.59792896, 0.91587929, 0.84587929, 0.61587929, 0.82587929, -0.97412071,  1.02587929,  0.02587929, 0.62587929]
-    #model, atomic = gce.runmodel(scl_test_powell, plot=True, title="Fiducial 1 (empirical yield Powell)", empirical=True, empiricalfit=True)
+    #scl_test_powell = [0.94060355, 0.28939645, 6.59792896, 0.91587929, 0.84587929, 0.61587929, 0.82587929, -0.97412071, 1.02587929, 0.02587929, 0.62587929]
+    scl_test_powell = [1.07520357, 0.16244134, 4.23355874, 0.99247777, 0.69161203, 0.58384897, 0.68119825, 1.34567668, 0.60438552, 0.16198303, 3.36670239]
+    model, atomic = gce.runmodel(scl_test_powell, plot=True, title="Fiducial 1 (empirical yield Powell)", empirical=True, empiricalfit=True)

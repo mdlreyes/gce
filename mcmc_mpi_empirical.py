@@ -21,14 +21,15 @@ import emcee
 from multiprocessing import Pool
 
 # Variables for MCMC run
-nsteps = 1e5
+nsteps = 100
 nwalkers = 32
 parallel = True
 datasource = 'both'
 empirical = True
 
 # Put in initial guesses for parameters 
-params_init = [0.94060355, 0.28939645, 6.59792896, 0.91587929, 0.84587929, 0.61587929, 0.82587929, -0.97412071,  1.02587929,  0.02587929, 0.62587929] # from Powell optimization
+params_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6] # initial values
+#params_init = [0.94060355, 0.28939645, 6.59792896, 0.91587929, 0.84587929, 0.61587929, 0.82587929, -0.97412071,  1.02587929,  0.02587929, 0.62587929] # from Powell optimization
 
 # Model prep!
 
@@ -206,8 +207,8 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
         goodidxnew = goodidx
         n_ii = model['mdot'][timestep] * n_himass   # Number of stars formed now that will explode in the future
         if timestep + goodidx[-1] + 1 > n:
-            n_ii = n_ii[:-timestep]
-            goodidxnew = goodidx[:-timestep]
+            n_ii = n_ii[:-(timestep + goodidx[-1] - n + 1)]
+            goodidxnew = goodidx[:-(timestep + goodidx[-1] - n + 1)]
         model['II_rate'][timestep+goodidxnew] += n_ii  # Put Type II rate in future array
 
         # Eq. 7: Type II SNe yields IN THE FUTURE
@@ -219,14 +220,14 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
         goodidxnew = goodidx_agb
         n_agb = model['mdot'][timestep] * n_intmass   # Number of stars formed now that will produce AGB winds in the future
         if timestep + goodidx_agb[-1] + 1 > n:
-            n_agb = n_agb[:-timestep]
-            goodidxnew = goodidx_agb[:-timestep]
+            n_agb = n_agb[:-(timestep + goodidx_agb[-1] - n + 1)]
+            goodidxnew = goodidx_agb[:-(timestep + goodidx_agb[-1] - n + 1)]
         model['AGB_rate'][timestep+goodidxnew] += n_agb  # Put AGB rate in future array
 
         # Eq. 13: AGB yields IN THE FUTURE
         if model['z'][timestep] > 0.:
             # Put AGB yields in future array
-            M_II_arr[:,timestep+goodidxnew] += n_agb * f_agb_metallicity(model['z'][timestep], cexp_ii, mgnorm_ii, canorm_ii)[:,:len(n_agb)]
+            M_AGB_arr[:,timestep+goodidxnew] += n_agb * f_agb_metallicity(model['z'][timestep], cnorm_agb)[:,:len(n_agb)]
 
         # Eq. 15: outflows IN CURRENT TIMESTEP (depends on gas mass fraction x_el)
         if model['mgas'][timestep] > 0.0: 
@@ -390,7 +391,7 @@ def lnprior(parameters):
 
     # Define uniform priors, based on values in Table 2 of Kirby+11
     if (0. < f_in_norm0 < 5.) and (0. < f_in_t0 < 1.) and (0. < f_out < 20.) and (0. < sfr_norm < 10.) and (0. < sfr_exp < 2.) and (0. < mgas0 < 20.) and \
-        (0.4 < fe_ia < 0.9) and (-2. < cexp_ii < 0.) and (0. < mgnorm_ii < 2.) and (0. < canorm_ii < 0.1) and (0.4 < cnorm_agb < 0.8):
+        (0.4 < fe_ia < 0.9) and (0. < cexp_ii < 2.) and (0. < mgnorm_ii < 2.) and (0. < canorm_ii < 0.1) and (0.4 < cnorm_agb < 0.8):
         return 0.0
     return -np.inf
 
@@ -403,28 +404,20 @@ def lnprob(parameters):
     else:
         return -np.inf
 
-# Test likelihood function
 '''
-print('actual values:', neglnlike([0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685]))
-print('initial values:', neglnlike([2.6988, 0.27, 5.37, 4.46, 0.85, 0.]))
-
-# With C
-print('values after powell:', neglnlike([0.91144016, 0.19617321, 4.42241379, 4.45999299, 1.97494677, 0.17709949]))
-print('values after mcmc:', neglnlike([1.01, 0.18, 4.30, 1.28, 0.74, 0.11]))
-print('values after mcmc (starting from kirby+11, Maoz+10 DTD):', neglnlike([1.01, 0.17, 4.31, 1.23, 0.76, 0.21]))
-print('values after mcmc (starting from Kirby+11, Mannucci+06 DTD):', neglnlike([4.86509872, 0.05459378, 3.13738242, 4.87828528, 0.4670316, 0.17314514]))
-print('Fiducial 1:', neglnlike([0.95, 0.18, 4.34, 1.27, 0.76, 0.69]))
-print('Fiducial 2:', neglnlike([0.95, 0.18, 4.34, 2.78, 0.17, 5.24]))
+# Test likelihood function
+print('initial values:', neglnlike([1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6]))
+print('values after powell:', neglnlike([0.94060355, 0.28939645, 6.59792896, 0.91587929, 0.84587929, 0.61587929, 0.82587929, -0.97412071, 1.02587929, 0.02587929, 0.62587929]))
 
 # Start by doing basic max-likelihood fit to get initial values
-result = op.minimize(neglnlike, [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, -1., 1., 0., 0.6], method='powell', options={'ftol':1e-6, 'maxiter':100000, 'direc':np.diag([-0.05,0.05,1.0,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01])}) 
+result = op.minimize(neglnlike, [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6], method='powell', options={'ftol':1e-6, 'maxiter':100000, 'direc':np.diag([-0.05,0.05,1.0,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01])}) 
 print(result)
 params_init = result["x"]
 '''
 
 # Sample the log-probability function using emcee - first, initialize the walkers
 ndim = len(params_init)
-dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513, 0.001, 0.001, 0.001, 0.001, 0.001] / np.sqrt(6.)
+dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513, 0.01, 0.01, 0.01, 0.01, 0.01] / np.sqrt(6.)
 pos = []
 for i in range(nwalkers):
     a = params_init + dpar*np.random.randn(ndim)

@@ -20,8 +20,8 @@ import emcee
 from multiprocessing import Pool
 
 # Variables for MCMC run
-nsteps = 100
-nwalkers = 20
+nsteps = 1e4
+nwalkers = 32
 parallel = True
 datasource = 'both'
 empirical = True
@@ -29,7 +29,7 @@ empirical = True
 # Put in initial guesses for parameters 
 #params_init = [0.91144016, 0.19617321, 4.42241379, 4.45999299, 1.97494677, 0.17709949] # from Powell optimization
 #params_init = [2.6988, 0.27, 5.37, 4.46, 0.85, 0.] # from dsph_gce.dat
-params_init = [0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685] # (based on results from Kirby+11)
+#params_init = [0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685] # (based on results from Kirby+11)
 
 # Model prep!
 
@@ -402,9 +402,10 @@ print('values after mcmc (starting from kirby+11, Maoz+10 DTD):', neglnlike([1.0
 print('values after mcmc (starting from Kirby+11, Mannucci+06 DTD):', neglnlike([4.86509872, 0.05459378, 3.13738242, 4.87828528, 0.4670316, 0.17314514]))
 print('Fiducial 1:', neglnlike([0.95, 0.18, 4.34, 1.27, 0.76, 0.69]))
 print('Fiducial 2:', neglnlike([0.95, 0.18, 4.34, 2.78, 0.17, 5.24]))
+'''
 
 # Start by doing basic max-likelihood fit to get initial values
-result = op.minimize(neglnlike, [2.6988, 0.27, 5.37, 4.46, 0.85, 0.], method='powell', options={'ftol':1e-6, 'maxiter':100000, 'direc':np.diag([-0.05,0.05,1.0,0.01,0.01,0.01])}) 
+result = op.minimize(neglnlike, [1.07, 0.16, 4.01, 0.89, 0.82, 0.59], method='powell', options={'ftol':1e-6, 'maxiter':100000, 'direc':np.diag([-0.05,0.05,1.0,0.01,0.01,0.01])}) 
 print(result)
 params_init = result["x"]
 '''
@@ -415,7 +416,7 @@ dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619
 pos = []
 for i in range(nwalkers):
     a = params_init + dpar*np.random.randn(ndim)
-    a[a < 0.] = 0.
+    #a[a < 0.] = 0.
     pos.append(a)
 
 print('Starting sampler')
@@ -436,3 +437,4 @@ else:
 
     # Save the chain so we don't have to run this again
     np.save('chain', sampler.chain, allow_pickle=True, fix_imports=True)
+'''

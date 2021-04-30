@@ -222,8 +222,8 @@ def runmodel(pars, plot=False, title="", amr=None, empirical=False, empiricalfit
         goodidxnew = goodidx
         n_ii = model['mdot'][timestep] * n_himass   # Number of stars formed now that will explode in the future
         if timestep + goodidx[-1] + 1 > n:
-            n_ii = n_ii[:-timestep]
-            goodidxnew = goodidx[:-timestep]
+            n_ii = n_ii[:-(timestep + goodidx[-1] - n + 1)]
+            goodidxnew = goodidx[:-(timestep + goodidx[-1] - n + 1)]
         model['II_rate'][timestep+goodidxnew] += n_ii  # Put Type II rate in future array
 
         # Eq. 7: Type II SNe yields IN THE FUTURE
@@ -238,8 +238,8 @@ def runmodel(pars, plot=False, title="", amr=None, empirical=False, empiricalfit
         goodidxnew = goodidx_agb
         n_agb = model['mdot'][timestep] * n_intmass   # Number of stars formed now that will produce AGB winds in the future
         if timestep + goodidx_agb[-1] + 1 > n:
-            n_agb = n_agb[:-timestep]
-            goodidxnew = goodidx_agb[:-timestep]
+            n_agb = n_agb[:-(timestep + goodidx_agb[-1] - n + 1)]
+            goodidxnew = goodidx_agb[:-(timestep + goodidx_agb[-1] - n + 1)]
         model['AGB_rate'][timestep+goodidxnew] += n_agb  # Put AGB rate in future array
 
         # Eq. 13: AGB yields IN THE FUTURE
