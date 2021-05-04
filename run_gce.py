@@ -67,6 +67,6 @@ if __name__ == "__main__":
 
     # Run a single model with empirical yield fits
     #scl_test_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6]
-    #scl_test_powell = [0.94060355, 0.28939645, 6.59792896, 0.91587929, 0.84587929, 0.61587929, 0.82587929, -0.97412071, 1.02587929, 0.02587929, 0.62587929]
-    scl_test_powell = [1.07520357, 0.16244134, 4.23355874, 0.99247777, 0.69161203, 0.58384897, 0.68119825, 1.34567668, 0.60438552, 0.16198303, 3.36670239]
-    model, atomic = gce.runmodel(scl_test_powell, plot=True, title="Fiducial 1 (empirical yield Powell)", empirical=True, empiricalfit=True)
+    #scl_test_powell = [1.07520357, 0.16244134, 4.23355874, 0.99247777, 0.69161203, 0.58384897, 0.68119825, 1.34567668, 0.60438552, 0.16198303, 3.36670239]
+    scl_test_mcmc = [0.46890192, 0.28214621, 4.53120169, 0.60097303, 0.91420782, 0.30462848, 0.52679802, 1.26303907, 0.71169272, 0.08934153, 0.76942736]
+    model, atomic = gce.runmodel(scl_test_mcmc, plot=True, title="Fiducial 1 (empirical yield MCMC)", empirical=True, empiricalfit=True)

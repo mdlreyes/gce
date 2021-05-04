@@ -471,4 +471,4 @@ def plotyields(yieldtype, fit=None, func=None, empirical=False, empiricalfit=Non
 if __name__ == "__main__":
 
     # Plot yield sets
-    plotyields('IaSN', empirical=False, empiricalfit=[0.68119825, 1.34567668, 0.60438552, 0.16198303, 3.36670239])
+    plotyields('IaSN', empirical=False, empiricalfit=[0.52679802, 1.26303907, 0.71169272, 0.08934153, 0.76942736])
