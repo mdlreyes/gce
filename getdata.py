@@ -83,6 +83,11 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
                     newdata = np.concatenate((newdata,[-999.]))
                     newerrs = np.concatenate((newerrs,[-999.]))
 
+            # No Eu data, so just put in an empty row for now
+            if eu: 
+                newdata = np.concatenate((newdata,[-999.]))
+                newerrs = np.concatenate((newerrs,[-999.]))
+
             finaldata.append(newdata)
             finalerrs.append(newerrs)
 
@@ -176,6 +181,6 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
 if __name__ == "__main__":
 
     # Test to make sure script is working
-    data, errs = getdata('Scl', source='dart', c=True) #, ba=True, mn=True, eu=True)
+    data, errs = getdata('Scl', source='dart', c=True, ba=True, eu=True) #mn=True, 
     print(data.shape)
     print(data[:,0])

@@ -180,6 +180,10 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
                 axs[i+1].set_yticks([0.5,1.5,2.5,3.5])
                 axs[i+1].set_ylim([0,3.5])
 
+            if label == elem_names[56]:
+                axs[i+1].set_yticks([-2,-1,0,1])
+                axs[i+1].set_ylim([-2,2])
+
         plt.xlim([-3.5,0])
         plt.xlabel('[Fe/H]')
         plt.savefig((plot_path+title+'_feh.png').replace(' ',''))

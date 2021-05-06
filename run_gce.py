@@ -60,7 +60,7 @@ if __name__ == "__main__":
     '''
 
     # Run a single model
-    #model, atomic = gce.runmodel(scl_fiducialcombined_powell, plot=True, title="Powell (initial fiducial)", empirical=False) #, amr="plots/amr_test")
+    model, atomic = gce.runmodel(scl_fiducial1, plot=True, title="Fiducial 1", empirical=False) #, amr="plots/amr_test")
 
     # Run model with input SFH
     #model, atomic = gce_modified.runmodel(scl_fiducial1, plot=True, title="Fiducial (Karakas+18)", empirical=True, amr="plots/amr_test")
@@ -68,5 +68,7 @@ if __name__ == "__main__":
     # Run a single model with empirical yield fits
     #scl_test_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6]
     #scl_test_powell = [1.07520357, 0.16244134, 4.23355874, 0.99247777, 0.69161203, 0.58384897, 0.68119825, 1.34567668, 0.60438552, 0.16198303, 3.36670239]
-    scl_test_mcmc = [0.46890192, 0.28214621, 4.53120169, 0.60097303, 0.91420782, 0.30462848, 0.52679802, 1.26303907, 0.71169272, 0.08934153, 0.76942736]
-    model, atomic = gce.runmodel(scl_test_mcmc, plot=True, title="Fiducial 1 (empirical yield MCMC)", empirical=True, empiricalfit=True)
+    #scl_test_mcmc = [0.46890192, 0.28214621, 4.53120169, 0.60097303, 0.91420782, 0.30462848, 0.52679802, 1.26303907, 0.71169272, 0.08934153, 0.76942736]
+    #scl_test_nofe = [1.50066934, 0.14006733, 4.4106292, 0.88685668, 0.80094976, 1.07388209, 0.77890429, 1.06857726, 0.9905412, 0.09191467, 0.58686714]
+    #scl_test_baeu = [1.02862074, 0.17523727, 3.75525287, 0.88471765, 0.70164733, 0.78237028, 0.73180173, 1.00540023, 0.99460002, 0.04271566, 0.57465244]
+    #model, atomic = gce.runmodel(scl_test_nofe, plot=True, title="Empirical yield (no Fe)", empirical=True, empiricalfit=True)

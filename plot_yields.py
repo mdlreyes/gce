@@ -52,7 +52,7 @@ def powernorm(x, a, b, c, amp, loc, s):
 def linearnorm(x, m, b, amp, s, loc):
     return m * x + b + amp*norm.pdf(x, loc=loc, scale=s)
 
-def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False, fit=None):
+def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False, fit=None, weakrprocess=False):
     """ Get yields as a function of mass, metallicity 
         and prep for plotting
 
@@ -62,6 +62,7 @@ def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False
                         (options: 'kroupa93', 'kroupa01', 'chabrier03', 'salpeter55')
         empirical (bool): if 'True', plot empirical parameterizations of yields
         fit (float list): if not None, these are the parameters for the empirical yields
+        weakrprocess (bool): if 'True', include r-process contributions to CCSN yields
     """
 
     # Set metallicity scale
@@ -75,6 +76,31 @@ def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False
             yields, M, loadZ = load_II(yieldsource, yield_path, nel, atomic_names, atomic_num)
             yieldtype='CCSN'
             yields = yields['II']
+
+            # Add r-process yields if needed
+            if weakrprocess:
+
+                # Barium yield for weak r-process event as a function of mass (Li+2014)
+                M_li14 = np.array([13.0, 15.0, 18.0, 20.0, 25.0, 30.0, 40.0])
+                ba_li14_weakr = np.asarray([1.38e-8, 2.83e-8, 5.38e-8, 6.84e-8, 9.42e-8, 0, 0])
+
+                # Eu yield for weak r-process event as a function of mass (Cescutti+2006)
+                M_ces06 = np.array([12.0, 15.0, 30.0, 40.0])
+                eu_ces06_weakr = np.array([4.5e-8, 3.0e-8, 5.0e-10, 0.])
+
+                # Linearly interpolate to high-mass end
+                ba_li14_weakr[-2] = ba_li14_weakr[-3]*M_li14[-2]/M_li14[-3]
+                ba_li14_weakr[-1] = ba_li14_weakr[-2]*M_li14[-1]/M_li14[-2]
+                eu_ces06_weakr[-1] = eu_ces06_weakr[-2]*M_ces06[-1]/M_ces06[-2]
+
+                # Interpolate to match SN mass array
+                ba_li14_weakr = np.interp(M, M_li14, ba_li14_weakr)
+                eu_ces06_weakr = np.interp(M, M_ces06, eu_ces06_weakr)
+
+                # Add to SNII yield arrays, assuming no Z dependence
+                for i in range(len(loadZ)):
+                    yields[-2][i,:] += ba_li14_weakr  # Ba
+                    yields[-1][i,:] += eu_ces06_weakr # Eu
 
         elif yieldsource in ['leu18_ddt','leu18_def','shen18','leu20']:
             SN_yield, M, loadZ = load_II('nom06', yield_path, nel, atomic_names, atomic_num)
@@ -229,8 +255,8 @@ def plotyields(yieldtype, fit=None, func=None, empirical=False, empiricalfit=Non
     yieldtitles = []
 
     if yieldtype=='CCSN':
-        nom13yields, nom13M, Z = getyields('nom13', imfweight='kroupa93', empirical=empirical)
-        lim18yields, lim18M, _ = getyields('lim18', imfweight='kroupa93', empirical=empirical)
+        nom13yields, nom13M, Z = getyields('nom13', imfweight='kroupa93', empirical=empirical, weakrprocess=True)
+        lim18yields, lim18M, _ = getyields('lim18', imfweight='kroupa93', empirical=empirical, weakrprocess=True)
         
         yieldlist = [nom13yields, lim18yields]
         masslist = [nom13M, lim18M]
@@ -283,7 +309,7 @@ def plotyields(yieldtype, fit=None, func=None, empirical=False, empiricalfit=Non
     # Add other yields if needed
     if yieldtype in ['AGB', 'CCSN']:
         elem_atomic = [1,2] + elem_atomic
-    if yieldtype=='AGB':
+        #if yieldtype=='AGB':
         elem_atomic = elem_atomic + [56, 63]
     
     # Create and format plot
@@ -353,9 +379,10 @@ def plotyields(yieldtype, fit=None, func=None, empirical=False, empiricalfit=Non
 
                     legend = axs[idx_elem].legend(handles=[fitline], loc='upper right', fontsize=10)
                     axs[idx_elem].add_artist(legend)
+                '''
 
                 # If needed, try fitting the Nom+13 data
-                if func is None and fit in ['exp', 'powerlaw', 'lognorm', 'norm', 'powernorm', 'linearnorm'] and idx_yields==1 and elem in [20]:
+                if func is None and fit in ['exp', 'powerlaw', 'lognorm', 'norm', 'powernorm', 'linearnorm'] and idx_yields==1 and elem in [56, 63]:
                     try:
                         if fit=='exp':
                             popt, pcov = curve_fit(exp, masslist[idx_yields], yields[idx_elem, 3, :]/(10**base10), p0=[10, 0.1, 0])
@@ -393,7 +420,6 @@ def plotyields(yieldtype, fit=None, func=None, empirical=False, empiricalfit=Non
                         
                     except:
                         pass
-                '''
 
                 # Create legends
                 legend = plt.legend(handles=handles, loc='upper left', fontsize=10, title=titles[yieldtitles[idx_yields]],
@@ -470,5 +496,7 @@ def plotyields(yieldtype, fit=None, func=None, empirical=False, empiricalfit=Non
 
 if __name__ == "__main__":
 
-    # Plot yield sets
-    plotyields('IaSN', empirical=False, empiricalfit=[0.52679802, 1.26303907, 0.71169272, 0.08934153, 0.76942736])
+    # Plot yields
+    #getyields('nom13', empirical=False, weakrprocess=True)
+    plotyields('CCSN', empirical=False, fit='powerlaw')
+    #plotyields('IaSN', empirical=False, empiricalfit=[0.52679802, 1.26303907, 0.71169272, 0.08934153, 0.76942736])

@@ -21,11 +21,15 @@ import emcee
 from multiprocessing import Pool
 
 # Variables for MCMC run
-nsteps = 500
+nsteps = 100
 nwalkers = 32
 parallel = True
 datasource = 'both'
 empirical = True
+
+# Which elements to fit?
+baeu = False
+fe = False
 
 # Put in initial guesses for parameters 
 params_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6] # initial values
@@ -123,7 +127,8 @@ snindex = {'h':np.where(atomic == 1)[0],
         'ti':np.where(atomic == 22)[0],
         'fe':np.where(atomic == 26)[0],
         'ba':np.where(atomic == 56)[0],
-        'mn':np.where(atomic == 25)[0]}
+        'mn':np.where(atomic == 25)[0],
+        'eu':np.where(atomic == 63)[0]}
 
 # Define parameters for pristine gas 
 pristine = np.zeros(nel)    # Pristine element fractions by mass (dimensionless)
@@ -292,14 +297,23 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
     # Once model is done, define the model outputs that are useful for MCMC
     model = model[:timestep-1]
 
-    elem_model = [ model['eps'][:,snindex['fe']], #- model['eps'][:,snindex['h']],		# [Fe/H]
-            model['eps'][:,snindex['mg']] - model['eps'][:,snindex['fe']] + 0.2,		# [Mg/Fe]
+    if fe:
+        elem_model = [model['eps'][:,snindex['fe']], #- model['eps'][:,snindex['h']], # [Fe/H]
+            model['eps'][:,snindex['mg']] - model['eps'][:,snindex['fe']] + 0.2,	# [Mg/Fe]
+            model['eps'][:,snindex['si']] - model['eps'][:,snindex['fe']],	# [Si/Fe]
+            model['eps'][:,snindex['ca']] - model['eps'][:,snindex['fe']],	# [Ca/Fe]
+            model['eps'][:,snindex['c']] - model['eps'][:,snindex['fe']]] 	# [C/Fe]
+            #model['eps'][:,snindex['mn']] - model['eps'][:,snindex['fe']],	# [Mn/Fe]
+    else:
+        elem_model = [model['eps'][:,snindex['mg']] - model['eps'][:,snindex['fe']] + 0.2,		# [Mg/Fe]
             model['eps'][:,snindex['si']] - model['eps'][:,snindex['fe']],		# [Si/Fe]
             model['eps'][:,snindex['ca']] - model['eps'][:,snindex['fe']],		# [Ca/Fe]
-            model['eps'][:,snindex['c']] - model['eps'][:,snindex['fe']] 	# [C/Fe]
-            #model['eps'][:,snindex['ba']] - model['eps'][:,snindex['fe']],	# [Ba/Fe]
-            #model['eps'][:,snindex['mn']] - model['eps'][:,snindex['fe']]	# [Mn/Fe]
-        ]
+            model['eps'][:,snindex['c']] - model['eps'][:,snindex['fe']]]       # [C/Fe]
+
+    if baeu:
+        elem_model.append(model['eps'][:,snindex['ba']] - model['eps'][:,snindex['fe']]) # [Ba/Fe]
+        elem_model.append(model['eps'][:,snindex['eu']] - model['eps'][:,snindex['fe']])	# [Eu/Fe]
+
     sfr = model['mdot']
     mstar_model = model['mstar'][-1]
     time = model['t']
@@ -313,8 +327,8 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
 
 # Define observed data
 if datasource=='both':
-    elem_dart, delem_dart = getdata(galaxy='Scl', source='dart', c=True)
-    elem_deimos, delem_deimos = getdata(galaxy='Scl', source='deimos', c=True)
+    elem_dart, delem_dart = getdata(galaxy='Scl', source='dart', c=True, ba=baeu, eu=baeu)
+    elem_deimos, delem_deimos = getdata(galaxy='Scl', source='deimos', c=True, ba=baeu, eu=baeu)
 
     # Don't use [Fe/H] from DART?
     elem_dart[0,:] = -999.
@@ -324,7 +338,12 @@ if datasource=='both':
     delem_data = np.hstack((delem_dart, delem_deimos))
 
 else:  
-    elem_data, delem_data = getdata(galaxy='Scl', source=datasource, c=True) #, ba=True, mn=True)
+    elem_data, delem_data = getdata(galaxy='Scl', source=datasource, c=True, ba=baeu, eu=baeu) #mn=True)
+
+if fe==False:
+    elem_data = np.delete(elem_data,0,0)
+    delem_data = np.delete(delem_data,0,0)
+
 nelems, nstars = elem_data.shape
 print('Numbers:', nelems, nstars)
 mstar_obs = 10**6.08
@@ -391,7 +410,7 @@ def lnprior(parameters):
 
     # Define uniform priors, based on values in Table 2 of Kirby+11
     if (0. < f_in_norm0 < 5.) and (0. < f_in_t0 < 1.) and (0. < f_out < 20.) and (0. < sfr_norm < 10.) and (0. < sfr_exp < 2.) and (0. < mgas0 < 20.) and \
-        (0.4 < fe_ia < 0.9) and (0. < cexp_ii < 2.) and (0. < mgnorm_ii < 2.) and (0. < canorm_ii < 0.5) and (0.4 < cnorm_agb < 2.):
+        (0.4 < fe_ia < 0.9) and (0. < cexp_ii < 2.) and (0. < mgnorm_ii < 2.) and (0. < canorm_ii < 0.5) and (0.4 < cnorm_agb < 5.):
         return 0.0
     return -np.inf
 

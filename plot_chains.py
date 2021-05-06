@@ -59,4 +59,4 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False):
 
 if __name__ == "__main__":
 
-    plotmcmc(file='chain.npy', burnin=300, empiricalfit=True)
+    plotmcmc(file='output/empiricaltest_combinedsample.npy', burnin=int(1e4), empiricalfit=True)

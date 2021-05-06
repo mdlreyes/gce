@@ -586,20 +586,26 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source
         # Note: no Eu abundances from Li+2014?
 
         # Barium yield for weak r-process event as a function of mass (Li+2014)
-        # These correspond to masses M_SN = [13.0, 15.0, 18.0, 20.0, 25.0, 30.0, 40.0]
+        M_li14 = np.array([13.0, 15.0, 18.0, 20.0, 25.0, 30.0, 40.0])
         ba_li14_weakr = 10. * np.asarray([1.38e-8, 2.83e-8, 5.38e-8, 6.84e-8, 9.42e-8, 0, 0])
 
+        # Eu yield for weak r-process event as a function of mass (Cescutti+2006)
+        M_ces06 = np.array([12.0, 15.0, 30.0, 40.0])
+        eu_ces06_weakr = np.array([4.5e-8, 3.0e-8, 5.0e-10, 0.])
+
         # Linearly interpolate to high-mass end
-        ba_li14_weakr[-2] = ba_li14_weakr[-3]*M_SN[-2]/M_SN[-3]
-        ba_li14_weakr[-1] = ba_li14_weakr[-2]*M_SN[-1]/M_SN[-2]
+        ba_li14_weakr[-2] = ba_li14_weakr[-3]*M_li14[-2]/M_li14[-3]
+        ba_li14_weakr[-1] = ba_li14_weakr[-2]*M_li14[-1]/M_li14[-2]
+        eu_ces06_weakr[-1] = eu_ces06_weakr[-2]*M_ces06[-1]/M_ces06[-2]
 
         # Interpolate to match SN mass array
-        M_li14 = np.array([13.0, 15.0, 18.0, 20.0, 25.0, 30.0, 40.0])
         ba_li14_weakr = np.interp(M_SN, M_li14, ba_li14_weakr)
+        eu_ces06_weakr = np.interp(M, M_ces06, eu_ces06_weakr)
 
-        # Add to SNII yield arrays
+        # Add to SNII yield arrays, assuming no Z dependence
         for i in range(len(z_II)):
-            SN_yield['II'][ba_idx][i,:] = ba_li14_weakr  # Assume no Z-dependence
+            SN_yield['II'][ba_idx][i,:] += ba_li14_weakr
+            SN_yield['II'][eu_idx][i,:] += eu_ces06_weakr 
             
     if r_process_keyword in ['rare_event_only','both']:   
 
@@ -719,10 +725,17 @@ def initialize_empirical(yield_path='yields/', r_process_keyword='none', imfweig
     # Return functions with free parameters
     else:
         # Ia yield function
-        def f_ia_metallicity(metallicity, fe_ia, mn_ia=2e-3):
+        def f_ia_metallicity(metallicity, fe_ia, mn_ia=2e-3, ba_ia=2.3e-6, eu_ia=2.27e-7):
             yields = np.array([0., 0., 1.e-3, 1.e-2, 0.15, 2.e-2, 1.e-3, 1., 0.8, 0., 0.])
             yields[7] = mn_ia  # Mn
             yields[8] = fe_ia  # Fe
+
+            if r_process_keyword in ['rare_event_only','both']:   
+
+                # Note: these are average Ba, Eu yields for a "main" r-process event (Li+2014)
+                yields[9] = ba_ia  # Ba
+                yields[10] = eu_ia  # Eu
+
             return yields
 
         # CCSN yield function
@@ -738,6 +751,20 @@ def initialize_empirical(yield_path='yields/', r_process_keyword='none', imfweig
             yields[6,:] = 1e-8 * (1000 * II_mass**(-2.3))  # Ti
             yields[7,:] = 1e-7 * (30 * II_mass**(-1.32) - 0.25)  # Mn
             yields[8,:] = 1e-5 * (2722 * II_mass**(-2.77))  # Fe
+
+            '''
+            if r_process_keyword in ['typical_SN_only','both']:
+
+                # Note: no Eu abundances from Li+2014?
+
+                # Barium yield for weak r-process event as a function of mass (Li+2014)
+                # These correspond to masses M_SN = [13.0, 15.0, 18.0, 20.0, 25.0, 30.0, 40.0]
+                ba_li14_weakr = 10. * np.asarray([1.38e-8, 2.83e-8, 5.38e-8, 6.84e-8, 9.42e-8, 0, 0])
+
+                # Linearly interpolate to high-mass end
+                ba_li14_weakr[-2] = ba_li14_weakr[-3]*M_SN[-2]/M_SN[-3]
+                ba_li14_weakr[-1] = ba_li14_weakr[-2]*M_SN[-1]/M_SN[-2]
+            '''
 
             # Yields with parameters to vary
             yields[2,:] = 1e-5 * (100 * II_mass**(-cexp_ii))  # C
@@ -770,8 +797,6 @@ def initialize_empirical(yield_path='yields/', r_process_keyword='none', imfweig
             return yields
 
     return nel, eps_sun, np.asarray(atomic_num), atomic_weight, f_ia_metallicity, f_ii_metallicity, f_agb_metallicity
-
-
 
 if __name__ == "__main__":
 
