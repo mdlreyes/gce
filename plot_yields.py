@@ -24,6 +24,7 @@ rc('xtick',direction='in')
 rc('ytick',direction='in')
 import cycler
 import cmasher as cmr
+matplotlib.rcParams['text.latex.preamble']=[r"\usepackage{amsmath}"]
 
 # Import other packages
 import numpy as np
@@ -35,7 +36,7 @@ import imf
 
 # Define list of yield sources
 titles = {'nom06':'Nomoto et al. (2006)','nom13':'Nomoto et al. (2013)','lim18':'Limongi \& Chieffi (2018)',
-        'leu18_ddt':'Leung \& Nomoto (2018) MCh DDT','leu18_def':'Leung \& Nomoto (2018) MCh def','shen18':'Shen et al. (2018) sub-MCh bare WD','leu20':'Leung \& Nomoto (2020) sub-MCh He shell',
+        'leu18_ddt':'Leung \& Nomoto (2018) MCh DDT','leu18_def':'Leung \& Nomoto (2018) MCh pure deflagration','shen18':'Shen et al. (2018) sub-MCh bare WD','leu20':'Leung \& Nomoto (2020) sub-MCh with He shell',
         'cri15':'FRUITY (Cristallos et al. 2015)','kar':'Karakas et al. (2016, 2018)'}
 
 # Some test functions
@@ -99,8 +100,8 @@ def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False
 
                 # Add to SNII yield arrays, assuming no Z dependence
                 for i in range(len(loadZ)):
-                    yields[-2][i,:] += ba_li14_weakr  # Ba
-                    yields[-1][i,:] += eu_ces06_weakr # Eu
+                    yields[-2][i,:] = ba_li14_weakr  # Ba
+                    yields[-1][i,:] = eu_ces06_weakr # Eu
 
         elif yieldsource in ['leu18_ddt','leu18_def','shen18','leu20']:
             SN_yield, M, loadZ = load_II('nom06', yield_path, nel, atomic_names, atomic_num)
@@ -197,6 +198,13 @@ def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False
                 yields[3,:,:] = np.tile(1e-5 * (fit[2] + normal(M, 13, 19, 6.24)), (len(Z),1)) # Mg
                 yields[5,:,:] = np.tile(1e-6 * (15.4*M**(-1) + 0.06), (len(Z),1)) + np.array([[fit[3] * 1e-6 * normal(mass, 40-10000*metal, 15, 3) for metal in Z] for mass in M]).T # Ca
 
+            if weakrprocess:
+                # Ba from Li+14
+                yields[9,:,:] = np.tile(1e-12 * (1560*M**(-1.80) + 0.14 - normal(M,480,5,5.5)), (len(Z),1))
+
+                # Eu from Matteucci+14
+                yields[10,:,:] = np.tile(1e-11 * (77600*M**(-4.31)), (len(Z),1))
+
         # AGB yields
         elif yieldsource in ['cri15','kar','fit_agb']:
             M = np.linspace(1,7,20)
@@ -238,7 +246,7 @@ def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False
     print(yields.shape) # Shape: elements, metallicity, (mass)
     return yields, M, Z
 
-def plotyields(yieldtype, fit=None, func=None, empirical=False, empiricalfit=None):
+def plotyields(yieldtype, fit=None, func=None, empirical=False, empiricalfit=None, weakrprocess=False):
     """ Plot yields as a function of mass, metallicity
 
     Args: 
@@ -255,15 +263,20 @@ def plotyields(yieldtype, fit=None, func=None, empirical=False, empiricalfit=Non
     yieldtitles = []
 
     if yieldtype=='CCSN':
-        nom13yields, nom13M, Z = getyields('nom13', imfweight='kroupa93', empirical=empirical, weakrprocess=True)
-        lim18yields, lim18M, _ = getyields('lim18', imfweight='kroupa93', empirical=empirical, weakrprocess=True)
+        nom13yields, nom13M, Z = getyields('nom13', imfweight='kroupa93', empirical=empirical, weakrprocess=weakrprocess)
+        lim18yields, lim18M, _ = getyields('lim18', imfweight='kroupa93', empirical=empirical, weakrprocess=weakrprocess)
         
         yieldlist = [nom13yields, lim18yields]
+        if weakrprocess:
+            yieldlist = [nom13yields[9:,:,:], lim18yields[9:,:,:]]
+    
         masslist = [nom13M, lim18M]
         yieldtitles = ['nom13', 'lim18']
 
         if empiricalfit is not None:
-            fityields, fitM, _ = getyields('fit_ii', imfweight='kroupa93', empirical=True, fit=empiricalfit)
+            fityields, fitM, _ = getyields('fit_ii', imfweight='kroupa93', empirical=True, fit=empiricalfit, weakrprocess=weakrprocess)
+            if weakrprocess:
+                fityields = fityields[9:,:,:]
 
     if yieldtype=='AGB':
         cri15yields, cri15M, Z = getyields('cri15', imfweight='kroupa93', empirical=empirical)
@@ -282,8 +295,8 @@ def plotyields(yieldtype, fit=None, func=None, empirical=False, empiricalfit=Non
         leu20_yields, _, _ = getyields('leu20', empirical=empirical)
         leu18def_yields, _, _ = getyields('leu18_def', empirical=empirical)
         
-        yieldlist = [leu18ddt_yields, shen18_yields, leu20_yields, leu18def_yields]
-        yieldtitles = ['leu18_ddt', 'shen18', 'leu20', 'leu18_def']
+        yieldlist = [leu18ddt_yields, leu18def_yields, shen18_yields, leu20_yields]
+        yieldtitles = ['leu18_ddt', 'leu18_def', 'shen18', 'leu20']
 
         if empiricalfit is not None:
             fityields, _, _ = getyields('fit_ia', imfweight='kroupa93', empirical=True, fit=empiricalfit)
@@ -309,19 +322,38 @@ def plotyields(yieldtype, fit=None, func=None, empirical=False, empiricalfit=Non
     # Add other yields if needed
     if yieldtype in ['AGB', 'CCSN']:
         elem_atomic = [1,2] + elem_atomic
-        #if yieldtype=='AGB':
+    if yieldtype=='AGB':
         elem_atomic = elem_atomic + [56, 63]
+
+    if yieldtype in ['CCSN'] and weakrprocess:
+        elem_atomic = [56, 63]
     
     # Create and format plot
-    figsizes = {'CCSN':(5,12), 'AGB':(5,13), 'IaSN':(5,12)}
-    fig, axs = plt.subplots(len(elem_atomic), figsize=figsizes[yieldtype],sharex=True)
-    fig.subplots_adjust(bottom=0.06,top=0.96,left=0.2,wspace=0.29,hspace=0)
-    plt.setp([a.yaxis.set_major_locator(MaxNLocator(nbins=5,prune='upper')) for a in [fig.axes[-1]]])
-    plt.setp([a.yaxis.set_major_locator(MaxNLocator(nbins=5,prune='both')) for a in fig.axes[1:-1]])
-    plt.setp([a.yaxis.set_major_locator(MaxNLocator(nbins=5,prune='lower')) for a in [fig.axes[0]]])
-    plt.setp([a.get_xticklabels() for a in fig.axes[:-1]], visible=False)
-    plt.setp([a.minorticks_on() for a in fig.axes[:]])
-    axs = axs.ravel()
+    if yieldtype=='CCSN' or yieldtype=='AGB':
+        if weakrprocess:
+            fig, axs = plt.subplots(len(elem_atomic), figsize=(5,4),sharex=True)
+        else:
+            figsizes = {'CCSN':(5,12), 'AGB':(5,14)}
+            fig, axs = plt.subplots(len(elem_atomic), figsize=figsizes[yieldtype],sharex=True)
+        fig.subplots_adjust(bottom=0.06,top=0.96,left=0.2,wspace=0.29,hspace=0)
+        plt.setp([a.yaxis.set_major_locator(MaxNLocator(nbins=5,prune='upper')) for a in [fig.axes[-1]]])
+        plt.setp([a.yaxis.set_major_locator(MaxNLocator(nbins=5,prune='both')) for a in fig.axes[1:-1]])
+        plt.setp([a.yaxis.set_major_locator(MaxNLocator(nbins=5,prune='lower')) for a in [fig.axes[0]]])
+        plt.setp([a.get_xticklabels() for a in fig.axes[:-1]], visible=False)
+        plt.setp([a.minorticks_on() for a in fig.axes[:]])
+        axs = axs.ravel()
+
+    else:
+        fig = plt.figure(figsize=(5,4))
+        ax = plt.subplot()
+
+        dy = 0.02  # distance between lines
+        nelem = len(elem_atomic)  # total number of elements
+        print(nelem)
+
+        ax.set_ylim(0.5, nelem+0.5)
+        plt.tick_params(axis='y', which='both', left=False, right=False)
+        ticklabels = []
 
     # Create each subplot
     for idx_elem, elem in enumerate(elem_atomic):
@@ -379,10 +411,9 @@ def plotyields(yieldtype, fit=None, func=None, empirical=False, empiricalfit=Non
 
                     legend = axs[idx_elem].legend(handles=[fitline], loc='upper right', fontsize=10)
                     axs[idx_elem].add_artist(legend)
-                '''
 
                 # If needed, try fitting the Nom+13 data
-                if func is None and fit in ['exp', 'powerlaw', 'lognorm', 'norm', 'powernorm', 'linearnorm'] and idx_yields==1 and elem in [56, 63]:
+                if func is None and fit in ['exp', 'powerlaw', 'lognorm', 'norm', 'powernorm', 'linearnorm'] and idx_yields==0 and elem in [56, 63]:
                     try:
                         if fit=='exp':
                             popt, pcov = curve_fit(exp, masslist[idx_yields], yields[idx_elem, 3, :]/(10**base10), p0=[10, 0.1, 0])
@@ -420,26 +451,36 @@ def plotyields(yieldtype, fit=None, func=None, empirical=False, empiricalfit=Non
                         
                     except:
                         pass
+                '''
+
+                if weakrprocess:
+                    topdx = 0.98
+                    dx = 0.31
+                    textdy = 0.85
+                else:
+                    topdx = 0.9
+                    dx = 0.12
+                    textdy = 0.75
 
                 # Create legends
                 legend = plt.legend(handles=handles, loc='upper left', fontsize=10, title=titles[yieldtitles[idx_yields]],
-                    bbox_to_anchor=(0.92, 0.9 - idx_yields*0.12), bbox_transform=plt.gcf().transFigure)
+                    bbox_to_anchor=(0.92, topdx - idx_yields*dx), bbox_transform=plt.gcf().transFigure)
                 legend._legend_box.align = "left"
                 plt.gca().add_artist(legend)
 
             if yieldtype=='IaSN':
-                # Plot abundances as function of metallicity
-                line, = axs[idx_elem].plot(Z, yields[idx_elem, :]/(10**base10), 
-                                        linestyle=lswheel[idx_yields], marker='None', 
-                                        color=cwheel[idx_yields], label=titles[yieldtitles[idx_yields]])
-                handles.append(line)
-
-                if empiricalfit is None:
-                    # Create legends
-                    legend = plt.legend(loc='upper left', fontsize=10, 
-                            bbox_to_anchor=(0.92, 0.9 - 0.12), bbox_transform=plt.gcf().transFigure)
+                # Plot abundances
+                line = ax.axvline(yields[idx_elem, 0]/(10**base10), ymin = (nelem-(idx_elem+1))/nelem + dy, ymax = (nelem-idx_elem)/nelem - dy, 
+                        color=cwheel[idx_yields], label=titles[yieldtitles[idx_yields]], linewidth=2)
+                if idx_elem==0:
+                    handles.append(line)
+                    legend = plt.legend(handles=handles, loc='upper left', fontsize=10,
+                        bbox_to_anchor=(0.1, 1.12 - idx_yields*0.05), bbox_transform=plt.gcf().transFigure)
                     legend._legend_box.align = "left"
                     plt.gca().add_artist(legend)
+
+                if idx_yields==0:
+                    ticklabels.append(elem_names[elem]+' ($10^{'+str(int(base10))+'}M_{\odot}$)')
 
         # Plot empirical fits if needed
         if empiricalfit is not None:
@@ -447,42 +488,55 @@ def plotyields(yieldtype, fit=None, func=None, empirical=False, empiricalfit=Non
             if yieldtype=='CCSN' or yieldtype=='AGB':
                 for idx_Z, metal in enumerate(Z):
                     line, = axs[idx_elem].plot(fitM, fityields[idx_elem, idx_Z, :]/(10**base10), 
-                                        linestyle='--', marker='None', lw=2,
+                                        linestyle='--', marker='None', lw=1,
                                         color=cwheelfit[idx_Z], label=r'$Z=$'+str(metal))
                     handles.append(line)
 
                 # Create legends
                 legend = plt.legend(handles=handles, loc='upper left', fontsize=10, title="Best-fit yields",
-                    bbox_to_anchor=(0.92, 0.9 - 2*0.12), bbox_transform=plt.gcf().transFigure)
+                    bbox_to_anchor=(0.92, topdx - 2*dx), bbox_transform=plt.gcf().transFigure)
                 legend._legend_box.align = "left"
                 plt.gca().add_artist(legend)
 
             if yieldtype=='IaSN':
-                # Plot abundances as function of metallicity
-                print(Z.shape, fityields.shape)
-                line, = axs[idx_elem].plot(Z, fityields[idx_elem, :]/(10**base10), 
-                                        linestyle='--', marker='None', lw=2, 
-                                        color='c', label="Best-fit yields")
-                handles.append(line)
-
-                # Create legends
-                legend = plt.legend(loc='upper left', fontsize=10, 
-                        bbox_to_anchor=(0.92, 0.9 - 0.12), bbox_transform=plt.gcf().transFigure)
-                legend._legend_box.align = "left"
-                plt.gca().add_artist(legend)
+                # Plot abundances
+                line = ax.axvline(fityields[idx_elem, 0]/(10**base10), ymin = (nelem-(idx_elem+1))/nelem + dy, ymax = (nelem-idx_elem)/nelem - dy, 
+                        color='C1', label="Best-fit yields", linewidth=2, linestyle=':')
+                if idx_elem==0:
+                    handles.append(line)
   
         # Do other formatting
-        axs[idx_elem].yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-        axs[idx_elem].set_ylabel(r'$M$('+elem_names[elem]+') ($10^{'+str(int(base10))+'}M_{\odot}$)', fontsize=10)
-        axs[idx_elem].set_ylim(ymin=0)
+        if yieldtype in ['CCSN', 'AGB']:
+            axs[idx_elem].yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
+            if (yieldtype=='CCSN' and elem_names[elem] in ['C','Mg','Ca']) or (yieldtype=='AGB' and elem_names[elem] in ['Ca']):
+                axs[idx_elem].text(0.95, textdy, r'\textbf{'+elem_names[elem]+'}', transform=axs[idx_elem].transAxes, fontsize=12, color='C1', horizontalalignment='right') #, bbox=dict(fc=cwheelfit[-1], ec='k', linewidth=0.5))
+            else:
+                axs[idx_elem].text(0.95, textdy, elem_names[elem], transform=axs[idx_elem].transAxes, fontsize=12, horizontalalignment='right') #, bbox=dict(fc='None', ec='k', linewidth=0.5))
+            axs[idx_elem].set_ylabel(r'$10^{'+str(int(base10))+'}M_{\odot}$', fontsize=10)
+            axs[idx_elem].set_ylim(ymin=0)
+
+    if yieldtype=='IaSN':
+        # Fix y-axis labels
+        ticklabels.append('')
+        print(ticklabels)
+        ax.yaxis.set_ticklabels(ticklabels[::-1])
+
+        plt.gca().get_yticklabels()[1].set_color('C1') 
+    
+        # Create legends
+        #legend = plt.legend(handles=handles, loc='upper left', fontsize=10, 
+        #        bbox_to_anchor=(0.92, 0.9 - 0.12), bbox_transform=plt.gcf().transFigure)
+        #legend._legend_box.align = "left"
 
     # Final plot formatting
     if yieldtype=='CCSN' or yieldtype=='AGB':
         plt.xlabel(r'Mass ($M_{\odot}$)', fontsize=14)
     else:
-        plt.xlabel(r'Metallicity ($Z_{\odot}$)', fontsize=14)
+        plt.xlabel(r'Yield mass', fontsize=14)
 
     # Output figure
+    if weakrprocess:
+        yieldtype += '_weakr'
     if empirical:
         outputname = 'plots/yieldtest_'+yieldtype+'_empirical.pdf'
     elif empiricalfit is not None:
@@ -498,5 +552,5 @@ if __name__ == "__main__":
 
     # Plot yields
     #getyields('nom13', empirical=False, weakrprocess=True)
-    plotyields('CCSN', empirical=False, fit='powerlaw')
-    #plotyields('IaSN', empirical=False, empiricalfit=[0.52679802, 1.26303907, 0.71169272, 0.08934153, 0.76942736])
+    plotyields('CCSN', empirical=False, empiricalfit=[0.8, 1., 1., 0., 0.6], weakrprocess=True)
+    #plotyields('CCSN', empirical=False, empiricalfit=[0.59413107, 1.32532419, 0.74524346, 0.20701649, 2.0645546])

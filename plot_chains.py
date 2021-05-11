@@ -9,6 +9,11 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
+# Do some formatting stuff with matplotlib
+from matplotlib import rc
+rc('font', family='serif')
+rc('text',usetex=True)
+
 # Import other packages
 import numpy as np
 import corner
@@ -37,21 +42,24 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False):
     ax[0].set_title('Chain', fontsize=18)
     ax[ndim-1].set_xlabel('Steps', fontsize=16)
 
-    plt.savefig(outfile+'/walkers.png', bbox_inches='tight')
+    plt.savefig(outfile+'/walkers.pdf', bbox_inches='tight')
     plt.show()
 
     # Make corner plots
     samples = chainfile[:,burnin:, :].reshape((-1, ndim))
+    '''
     cornerfig = corner.corner(samples, labels=names,
-                                quantiles=[0.16, 0.5, 0.84],
-                                show_titles=True, title_kwargs={"fontsize": 12})
-    cornerfig.savefig(outfile+'/cornerfig.png')
+                                quantiles=[0.16, 0.5, 0.84], rasterized=True,
+                                show_titles=True, title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16})
+    cornerfig.savefig(outfile+'/cornerfig.pdf', bbox_inches='tight', dpi=400)
     plt.show()
+    '''
 
     # Compute 16th, 50th, and 84th percentiles of parameters
     for i in range(ndim):
-        percentile = np.array([np.percentile(samples[:,i],16), np.percentile(samples[:,i],50), np.percentile(samples[:,i],84)])
-        print(names[i]+' range:', percentile)
+        median = np.percentile(samples[:,i],50)
+        percentile = np.array([np.percentile(samples[:,i],50), np.percentile(samples[:,i],84)-median, median-np.percentile(samples[:,i],16)])
+        print(names[i]+' range:', "${:.2f}^+{:.2f}_-{:.2f}$".format(*percentile))
 
     print(np.percentile(samples,50, axis=0))
 
@@ -59,4 +67,4 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False):
 
 if __name__ == "__main__":
 
-    plotmcmc(file='output/empiricaltest_combinedsample.npy', burnin=int(1e4), empiricalfit=True)
+    plotmcmc(file='output/chain.npy', burnin=10000, empiricalfit=True)

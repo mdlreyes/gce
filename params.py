@@ -24,7 +24,7 @@ Ia_source = 'leu20'
 II_source = 'nom13'
 
 # r-process options: 'none', 'typical_SN_only', 'rare_event_only', 'both'
-r_process_keyword='rare_event_only'
+r_process_keyword='typical_SN_only' #'rare_event_only'
 
 # Minimum and maximum AGB masses
 M_AGB_min = 0.865   # lower mass limit for AGB stars (M_sun)

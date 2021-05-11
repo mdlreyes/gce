@@ -16,6 +16,11 @@ import matplotlib.pyplot as plt
 # Import other modules
 from getdata import getdata
 import params as paramfile
+from astropy.io import ascii  # only needed for SFH test stuff
+from astropy.cosmology import FlatLambdaCDM  # needed to compute redshifts
+cosmo = FlatLambdaCDM(H0=67.7, Om0=0.310)
+import astropy.units as u
+from astropy.cosmology import z_at_value
 
 # Systematic errors
 # Fe/H and alpha/Fe calculated by Evan on 12/28/17
@@ -33,12 +38,16 @@ rc('font', family='serif')
 rc('axes', labelsize=14) 
 rc('xtick', labelsize=12)
 rc('ytick', labelsize=12)
-rc('xtick.major', size=12)
-rc('ytick.major', size=12)
+rc('xtick.major', size=10)
+rc('ytick.major', size=10)
 rc('legend', fontsize=12, frameon=False)
 rc('text',usetex=True)
 rc('xtick',direction='in')
 rc('ytick',direction='in')
+
+# Some other stuff to make cool colors
+import cycler
+import cmasher as cmr
 
 def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl', skip_end_dots=-1, NSM=False, 
             plot_path='plots/', abunds=True, time=True, params=True): 
@@ -219,6 +228,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
             plt.xlabel('[Fe/H]')
             plt.plot([-6,0],[0,0],':k')
             plt.xlim([-3.5,0])
+            plt.ylim([-2.5,2.5])
             agbtitle = {'kar':'Karakas+18', 'cri15':'FRUITY'}
             ax.text(0.05, 0.9, agbtitle[paramfile.AGB_source], transform=ax.transAxes, fontsize=12)
 
@@ -272,7 +282,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         plt.setp([a.yaxis.set_major_locator(MaxNLocator(nbins=5,prune='upper')) for a in fig.axes[1:]])
         plt.setp([a.get_xticklabels() for a in fig.axes[:-1]], visible=False)
         plt.setp([a.minorticks_on() for a in fig.axes[:]])
-        plt.suptitle("Final mass: %.1f x $10^6$ M$_\odot$"%(model['mgal'][-1]/1e6), y=0.97)
+        plt.suptitle("Final mass: %.2f x $10^6$ M$_\odot$"%(model['mgal'][-1]/1e6), y=0.97)
         axs[0].set_title(title, y = 1.15)
         axs = axs.ravel()    
         
@@ -308,5 +318,55 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         plt.savefig((plot_path+title+'_time_param.png').replace(' ',''))
         if plot==True: 
             plt.show()
+        else:
+            plt.close()
+
+        # Plot SFH
+        cwheelsize = 3
+        color = cmr.bubblegum(np.linspace(0,1,cwheelsize,endpoint=True))
+        matplotlib.rcParams['axes.prop_cycle'] = cycler.cycler('color', color)
+        cwheel = [np.array(matplotlib.rcParams['axes.prop_cycle'])[x]['color'] for x in range(cwheelsize)]
+
+        fig = plt.figure(figsize=(8,2))
+        ax = plt.subplot()
+        plt.title(title, fontsize=16)
+        plt.xlabel('Time (Gyr)')
+        plt.setp([a.minorticks_on() for a in fig.axes[:]])
+        #plt.xlim([0,1.7])
+        #plt.xticks([0.0,0.5,1.0,1.5])
+        #plt.suptitle("Final mass: %.1f x $10^6$ M$_\odot$"%(model['mgal'][-1]/1e6), y=0.97)
+
+        # Add redshift axis on top
+        ages = np.array([13, 10, 8, 6, 4, 3, 2, 1.5, 1.2, 1, 0.8, 0.6])*u.Gyr
+        ageticks = [z_at_value(cosmo.age, age) for age in ages]
+        ax2 = ax.twiny()
+        ax2.set_xticks(ageticks)
+        ax2.set_xticklabels(['{:g}'.format(age) for age in ages.value])
+        zmin, zmax = 0.0, 8.5
+        ax.set_xlim(zmin, zmax)
+        ax2.set_xlim(zmin, zmax)
+        
+        # Plot SFH from this model
+        plt.plot(model['t'],model['mdot']/1e5, ls='-', lw=2, color=plt.cm.Set2(0), label='This work')
+
+        # Also from other models
+        bettinelli = ascii.read('data/sfhtest/bettinelli19.dat')
+        bettinelli = [13.792 - bettinelli['Lookback time (Gyr)'], bettinelli['SFR (1e-4 Msun/y)']]
+        deboer = ascii.read('data/sfhtest/deboer12.dat')
+        deboer = [13.792 - deboer['Age (Gyr)'], deboer['SFR (1e-4 Msun/y)']]
+        titles = ['Bettinelli et al. (2019)', 'de Boer et al. (2012)']
+        linestyles = ['--', ':']
+        for idx, data in enumerate([bettinelli, deboer]):
+            plt.plot(data[0], data[1], ls=linestyles[idx], lw=2, label=titles[idx], color=plt.cm.Set2(idx+1))
+
+        plt.ylabel('SFR ($10^{-4}$ M$_\odot$yr$^{-1})$')
+        plt.ylim([0,30])
+        plt.yticks([0, 10, 20, 30])
+        plt.legend(loc='best')
+        plt.savefig((plot_path+title+'_sfh.png').replace(' ',''), bbox_inches='tight')
+        if plot==True: 
+            plt.show()
+        else:
+            plt.close() 
     
     return

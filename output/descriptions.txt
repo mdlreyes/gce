@@ -23,6 +23,15 @@ empiricaltest_combinedsample.npy
     > ia_model = 'maoz10'
     > imf_model = 'kroupa93'
     > fitting the following extra variables to parameterize yields: 
-        > fe_ia, cexp_ii, mgnorm_ii, canorm_ii, cnorm_agb = pars[10]
+        > fe_ia, cexp_ii, mgnorm_ii, canorm_ii, cnorm_agb
     > datasource = 'both'
     > 1e6 steps over 32 walkers
+
+empiricaltest_combinedsample_short.npy
+    > same params as empiricaltest_combinedsample.npy
+    > 1e5 steps over 32 walkers
+
+empiricaltest_nofe.npy
+    > same params as empiricaltest_combinedsample.npy, but not fitting Fe
+    > datasource = 'both'
+    > 1e5 steps over 32 walkers

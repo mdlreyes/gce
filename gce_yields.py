@@ -752,19 +752,13 @@ def initialize_empirical(yield_path='yields/', r_process_keyword='none', imfweig
             yields[7,:] = 1e-7 * (30 * II_mass**(-1.32) - 0.25)  # Mn
             yields[8,:] = 1e-5 * (2722 * II_mass**(-2.77))  # Fe
 
-            '''
             if r_process_keyword in ['typical_SN_only','both']:
 
-                # Note: no Eu abundances from Li+2014?
+                # Ba from Li+14
+                yields[9,:] = 1e-12 * (1560 * II_mass**(-1.80) + 0.14 - 480*np.exp(-((II_mass-5)/5.5)**2/2)/(5.5*normpdfc))
 
-                # Barium yield for weak r-process event as a function of mass (Li+2014)
-                # These correspond to masses M_SN = [13.0, 15.0, 18.0, 20.0, 25.0, 30.0, 40.0]
-                ba_li14_weakr = 10. * np.asarray([1.38e-8, 2.83e-8, 5.38e-8, 6.84e-8, 9.42e-8, 0, 0])
-
-                # Linearly interpolate to high-mass end
-                ba_li14_weakr[-2] = ba_li14_weakr[-3]*M_SN[-2]/M_SN[-3]
-                ba_li14_weakr[-1] = ba_li14_weakr[-2]*M_SN[-1]/M_SN[-2]
-            '''
+                # Eu from Matteucci+14
+                yields[10,:] = 1e-11 * (77600 * II_mass**(-4.31))  # Eu
 
             # Yields with parameters to vary
             yields[2,:] = 1e-5 * (100 * II_mass**(-cexp_ii))  # C

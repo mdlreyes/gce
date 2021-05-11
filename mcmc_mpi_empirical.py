@@ -29,7 +29,8 @@ empirical = True
 
 # Which elements to fit?
 baeu = False
-fe = False
+fe = True
+c = True
 
 # Put in initial guesses for parameters 
 params_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6] # initial values
@@ -158,10 +159,14 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
 
     # Additional free parameters from yields
     fe_ia = pars[6]         # Fe yield from IaSNe
-    cexp_ii = pars[7]       # C exponent for CCSN yields
     mgnorm_ii = pars[8]     # Mg normalization for CCSN yields
     canorm_ii = pars[9]     # Ca normalization for CCSN yields
-    cnorm_agb = pars[10]    # C normalization for AGB yields
+    if c:
+        cexp_ii = pars[7]       # C exponent for CCSN yields
+        cnorm_agb = pars[10]    # C normalization for AGB yields
+    else:
+        cexp_ii = 1.
+        cnorm_agb = 0.6
 
     # Initialize model
     model['f_in'] = f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)                                                                                
@@ -307,11 +312,13 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
     else:
         elem_model = [model['eps'][:,snindex['mg']] - model['eps'][:,snindex['fe']] + 0.2,		# [Mg/Fe]
             model['eps'][:,snindex['si']] - model['eps'][:,snindex['fe']],		# [Si/Fe]
-            model['eps'][:,snindex['ca']] - model['eps'][:,snindex['fe']],		# [Ca/Fe]
-            model['eps'][:,snindex['c']] - model['eps'][:,snindex['fe']]]       # [C/Fe]
+            model['eps'][:,snindex['ca']] - model['eps'][:,snindex['fe']]]      # [Ca/Fe]
+            
+    if c:		
+        elem_model.append(model['eps'][:,snindex['c']] - model['eps'][:,snindex['fe']])     # [C/Fe]
 
     if baeu:
-        elem_model.append(model['eps'][:,snindex['ba']] - model['eps'][:,snindex['fe']]) # [Ba/Fe]
+        elem_model.append(model['eps'][:,snindex['ba']] - model['eps'][:,snindex['fe']])    # [Ba/Fe]
         elem_model.append(model['eps'][:,snindex['eu']] - model['eps'][:,snindex['fe']])	# [Eu/Fe]
 
     sfr = model['mdot']
@@ -327,8 +334,8 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
 
 # Define observed data
 if datasource=='both':
-    elem_dart, delem_dart = getdata(galaxy='Scl', source='dart', c=True, ba=baeu, eu=baeu)
-    elem_deimos, delem_deimos = getdata(galaxy='Scl', source='deimos', c=True, ba=baeu, eu=baeu)
+    elem_dart, delem_dart = getdata(galaxy='Scl', source='dart', c=c, ba=baeu, eu=baeu)
+    elem_deimos, delem_deimos = getdata(galaxy='Scl', source='deimos', c=c, ba=baeu, eu=baeu)
 
     # Don't use [Fe/H] from DART?
     elem_dart[0,:] = -999.
@@ -430,8 +437,8 @@ print('values after powell:', neglnlike([0.94060355, 0.28939645, 6.59792896, 0.9
 
 # Start by doing basic max-likelihood fit to get initial values
 result = op.minimize(neglnlike, [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6], method='powell', options={'ftol':1e-6, 'maxiter':100000, 'direc':np.diag([-0.05,0.05,1.0,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01])}) 
-print(result)
 params_init = result["x"]
+print('Result from Powell: ', params_init)
 '''
 
 # Sample the log-probability function using emcee - first, initialize the walkers
