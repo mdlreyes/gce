@@ -72,4 +72,4 @@ if __name__ == "__main__":
     scl_mcmc_widerpriors = [0.57925062, 0.25511282, 4.73242679, 0.78293811, 0.76362412, 0.23648493, 0.5921274, 1.32518867, 0.74821858, 0.21047607, 2.0407864]
     #scl_test_nofe = [3.27268533, 0.15745049, 12.14827856, 0.31355088, 0.63376588, 3.81172396, 0.68714936, 1.34409349, 0.70064215, 0.2433965, 2.44628418]
     #scl_test_nofe_baeu = [0.5826848, 0.20566443, 3.45481582, 0.74983842, 1.14243184, 1.69508041, 0.64673482, 0.99626161, 1.00602021, 0.06666074, 0.52752042]
-    model, atomic = gce.runmodel(scl_mcmc_widerpriors, plot=True, title="Sculptor dSph", empirical=True, empiricalfit=True, amr="plots/amr_test")
+    model, atomic = gce.runmodel(scl_mcmc_widerpriors, plot=True, title="Sculptor dSph", empirical=True, empiricalfit=True, amr="plots/amr_test", sfh="plots/sfh_test")

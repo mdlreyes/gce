@@ -91,7 +91,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
     # Open observed data
     elem_data, delem_data = getdata(galaxy='Scl', source='deimos', c=True, ba=True, mn=True)
     if datasource=='dart' or datasource=='both':
-        elem_data_dart, delem_data_dart = getdata(galaxy='Scl', source='dart', c=True, ba=True, mn=True, eu=True)
+        elem_data_dart, delem_data_dart = getdata(galaxy='Scl', source='dart', c=True, ba=True, mn=True, eu=True, removerprocess=False)
     obs_idx = {'Fe':0, 'Mg':1, 'Si':2, 'Ca':3, 'C':4, 'Ba':5, 'Mn':6, 'Eu':7}  # Maps content of observed elem_data to index
 
     print(elem_names, snindex, labels, obs_idx)
@@ -149,7 +149,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
 
             # Plot observed [X/Fe]
             if label in obs_idx:
-                if datasource=='deimos' or datasource=='both':
+                if datasource=='deimos' or datasource=='both' and label!='Ba':
                     obs_data = elem_data[obs_idx[label],obsmask]
                     obs_errs = delem_data[obs_idx[label],obsmask]
                     feh_errs = delem_data[obs_idx['Fe'],obsmask]
@@ -229,8 +229,8 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
             plt.plot([-6,0],[0,0],':k')
             plt.xlim([-3.5,0])
             plt.ylim([-2.5,2.5])
-            agbtitle = {'kar':'Karakas+18', 'cri15':'FRUITY'}
-            ax.text(0.05, 0.9, agbtitle[paramfile.AGB_source], transform=ax.transAxes, fontsize=12)
+            #agbtitle = {'kar':'Karakas+18', 'cri15':'FRUITY'}
+            #ax.text(0.05, 0.9, agbtitle[paramfile.AGB_source], transform=ax.transAxes, fontsize=12)
 
             plt.savefig((plot_path+title+'_baeu.png').replace(' ',''), bbox_inches='tight')
             if plot==True: 
@@ -283,6 +283,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         plt.setp([a.get_xticklabels() for a in fig.axes[:-1]], visible=False)
         plt.setp([a.minorticks_on() for a in fig.axes[:]])
         plt.suptitle("Final mass: %.2f x $10^6$ M$_\odot$"%(model['mgal'][-1]/1e6), y=0.97)
+        print('test', model['mgal'][-1]/1e6, model['mstar'][-1]/1e6)
         axs[0].set_title(title, y = 1.15)
         axs = axs.ravel()    
         
@@ -332,6 +333,9 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         plt.title(title, fontsize=16)
         plt.xlabel('Time (Gyr)')
         plt.setp([a.minorticks_on() for a in fig.axes[:]])
+        plt.ylabel('SFR ($10^{-4}$ M$_\odot$ yr$^{-1})$')
+        plt.ylim([0,30])
+        plt.yticks([0, 10, 20, 30])
         #plt.xlim([0,1.7])
         #plt.xticks([0.0,0.5,1.0,1.5])
         #plt.suptitle("Final mass: %.1f x $10^6$ M$_\odot$"%(model['mgal'][-1]/1e6), y=0.97)
@@ -359,9 +363,6 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         for idx, data in enumerate([bettinelli, deboer]):
             plt.plot(data[0], data[1], ls=linestyles[idx], lw=2, label=titles[idx], color=plt.cm.Set2(idx+1))
 
-        plt.ylabel('SFR ($10^{-4}$ M$_\odot$yr$^{-1})$')
-        plt.ylim([0,30])
-        plt.yticks([0, 10, 20, 30])
         plt.legend(loc='best')
         plt.savefig((plot_path+title+'_sfh.png').replace(' ',''), bbox_inches='tight')
         if plot==True: 

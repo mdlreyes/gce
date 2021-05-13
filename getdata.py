@@ -14,7 +14,7 @@ syserr = {'Fe':0.10103081, 'alpha':0.084143983, 'Mg':0.076933658,
         'Si':0.099193360, 'Ca':0.11088295, 'Ti':0.10586739,
         'C':0.100, 'Ba':0.100, 'Mn':0.100}
 
-def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outlier_reject=True):
+def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outlier_reject=True, removerprocess=True):
     """Compiles observed abundances from literature tables.
 
     Args:
@@ -23,6 +23,7 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
         c, ba, mn, eu (bool): Keywords to decide which elements to include 
                         along with [Fe/H], [Mg/Fe], [Si/Fe], [Ca/Fe]
         outlier_reject (bool): If 'True', do remove high-C and high-Ba outliers
+        removerprocess (bool): If 'True', subtract r-process contribution using Duggan+18 method
 
     Returns:
         data, errs (array): Observed data and errors
@@ -131,11 +132,32 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
 
             # Add barium if needed
             if ba:
-                ba_data = table['[Ba/Fe]'].reshape(table['[Ba/Fe]'].shape[0],1)
-                data = np.hstack([data,ba_data])
+                if removerprocess:
+                    bafe = table['[Ba/Fe]'].reshape(table['[Ba/Fe]'].shape[0],1)
+                    eufe = table['[Eu/Fe]'].reshape(table['[Eu/Fe]'].shape[0],1)
+                    ba_errs = table['[Ba/Fe]err'].reshape(table['[Ba/Fe]err'].shape[0],1)
+                    eu_errs = table['[Eu/Fe]err'].reshape(table['[Eu/Fe]err'].shape[0],1)
 
-                ba_errs = table['[Ba/Fe]err'].reshape(table['[Ba/Fe]err'].shape[0],1)
-                errs = np.hstack([errs,ba_errs])
+                    # Compute fraction of r-process elements
+                    rfrac = (10.**(-1.062)/10.**(2.209) - 10.**(-((bafe-eufe)+(2.13-0.51))))/((10.**(-1.062)/10.**(2.209)) - (10.**(0.494)/10.**(1.446)))
+                    rfrac[rfrac < 0.] = 0.
+                    rfrac[rfrac > 1.] = 1.
+
+                    # Compute s-process contribution to [Ba/Fe]
+                    bafe_s = bafe + np.log10(1.-rfrac)
+                    bafe_s[~np.isfinite(bafe_s)] = -999.
+                    bafe_s[eufe < -90] = -999.
+
+                    # Add to tables
+                    data = np.hstack([data,bafe_s])
+                    errs = np.hstack([errs,ba_errs])
+
+                else:
+                    ba_data = table['[Ba/Fe]'].reshape(table['[Ba/Fe]'].shape[0],1)
+                    data = np.hstack([data,ba_data])
+
+                    ba_errs = table['[Ba/Fe]err'].reshape(table['[Ba/Fe]err'].shape[0],1)
+                    errs = np.hstack([errs,ba_errs])
 
             # Cross-match with manganese table if needed
             if mn:
@@ -161,13 +183,34 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
                 data = np.asarray(finaldata)
                 errs = np.asarray(finalerrs)
 
-            # Add barium if needed
+            # Add europium if needed
             if eu:
-                eu_data = table['[Eu/Fe]'].reshape(table['[Eu/Fe]'].shape[0],1)
-                data = np.hstack([data,eu_data])
+                if removerprocess:
+                    bafe = table['[Ba/Fe]'].reshape(table['[Ba/Fe]'].shape[0],1)
+                    eufe = table['[Eu/Fe]'].reshape(table['[Eu/Fe]'].shape[0],1)
+                    ba_errs = table['[Ba/Fe]err'].reshape(table['[Ba/Fe]err'].shape[0],1)
+                    eu_errs = table['[Eu/Fe]err'].reshape(table['[Eu/Fe]err'].shape[0],1)
 
-                eu_errs = table['[Eu/Fe]err'].reshape(table['[Eu/Fe]err'].shape[0],1)
-                errs = np.hstack([errs,eu_errs])
+                    # Compute fraction of r-process elements
+                    rfrac = (10.**(-1.062)/10.**(2.209) - 10.**(-((bafe-eufe)+(2.13-0.51))))/((10.**(-1.062)/10.**(2.209)) - (10.**(0.494)/10.**(1.446)))
+                    rfrac[rfrac < 0.] = 0.
+                    rfrac[rfrac > 1.] = 1.
+
+                    # Compute s-process contribution to [Ba/Fe]
+                    eufe_s = eufe + np.log10(1.-rfrac)
+                    eufe_s[~np.isfinite(eufe_s)] = -999.
+                    eufe_s[eufe < -90] = -999.
+
+                    # Add to tables
+                    data = np.hstack([data,eufe_s])
+                    errs = np.hstack([errs,eu_errs])
+
+                else:
+                    eu_data = table['[Eu/Fe]'].reshape(table['[Eu/Fe]'].shape[0],1)
+                    data = np.hstack([data,eu_data])
+
+                    eu_errs = table['[Eu/Fe]err'].reshape(table['[Eu/Fe]err'].shape[0],1)
+                    errs = np.hstack([errs,eu_errs])
 
             # Mask out non-detections
             data[np.isclose(data,-99)] = -999.0
@@ -182,5 +225,5 @@ if __name__ == "__main__":
 
     # Test to make sure script is working
     data, errs = getdata('Scl', source='dart', c=True, ba=True, eu=True) #mn=True, 
-    print(data.shape)
-    print(data[:,0])
+    #print(data.shape)
+    #print(data[:,0])

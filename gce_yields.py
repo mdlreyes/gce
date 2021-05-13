@@ -796,10 +796,5 @@ if __name__ == "__main__":
 
     #readkaryields()
 
-    nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB = initialize_yields(II_source='nom13', r_process_keyword='none')
-    #print(AGB_yield['AGB'][-1, 0, :])
-    #print(z_AGB)
-    print(M_SN)
-    print(SN_yield['II'][2,0,:]) # elem, Z, M
-    #print(z_II, M_SN)
-    #print(np.isclose(z_II,0))
+    nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB = initialize_yields(r_process_keyword='none')
+    print(eps_sun, SN_yield['atomic'])

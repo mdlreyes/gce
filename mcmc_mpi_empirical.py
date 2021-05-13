@@ -28,7 +28,7 @@ datasource = 'both'
 empirical = True
 
 # Which elements to fit?
-baeu = False
+baeu = True
 fe = True
 c = True
 
@@ -319,7 +319,7 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
 
     if baeu:
         elem_model.append(model['eps'][:,snindex['ba']] - model['eps'][:,snindex['fe']])    # [Ba/Fe]
-        elem_model.append(model['eps'][:,snindex['eu']] - model['eps'][:,snindex['fe']])	# [Eu/Fe]
+        #elem_model.append(model['eps'][:,snindex['eu']] - model['eps'][:,snindex['fe']])	# [Eu/Fe]
 
     sfr = model['mdot']
     mstar_model = model['mstar'][-1]
@@ -334,8 +334,8 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
 
 # Define observed data
 if datasource=='both':
-    elem_dart, delem_dart = getdata(galaxy='Scl', source='dart', c=c, ba=baeu, eu=baeu)
-    elem_deimos, delem_deimos = getdata(galaxy='Scl', source='deimos', c=c, ba=baeu, eu=baeu)
+    elem_dart, delem_dart = getdata(galaxy='Scl', source='dart', c=c, ba=baeu, removerprocess=baeu) #, eu=baeu)
+    elem_deimos, delem_deimos = getdata(galaxy='Scl', source='deimos', c=c, ba=baeu, removerprocess=baeu) #, eu=baeu)
 
     # Don't use [Fe/H] from DART?
     elem_dart[0,:] = -999.
@@ -345,7 +345,7 @@ if datasource=='both':
     delem_data = np.hstack((delem_dart, delem_deimos))
 
 else:  
-    elem_data, delem_data = getdata(galaxy='Scl', source=datasource, c=True, ba=baeu, eu=baeu) #mn=True)
+    elem_data, delem_data = getdata(galaxy='Scl', source=datasource, c=True, ba=baeu) #, eu=baeu) #mn=True)
 
 if fe==False:
     elem_data = np.delete(elem_data,0,0)
