@@ -345,7 +345,7 @@ if datasource=='both':
     delem_data = np.hstack((delem_dart, delem_deimos))
 
 else:  
-    elem_data, delem_data = getdata(galaxy='Scl', source=datasource, c=True, ba=baeu) #, eu=baeu) #mn=True)
+    elem_data, delem_data = getdata(galaxy='Scl', source=datasource, c=True, ba=baeu, removerprocess=baeu) #, eu=baeu) #mn=True)
 
 if fe==False:
     elem_data = np.delete(elem_data,0,0)

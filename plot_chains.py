@@ -47,13 +47,11 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False):
 
     # Make corner plots
     samples = chainfile[:,burnin:, :].reshape((-1, ndim))
-    '''
     cornerfig = corner.corner(samples, labels=names,
                                 quantiles=[0.16, 0.5, 0.84], rasterized=True,
                                 show_titles=True, title_kwargs={"fontsize": 16}, label_kwargs={"fontsize": 16})
     cornerfig.savefig(outfile+'/cornerfig.pdf', bbox_inches='tight', dpi=400)
     plt.show()
-    '''
 
     # Compute 16th, 50th, and 84th percentiles of parameters
     for i in range(ndim):
@@ -67,4 +65,4 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False):
 
 if __name__ == "__main__":
 
-    plotmcmc(file='output/chain.npy', burnin=10000, empiricalfit=True)
+    plotmcmc(file='chain.npy', burnin=0, empiricalfit=True)
