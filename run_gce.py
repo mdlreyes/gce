@@ -68,8 +68,7 @@ if __name__ == "__main__":
     # Run a single model with empirical yield fits
     #scl_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6]
     #scl_powell = [1.07520357, 0.16244134, 4.23355874, 0.99247777, 0.69161203, 0.58384897, 0.68119825, 1.34567668, 0.60438552, 0.16198303, 3.36670239]
-    #scl_mcmc_old = [0.46890192, 0.28214621, 4.53120169, 0.60097303, 0.91420782, 0.30462848, 0.52679802, 1.26303907, 0.71169272, 0.08934153, 0.76942736]
-    scl_mcmc_widerpriors = [0.57925062, 0.25511282, 4.73242679, 0.78293811, 0.76362412, 0.23648493, 0.5921274, 1.32518867, 0.74821858, 0.21047607, 2.0407864]
+    #scl_mcmc_widerpriors = [0.57925062, 0.25511282, 4.73242679, 0.78293811, 0.76362412, 0.23648493, 0.5921274, 1.32518867, 0.74821858, 0.21047607, 2.0407864]
     #scl_test_nofe = [3.27268533, 0.15745049, 12.14827856, 0.31355088, 0.63376588, 3.81172396, 0.68714936, 1.34409349, 0.70064215, 0.2433965, 2.44628418]
-    #scl_test_baeu = 
-    model, atomic = gce.runmodel(scl_mcmc_widerpriors, plot=True, title="Sculptor dSph", empirical=True, empiricalfit=True, amr="plots/amr_test", sfh="plots/sfh_test")
+    scl_test_baeu = [0.59231386, 0.24635045, 4.68516065, 0.5798797, 0.94214962, 1.38412127, 0.58593614, 1.32270303, 0.7562073, 0.2149663, 3.06525529]
+    model, atomic = gce.runmodel(scl_test_baeu, plot=True, title="Empirical yield (incl Ba Eu)", empirical=True, empiricalfit=True) #, amr="plots/amr_test", sfh="plots/sfh_test")

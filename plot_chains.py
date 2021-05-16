@@ -18,7 +18,7 @@ rc('text',usetex=True)
 import numpy as np
 import corner
 
-def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False):
+def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, c=True):
 
     # Load file
     chainfile = np.load(file)
@@ -30,7 +30,11 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False):
 
     names = [r"$A_{\mathrm{in}}$", r"$\tau_{\mathrm{in}}$", r"$A_{\mathrm{out}}$", r"$A_{\star}$", r"$\alpha$", r"$M_{\mathrm{gas},0}$"]
     if empiricalfit:
-        names += [r"$\mathrm{Fe}_{\mathrm{Ia}}$", r"$\mathrm{expC}_{\mathrm{II}}$", r"$\mathrm{normMg}_{\mathrm{II}}$", r"$\mathrm{normCa}_{\mathrm{II}}$", r"$\mathrm{normC}_{\mathrm{AGB}}$"]
+        if c:
+            names += [r"$\mathrm{Fe}_{\mathrm{Ia}}$", r"$\mathrm{expC}_{\mathrm{II}}$", r"$\mathrm{normMg}_{\mathrm{II}}$", r"$\mathrm{normCa}_{\mathrm{II}}$", r"$\mathrm{normC}_{\mathrm{AGB}}$"]
+        else:
+            names += [r"$\mathrm{Fe}_{\mathrm{Ia}}$", r"$\mathrm{normMg}_{\mathrm{II}}$", r"$\mathrm{normCa}_{\mathrm{II}}$"]
+
     for i in range(ndim):
         for j in range(nwalkers):
             chain = chainfile[j,:,i]
@@ -59,10 +63,15 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False):
         percentile = np.array([np.percentile(samples[:,i],50), np.percentile(samples[:,i],84)-median, median-np.percentile(samples[:,i],16)])
         print(names[i]+' range:', "${:.2f}^+{:.2f}_-{:.2f}$".format(*percentile))
 
-    print(np.percentile(samples,50, axis=0))
+    # Print the output parameters
+    outputparams = np.percentile(samples,50, axis=0)
+    if c==False:
+        outputparams = np.insert(outputparams, 7, 1.)
+        outputparams = np.append(outputparams, 0.6)
+    print(outputparams)
 
     return
 
 if __name__ == "__main__":
 
-    plotmcmc(file='chain.npy', burnin=0, empiricalfit=True)
+    plotmcmc(file='chain.npy', burnin=0, empiricalfit=True, c=False)

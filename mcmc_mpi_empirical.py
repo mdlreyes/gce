@@ -28,13 +28,15 @@ datasource = 'both'
 empirical = True
 
 # Which elements to fit?
-baeu = True
+baeu = False
 fe = True
-c = True
+c = False
 
 # Put in initial guesses for parameters 
-params_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6] # initial values
-#params_init = [0.94060355, 0.28939645, 6.59792896, 0.91587929, 0.84587929, 0.61587929, 0.82587929, -0.97412071,  1.02587929,  0.02587929, 0.62587929] # from Powell optimization
+if c:
+    params_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6] # initial values
+else:
+    params_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 0.] # initial values
 
 # Model prep!
 
@@ -159,14 +161,14 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
 
     # Additional free parameters from yields
     fe_ia = pars[6]         # Fe yield from IaSNe
-    mgnorm_ii = pars[8]     # Mg normalization for CCSN yields
-    canorm_ii = pars[9]     # Ca normalization for CCSN yields
     if c:
         cexp_ii = pars[7]       # C exponent for CCSN yields
         cnorm_agb = pars[10]    # C normalization for AGB yields
     else:
         cexp_ii = 1.
         cnorm_agb = 0.6
+    mgnorm_ii = pars[8]     # Mg normalization for CCSN yields
+    canorm_ii = pars[9]     # Ca normalization for CCSN yields
 
     # Initialize model
     model['f_in'] = f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)                                                                                
@@ -345,7 +347,7 @@ if datasource=='both':
     delem_data = np.hstack((delem_dart, delem_deimos))
 
 else:  
-    elem_data, delem_data = getdata(galaxy='Scl', source=datasource, c=True, ba=baeu, removerprocess=baeu) #, eu=baeu) #mn=True)
+    elem_data, delem_data = getdata(galaxy='Scl', source=datasource, c=c, ba=baeu, removerprocess=baeu) #, eu=baeu) #mn=True)
 
 if fe==False:
     elem_data = np.delete(elem_data,0,0)
@@ -364,6 +366,10 @@ def neglnlike(parameters):
     # Don't even bother to compute likelihood if any of the parameters are negative
     if np.any(np.asarray(parameters) < 0.):
         return 1e10
+
+    if c==False:
+        parameters = np.insert(parameters, 7, 1.)
+        parameters = np.append(parameters, 0.6)
 
     # Get data from model
     elem_model, sfr, mstar_model, time, leftovergas = gce_model(parameters)
@@ -413,7 +419,12 @@ def neglnlike(parameters):
 # Define the priors
 def lnprior(parameters):
 
-    f_in_norm0, f_in_t0, f_out, sfr_norm, sfr_exp, mgas0, fe_ia, cexp_ii, mgnorm_ii, canorm_ii, cnorm_agb = parameters
+    if c:
+        f_in_norm0, f_in_t0, f_out, sfr_norm, sfr_exp, mgas0, fe_ia, cexp_ii, mgnorm_ii, canorm_ii, cnorm_agb = parameters
+    else:
+        f_in_norm0, f_in_t0, f_out, sfr_norm, sfr_exp, mgas0, fe_ia, mgnorm_ii, canorm_ii = parameters
+        cexp_ii = 1.
+        cnorm_agb = 0.6
 
     # Define uniform priors, based on values in Table 2 of Kirby+11
     if (0. < f_in_norm0 < 5.) and (0. < f_in_t0 < 1.) and (0. < f_out < 20.) and (0. < sfr_norm < 10.) and (0. < sfr_exp < 2.) and (0. < mgas0 < 20.) and \
@@ -443,7 +454,10 @@ print('Result from Powell: ', params_init)
 
 # Sample the log-probability function using emcee - first, initialize the walkers
 ndim = len(params_init)
-dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513, 0.01, 0.01, 0.01, 0.01, 0.01] / np.sqrt(6.)
+if c:
+    dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513, 0.01, 0.01, 0.01, 0.01, 0.01] / np.sqrt(6.)
+else:
+    dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513, 0.01, 0.01, 0.01] / np.sqrt(6.)
 pos = []
 for i in range(nwalkers):
     a = params_init + dpar*np.random.randn(ndim)

@@ -91,7 +91,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
     # Open observed data
     elem_data, delem_data = getdata(galaxy='Scl', source='deimos', c=True, ba=True, mn=True)
     if datasource=='dart' or datasource=='both':
-        elem_data_dart, delem_data_dart = getdata(galaxy='Scl', source='dart', c=True, ba=True, mn=True, eu=True, removerprocess=False)
+        elem_data_dart, delem_data_dart = getdata(galaxy='Scl', source='dart', c=True, ba=True, mn=True, eu=True, removerprocess=True)
     obs_idx = {'Fe':0, 'Mg':1, 'Si':2, 'Ca':3, 'C':4, 'Ba':5, 'Mn':6, 'Eu':7}  # Maps content of observed elem_data to index
 
     print(elem_names, snindex, labels, obs_idx)
