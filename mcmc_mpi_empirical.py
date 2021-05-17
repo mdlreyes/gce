@@ -35,8 +35,8 @@ c = True
 # Put in initial guesses for parameters 
 params_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6] # initial values
 if c==False:
-    del params_init[7]
     del params_init[10]
+    del params_init[7]
 if fe==False:
     del params_init[6]
 
@@ -469,8 +469,8 @@ print('Result from Powell: ', params_init)
 ndim = len(params_init)
 dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513, 0.01, 0.01, 0.01, 0.01, 0.01] / np.sqrt(6.)
 if c==False:
-    dpar = np.delete(dpar,7)
     dpar = np.delete(dpar,10)
+    dpar = np.delete(dpar,7)
 if fe==False:
     dpar = np.delete(dpar, 6)
 
