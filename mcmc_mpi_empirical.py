@@ -319,9 +319,9 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
         denom = model['eps'][:,snindex['fe']]
     else:
         elem_model = [model['eps'][:,snindex['mg']] + 0.2,		# [Mg/H]
-            model['eps'][:,snindex['si']] - model['eps'][:,snindex['mg']],		# [Si/Mg]
-            model['eps'][:,snindex['ca']] - model['eps'][:,snindex['mg']]]      # [Ca/Mg]
-        denom = model['eps'][:,snindex['mg']]
+            model['eps'][:,snindex['si']] - (model['eps'][:,snindex['mg']] + 0.2),		# [Si/Mg]
+            model['eps'][:,snindex['ca']] - (model['eps'][:,snindex['mg']] + 0.2)]      # [Ca/Mg]
+        denom = model['eps'][:,snindex['mg']] + 0.2
             
     if c:		
         elem_model.append(model['eps'][:,snindex['c']] - denom)     # [C/Fe] or [C/Mg]
