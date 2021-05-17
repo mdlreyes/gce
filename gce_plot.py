@@ -91,9 +91,10 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
 
     if feh==False:
         labels.remove('Mg')
+        labels.append('Fe')
 
     # Open observed data
-    elem_data, delem_data = getdata(galaxy='Scl', source='deimos', c=True, ba=True, mn=True, feh_denom=feh)
+    elem_data, delem_data = getdata(galaxy='Scl', source='deimos', c=True, ba=True, mn=True, eu=True, feh_denom=feh)
     if datasource=='dart' or datasource=='both':
         elem_data_dart, delem_data_dart = getdata(galaxy='Scl', source='dart', c=True, ba=True, mn=True, eu=True, removerprocess=True, feh_denom=feh)
     
@@ -101,7 +102,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
     if feh:
         obs_idx = {'Fe':0, 'Mg':1, 'Si':2, 'Ca':3, 'C':4, 'Ba':5, 'Mn':6, 'Eu':7}
     else:
-        obs_idx = {'Mg':0, 'Si':1, 'Ca':2, 'C':3, 'Ba':4, 'Mn':5, 'Eu':6}
+        obs_idx = {'Mg':0, 'Si':1, 'Ca':2, 'C':3, 'Ba':4, 'Mn':5, 'Eu':6, 'Fe':7}
     print(elem_names, snindex, labels, obs_idx)
 
     if abunds:
@@ -209,7 +210,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
                     # Add 0.2 to [Mg/Fe]
                     modeldata += 0.2
             else:
-                modeldata = model['eps'][:,snindex[label]] - model['eps'][:,snindex['Mg']]
+                modeldata = model['eps'][:,snindex[label]] - (model['eps'][:,snindex['Mg']] + 0.2)
                 
             axs[i+1].plot(x,modeldata,'k.-', zorder=100)
             

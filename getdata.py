@@ -224,15 +224,22 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
 
     # If not using Fe, convert data to [X/Mg] and remove [Fe/H] from the equation
     if feh_denom==False:
-        test = 0
-        print(data[:,test])
+
+        # Temporary: add another row to data table, including [Fe/Mg]
+        data = np.vstack((data, data[0,:]))
+        errs = np.vstack((errs, errs[0,:]))
+
         for i in range(len(data[1,:])):
-            
+
             if data[1,i] > -990:
                 # Convert [X/Fe] -> [X/Mg]
                 for elem in range(2,data.shape[0]):
                     data[elem,i] = data[elem,i] - data[1,i]
                     errs[elem,i] = np.sqrt(errs[elem,i]**2. + errs[1,i]**2.)
+
+                # Temporary: convert [Fe/H] -> [Fe/Mg]
+                data[-1,i] = -data[1,i]
+                errs[-1,i] = errs[1,i]
 
                 # Convert [Mg/Fe] -> [Mg/H]
                 data[1,i] = data[1,i] + data[0,i]
@@ -241,16 +248,16 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
             else:
                 data[:,i] = -999.
 
+
         # Remove [Fe/H] from data
         data = np.delete(data,0,0)
         errs = np.delete(errs,0,0)
-        print(data[:,test])
 
     return data, errs
 
 if __name__ == "__main__":
 
     # Test to make sure script is working
-    data, errs = getdata('Scl', source='dart', c=True, ba=True, eu=True, feh_denom=False) #mn=True, 
+    data, errs = getdata('Scl', source='deimos', c=True, ba=True, mn=True, eu=True, feh_denom=False)
     print(data.shape)
     #print(data[:,2])
