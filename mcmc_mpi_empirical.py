@@ -29,14 +29,16 @@ empirical = True
 
 # Which elements to fit?
 baeu = False
-fe = True
-c = False
+fe = False
+c = True
 
 # Put in initial guesses for parameters 
-if c:
-    params_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6] # initial values
-else:
-    params_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 0.] # initial values
+params_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6] # initial values
+if c==False:
+    del params_init[7]
+    del params_init[10]
+if fe==False:
+    del params_init[6]
 
 # Model prep!
 
@@ -160,7 +162,10 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
     model['mgas'][0] = pars[5]*1.e6  # Initial gas mass (M_sun)
 
     # Additional free parameters from yields
-    fe_ia = pars[6]         # Fe yield from IaSNe
+    if fe:
+        fe_ia = pars[6]         # Fe yield from IaSNe
+    else:
+        fe_ia = 0.8
     if c:
         cexp_ii = pars[7]       # C exponent for CCSN yields
         cnorm_agb = pars[10]    # C normalization for AGB yields
@@ -308,19 +313,21 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
         elem_model = [model['eps'][:,snindex['fe']], #- model['eps'][:,snindex['h']], # [Fe/H]
             model['eps'][:,snindex['mg']] - model['eps'][:,snindex['fe']] + 0.2,	# [Mg/Fe]
             model['eps'][:,snindex['si']] - model['eps'][:,snindex['fe']],	# [Si/Fe]
-            model['eps'][:,snindex['ca']] - model['eps'][:,snindex['fe']],	# [Ca/Fe]
-            model['eps'][:,snindex['c']] - model['eps'][:,snindex['fe']]] 	# [C/Fe]
+            model['eps'][:,snindex['ca']] - model['eps'][:,snindex['fe']]]	# [Ca/Fe]
+            #model['eps'][:,snindex['c']] - model['eps'][:,snindex['fe']]] 	# [C/Fe]
             #model['eps'][:,snindex['mn']] - model['eps'][:,snindex['fe']],	# [Mn/Fe]
+        denom = model['eps'][:,snindex['fe']]
     else:
-        elem_model = [model['eps'][:,snindex['mg']] - model['eps'][:,snindex['fe']] + 0.2,		# [Mg/Fe]
-            model['eps'][:,snindex['si']] - model['eps'][:,snindex['fe']],		# [Si/Fe]
-            model['eps'][:,snindex['ca']] - model['eps'][:,snindex['fe']]]      # [Ca/Fe]
+        elem_model = [model['eps'][:,snindex['mg']] + 0.2,		# [Mg/H]
+            model['eps'][:,snindex['si']] - model['eps'][:,snindex['mg']],		# [Si/Mg]
+            model['eps'][:,snindex['ca']] - model['eps'][:,snindex['mg']]]      # [Ca/Mg]
+        denom = model['eps'][:,snindex['mg']]
             
     if c:		
-        elem_model.append(model['eps'][:,snindex['c']] - model['eps'][:,snindex['fe']])     # [C/Fe]
+        elem_model.append(model['eps'][:,snindex['c']] - denom)     # [C/Fe] or [C/Mg]
 
     if baeu:
-        elem_model.append(model['eps'][:,snindex['ba']] - model['eps'][:,snindex['fe']])    # [Ba/Fe]
+        elem_model.append(model['eps'][:,snindex['ba']] - denom)    # [Ba/Fe] or [Ba/Mg]
         #elem_model.append(model['eps'][:,snindex['eu']] - model['eps'][:,snindex['fe']])	# [Eu/Fe]
 
     sfr = model['mdot']
@@ -336,8 +343,8 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
 
 # Define observed data
 if datasource=='both':
-    elem_dart, delem_dart = getdata(galaxy='Scl', source='dart', c=c, ba=baeu, removerprocess=baeu) #, eu=baeu)
-    elem_deimos, delem_deimos = getdata(galaxy='Scl', source='deimos', c=c, ba=baeu, removerprocess=baeu) #, eu=baeu)
+    elem_dart, delem_dart = getdata(galaxy='Scl', source='dart', c=c, ba=baeu, removerprocess=baeu, feh_denom=fe) #, eu=baeu)
+    elem_deimos, delem_deimos = getdata(galaxy='Scl', source='deimos', c=c, ba=baeu, removerprocess=baeu, feh_denom=fe) #, eu=baeu)
 
     # Don't use [Fe/H] from DART?
     elem_dart[0,:] = -999.
@@ -347,11 +354,7 @@ if datasource=='both':
     delem_data = np.hstack((delem_dart, delem_deimos))
 
 else:  
-    elem_data, delem_data = getdata(galaxy='Scl', source=datasource, c=c, ba=baeu, removerprocess=baeu) #, eu=baeu) #mn=True)
-
-if fe==False:
-    elem_data = np.delete(elem_data,0,0)
-    delem_data = np.delete(delem_data,0,0)
+    elem_data, delem_data = getdata(galaxy='Scl', source=datasource, c=c, ba=baeu, removerprocess=baeu, feh_denom=fe) #, eu=baeu) #mn=True)
 
 nelems, nstars = elem_data.shape
 print('Numbers:', nelems, nstars)
@@ -367,6 +370,8 @@ def neglnlike(parameters):
     if np.any(np.asarray(parameters) < 0.):
         return 1e10
 
+    if fe==False:
+        parameters = np.insert(parameters, 6, 0.8)
     if c==False:
         parameters = np.insert(parameters, 7, 1.)
         parameters = np.append(parameters, 0.6)
@@ -419,12 +424,20 @@ def neglnlike(parameters):
 # Define the priors
 def lnprior(parameters):
 
-    if c:
+    if c and fe:
         f_in_norm0, f_in_t0, f_out, sfr_norm, sfr_exp, mgas0, fe_ia, cexp_ii, mgnorm_ii, canorm_ii, cnorm_agb = parameters
-    else:
+    elif ~c and fe:
         f_in_norm0, f_in_t0, f_out, sfr_norm, sfr_exp, mgas0, fe_ia, mgnorm_ii, canorm_ii = parameters
         cexp_ii = 1.
         cnorm_agb = 0.6
+    elif c and ~fe:
+        f_in_norm0, f_in_t0, f_out, sfr_norm, sfr_exp, mgas0, cexp_ii, mgnorm_ii, canorm_ii, cnorm_agb = parameters
+        fe_ia = 0.8
+    elif ~c and ~fe:
+        f_in_norm0, f_in_t0, f_out, sfr_norm, sfr_exp, mgas0, mgnorm_ii, canorm_ii = parameters
+        cexp_ii = 1.
+        cnorm_agb = 0.6
+        fe_ia = 0.8
 
     # Define uniform priors, based on values in Table 2 of Kirby+11
     if (0. < f_in_norm0 < 5.) and (0. < f_in_t0 < 1.) and (0. < f_out < 20.) and (0. < sfr_norm < 10.) and (0. < sfr_exp < 2.) and (0. < mgas0 < 20.) and \
@@ -454,10 +467,13 @@ print('Result from Powell: ', params_init)
 
 # Sample the log-probability function using emcee - first, initialize the walkers
 ndim = len(params_init)
-if c:
-    dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513, 0.01, 0.01, 0.01, 0.01, 0.01] / np.sqrt(6.)
-else:
-    dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513, 0.01, 0.01, 0.01] / np.sqrt(6.)
+dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513, 0.01, 0.01, 0.01, 0.01, 0.01] / np.sqrt(6.)
+if c==False:
+    dpar = np.delete(dpar,7)
+    dpar = np.delete(dpar,10)
+if fe==False:
+    dpar = np.delete(dpar, 6)
+
 pos = []
 for i in range(nwalkers):
     a = params_init + dpar*np.random.randn(ndim)

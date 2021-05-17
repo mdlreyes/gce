@@ -50,7 +50,7 @@ import cycler
 import cmasher as cmr
 
 def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl', skip_end_dots=-1, NSM=False, 
-            plot_path='plots/', abunds=True, time=True, params=True): 
+            plot_path='plots/', abunds=True, time=True, params=True, feh=True): 
     """Generates plots: [X/Fe] vs [Fe/H], [X/Fe] vs [time], model parameters vs time
 
     Args:
@@ -63,6 +63,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         skip_end_dots (int): Remove last n dots (useful if model becomes erratic)
         plot_path (str): Path to store plots
         abunds, time, params (bool): Types of plots
+        feh (bool): If 'True', plot abundances as a function of [Fe/H]; else, as a function of [Mg/H]
     """
 
     single_plot = False
@@ -88,12 +89,19 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
             labels_h.append(elem_names[elem])
         snindex[elem_names[elem]] = idx
 
-    # Open observed data
-    elem_data, delem_data = getdata(galaxy='Scl', source='deimos', c=True, ba=True, mn=True)
-    if datasource=='dart' or datasource=='both':
-        elem_data_dart, delem_data_dart = getdata(galaxy='Scl', source='dart', c=True, ba=True, mn=True, eu=True, removerprocess=True)
-    obs_idx = {'Fe':0, 'Mg':1, 'Si':2, 'Ca':3, 'C':4, 'Ba':5, 'Mn':6, 'Eu':7}  # Maps content of observed elem_data to index
+    if feh==False:
+        labels.remove('Mg')
 
+    # Open observed data
+    elem_data, delem_data = getdata(galaxy='Scl', source='deimos', c=True, ba=True, mn=True, feh_denom=feh)
+    if datasource=='dart' or datasource=='both':
+        elem_data_dart, delem_data_dart = getdata(galaxy='Scl', source='dart', c=True, ba=True, mn=True, eu=True, removerprocess=True, feh_denom=feh)
+    
+    # Map content of observed elem_data to index
+    if feh:
+        obs_idx = {'Fe':0, 'Mg':1, 'Si':2, 'Ca':3, 'C':4, 'Ba':5, 'Mn':6, 'Eu':7}
+    else:
+        obs_idx = {'Mg':0, 'Si':1, 'Ca':2, 'C':3, 'Ba':4, 'Mn':5, 'Eu':6}
     print(elem_names, snindex, labels, obs_idx)
 
     if abunds:
@@ -106,40 +114,56 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         plt.setp([a.minorticks_on() for a in fig.axes[:]])
         axs = axs.ravel()
 
-        # Get [Fe/H] info from model to plot MDF
-        feh = model['eps'][:,snindex['Fe']]
-        feh_step = 0.1
-        feh_plot = np.arange(-3.5,feh_step,feh_step)
+        # Get x-axis model data ([Fe/H] or [Mg/H]) to plot MDF
+        if feh:
+            x = model['eps'][:,snindex['Fe']]
+            x_step = 0.1
+            x_plot = np.arange(-3.5,x_step,x_step)
+        else:
+            x = model['eps'][:,snindex['Mg']] + 0.2
+            x_step = 0.1
+            x_plot = np.arange(-2.5,1.5,x_step)
+            
         mdot = []
-        for i in range(len(feh_plot)):
+        for i in range(len(x_plot)):
             # Add up all star formation that happened in this [Fe/H] step
-            mask = np.where((feh_plot[i] - feh_step/2. < feh) & (feh < feh_plot[i] + feh_step/2.))[0]
+            mask = np.where((x_plot[i] - x_step/2. < x) & (x < x_plot[i] + x_step/2.))[0]
             mdot.append(np.sum(model['mdot'][mask]))
         mdot = np.array(mdot)
         gauss_sigma = 1
 
-        # Get [Fe/H] observed data to plot
-        feh_obs = elem_data[0,:]
-        obsmask = np.where((feh_obs > -3.5) & (feh_obs < 0.) & (delem_data[0,:] < 0.4))[0]
-        feh_obs = feh_obs[obsmask]
+        # Get x-axis observed data ([Fe/H] or [Mg/H]) to plot
+        x_obs = elem_data[0,:]
+        if feh:
+            obsmask = np.where((x_obs > -3.5) & (x_obs < 0.) & (delem_data[0,:] < 0.4))[0]
+        else:
+            obsmask = np.where((x_obs > -2.5) & (x_obs < 0.) & (delem_data[0,:] < 0.4))[0]
+        x_obs = x_obs[obsmask]
 
         # In top panel, plot model MDF
-        axs[0].plot(feh_plot,scipy.ndimage.filters.gaussian_filter(mdot/np.sum(mdot)/feh_step,gauss_sigma),'k-')
+        axs[0].plot(x_plot,scipy.ndimage.filters.gaussian_filter(mdot/np.sum(mdot)/x_step,gauss_sigma),'k-')
             
         if datasource=='dart' or datasource=='both':
-            # Get [Fe/H] observed data to plot
-            feh_obs_dart = elem_data_dart[0,:]
-            obsmask_dart = np.where((feh_obs_dart > -3.5) & (feh_obs_dart < 0.) & (delem_data_dart[0,:] < 0.4))[0]
-            feh_obs_dart = feh_obs_dart[obsmask_dart]
+            # Get x-axis observed data from DART to plot
+            x_obs_dart = elem_data_dart[0,:]
+            if feh:
+                obsmask_dart = np.where((x_obs_dart > -3.5) & (x_obs_dart < 0.) & (delem_data_dart[0,:] < 0.4))[0]
+            else:
+                obsmask_dart = np.where((x_obs_dart > -2.5) & (x_obs_dart < 0.) & (delem_data_dart[0,:] < 0.4))[0]
+            x_obs_dart = x_obs_dart[obsmask_dart]
 
             # In top panel, plot metallicity distribution function
-            axs[0].hist(feh_obs_dart, bins=20, fill=False, histtype='step', edgecolor=plt.cm.Set3(3), linewidth=1.5, density=True, label='DART')
-            axs[0].set_ylabel('dN/d[Fe/H]') 
+            axs[0].hist(x_obs_dart, bins=20, fill=False, histtype='step', edgecolor=plt.cm.Set3(3), linewidth=1.5, density=True, label='DART')
+            label='[Fe/H]'
+            if feh==False: label='[Mg/H]'
+            axs[0].set_ylabel('dN/d'+label) 
 
         if datasource=='deimos' or datasource=='both':
             # Plot observed DEIMOS MDF    
-            axs[0].hist(feh_obs, bins=20, color=plt.cm.Set3(0), alpha=0.7, density=True, label='DEIMOS')
-            axs[0].set_ylabel('dN/d[Fe/H]') 
+            axs[0].hist(x_obs, bins=20, color=plt.cm.Set3(0), alpha=0.7, density=True, label='DEIMOS')
+            label='[Fe/H]'
+            if feh==False: label='[Mg/H]'
+            axs[0].set_ylabel('dN/d'+label) 
 
         if datasource=='both':
             axs[0].legend(loc='best', fontsize=8)
@@ -152,50 +176,76 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
                 if datasource=='deimos' or datasource=='both' and label!='Ba':
                     obs_data = elem_data[obs_idx[label],obsmask]
                     obs_errs = delem_data[obs_idx[label],obsmask]
-                    feh_errs = delem_data[obs_idx['Fe'],obsmask]
-                    totalerrs = np.sqrt(delem_data[obs_idx[label],obsmask]**2. + delem_data[obs_idx['Fe'],obsmask]**2.)
-                    goodidx = np.where((feh_obs > -990) & (obs_data > -990) & 
-                                    (np.abs(obs_errs) < 0.4) & (np.abs(feh_errs) < 0.4))[0]
+                    if feh:
+                        x_errs = delem_data[obs_idx['Fe'],obsmask]
+                    else:
+                        x_errs = delem_data[obs_idx['Mg'],obsmask]
+                    totalerrs = np.sqrt(delem_data[obs_idx[label],obsmask]**2. + x_errs**2.)
+                    goodidx = np.where((x_obs > -990) & (obs_data > -990) & 
+                                    (np.abs(obs_errs) < 0.4) & (np.abs(x_errs) < 0.4))[0]
+                    print(label, obs_idx[label], len(obs_data), len(obs_data[goodidx]))
                     #axs[i+1].scatter(feh_obs[goodidx], obs_data[goodidx], c='r', s=0.8/(totalerrs[goodidx])**2., alpha=0.5)
-                    axs[i+1].errorbar(feh_obs[goodidx], obs_data[goodidx], xerr=feh_errs[goodidx], yerr=obs_errs[goodidx], 
+                    axs[i+1].errorbar(x_obs[goodidx], obs_data[goodidx], xerr=x_errs[goodidx], yerr=obs_errs[goodidx], 
                                     color=plt.cm.Set3(0), linestyle='None', marker='o', markersize=3, alpha=0.7, linewidth=0.5)
 
                 if datasource=='dart' or datasource=='both':
                     obs_data = elem_data_dart[obs_idx[label],obsmask_dart]
                     obs_errs = delem_data_dart[obs_idx[label],obsmask_dart]
-                    feh_errs = delem_data_dart[obs_idx['Fe'],obsmask_dart]
-                    totalerrs = np.sqrt(delem_data_dart[obs_idx[label],obsmask_dart]**2. + delem_data_dart[obs_idx['Fe'],obsmask_dart]**2.)
-                    goodidx = np.where((feh_obs_dart > -990) & (obs_data > -990) & 
-                                    (np.abs(obs_errs) < 0.4) & (np.abs(feh_errs) < 0.4))[0]
+                    if feh:
+                        x_errs = delem_data_dart[obs_idx['Fe'],obsmask_dart]
+                    else:
+                        x_errs = delem_data_dart[obs_idx['Mg'],obsmask_dart]
+                    totalerrs = np.sqrt(delem_data_dart[obs_idx[label],obsmask_dart]**2. + x_errs**2.)
+                    goodidx = np.where((x_obs_dart > -990) & (obs_data > -990) & 
+                                    (np.abs(obs_errs) < 0.4) & (np.abs(x_errs) < 0.4))[0]
                     #axs[i+1].scatter(feh_obs[goodidx], obs_data[goodidx], c='r', s=0.8/(totalerrs[goodidx])**2., alpha=0.5)
-                    axs[i+1].errorbar(feh_obs_dart[goodidx], obs_data[goodidx], xerr=feh_errs[goodidx], yerr=obs_errs[goodidx], 
+                    axs[i+1].errorbar(x_obs_dart[goodidx], obs_data[goodidx], xerr=x_errs[goodidx], yerr=obs_errs[goodidx], 
                                     mfc='white', mec=plt.cm.Set3(3), ecolor=plt.cm.Set3(3), linestyle='None', marker='o', markersize=3, linewidth=0.5)
             
-            # Plot model [X/Fe]
-            modeldata = model['eps'][:,snindex[label]] - model['eps'][:,snindex['Fe']]
-            if i == 4:
-                # Add 0.2 to [Mg/Fe]
-                modeldata += 0.2
-            axs[i+1].plot(feh,modeldata,'k.-', zorder=100)
+            # Plot model [X/Fe] (or [X/Mg])
+            if feh:
+                modeldata = model['eps'][:,snindex[label]] - model['eps'][:,snindex['Fe']]
+                if label == 'Mg':
+                    # Add 0.2 to [Mg/Fe]
+                    modeldata += 0.2
+            else:
+                modeldata = model['eps'][:,snindex[label]] - model['eps'][:,snindex['Mg']]
+                
+            axs[i+1].plot(x,modeldata,'k.-', zorder=100)
             
             # Add title and labels
             if i == 0:
                 axs[0].set_title(title)
-            axs[i+1].set_ylabel('['+label+'/Fe]')
+            if feh:
+                denom_label = '/Fe]'
+            else:
+                denom_label = '/Mg]'
+            axs[i+1].set_ylabel('['+label+denom_label)
             axs[i+1].plot([-6,0],[0,0],':k')
 
             # Set different limits/ticks for H and He
-            if label in [elem_names[1],elem_names[2]]:
-                axs[i+1].set_yticks([0.5,1.5,2.5,3.5])
-                axs[i+1].set_ylim([0,3.5])
+            if feh:
+                if label in [elem_names[1],elem_names[2]]:
+                    axs[i+1].set_yticks([0.5,1.5,2.5,3.5])
+                    axs[i+1].set_ylim([0,3.5])
 
             if label == elem_names[56]:
                 axs[i+1].set_yticks([-2,-1,0,1])
-                axs[i+1].set_ylim([-2,2])
+                if feh:
+                    axs[i+1].set_ylim([-2,2])
+                else:
+                    axs[i+1].set_ylim([-3,2])
 
-        plt.xlim([-3.5,0])
-        plt.xlabel('[Fe/H]')
-        plt.savefig((plot_path+title+'_feh.png').replace(' ',''))
+        if feh:
+            plt.xlim([-3.5,0])
+            plt.xlabel('[Fe/H]')
+            filelabel = '_feh.png'
+        else:
+            plt.xlim([-2.5,0.])
+            plt.xlabel('[Mg/H]')
+            filelabel = '_mgh.png'
+
+        plt.savefig((plot_path+title+filelabel).replace(' ',''))
         if plot==True: 
             plt.show()
         else:
@@ -212,22 +262,28 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
                 eu_data = elem_data_dart[obs_idx['Eu'],obsmask_dart]
                 obs_data = ba_data - eu_data
                 obs_errs = np.sqrt(delem_data_dart[obs_idx['Ba'],obsmask_dart]**2. + delem_data_dart[obs_idx['Eu'],obsmask_dart]**2.)
-                feh_errs = delem_data_dart[obs_idx['Fe'],obsmask_dart]
-                goodidx = np.where((feh_obs_dart > -990) & (ba_data > -990) & (eu_data > -990) & 
-                                (np.abs(obs_errs) < 0.4) & (np.abs(feh_errs) < 0.4))[0]
-                ax.errorbar(feh_obs_dart[goodidx], obs_data[goodidx], xerr=feh_errs[goodidx], yerr=obs_errs[goodidx], 
+                if feh:
+                    x_errs = delem_data_dart[obs_idx['Fe'],obsmask_dart]
+                else:
+                    x_errs = delem_data_dart[obs_idx['Mg'],obsmask_dart]
+                goodidx = np.where((x_obs_dart > -990) & (ba_data > -990) & (eu_data > -990) & 
+                                (np.abs(obs_errs) < 0.4) & (np.abs(x_errs) < 0.4))[0]
+                ax.errorbar(x_obs_dart[goodidx], obs_data[goodidx], xerr=x_errs[goodidx], yerr=obs_errs[goodidx], 
                             mfc='white', mec=plt.cm.Set3(3), ecolor=plt.cm.Set3(3), linestyle='None', marker='o', markersize=3, linewidth=0.5)
 
             # Plot model [Ba/Eu] vs [Fe/H]
             modeldata = model['eps'][:,snindex['Ba']] - model['eps'][:,snindex['Eu']]
-            plt.plot(feh,modeldata,'k.-', zorder=100)
+            plt.plot(x,modeldata,'k.-', zorder=100)
             
             # Add title and labels
             plt.title(title)
             plt.ylabel('[Ba/Eu]')
-            plt.xlabel('[Fe/H]')
+            if feh:
+                plt.xlabel('[Fe/H]')
+                plt.xlim([-3.5,0])
+            else:
+                plt.xlabel('[Mg/H]')
             plt.plot([-6,0],[0,0],':k')
-            plt.xlim([-3.5,0])
             plt.ylim([-2.5,2.5])
             #agbtitle = {'kar':'Karakas+18', 'cri15':'FRUITY'}
             #ax.text(0.05, 0.9, agbtitle[paramfile.AGB_source], transform=ax.transAxes, fontsize=12)

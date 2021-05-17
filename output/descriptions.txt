@@ -37,11 +37,11 @@ empiricaltest_nofe.npy
     > 1e5 steps over 32 walkers
 
 empiricaltest_withbaeu_short.npy
-    > same params as empiricaltest_combinedsample.npy, but also fitting Ba and Eu
+    > same params as empiricaltest_combinedsample.npy, but not fitting C
     > datasource = 'both'
     > 1e5 steps over 32 walkers
 
-empiricaltest_withbaeu_short.npy
+empiricaltest_noc_short.npy
     > same params as empiricaltest_combinedsample.npy, but not fitting C
     > datasource = 'both'
     > 1e5 steps over 32 walkers

@@ -14,7 +14,8 @@ syserr = {'Fe':0.10103081, 'alpha':0.084143983, 'Mg':0.076933658,
         'Si':0.099193360, 'Ca':0.11088295, 'Ti':0.10586739,
         'C':0.100, 'Ba':0.100, 'Mn':0.100}
 
-def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outlier_reject=True, removerprocess=True):
+def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outlier_reject=True, 
+    removerprocess=True, feh_denom=True):
     """Compiles observed abundances from literature tables.
 
     Args:
@@ -24,6 +25,8 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
                         along with [Fe/H], [Mg/Fe], [Si/Fe], [Ca/Fe]
         outlier_reject (bool): If 'True', do remove high-C and high-Ba outliers
         removerprocess (bool): If 'True', subtract r-process contribution using Duggan+18 method
+        feh_denom (bool): If 'True', return [Fe/H] and other elements as [X/Fe];
+                        otherwise, don't return [Fe/H] and convert [X/Fe] -> [X/Mg]
 
     Returns:
         data, errs (array): Observed data and errors
@@ -219,11 +222,35 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
         data = data.T
         errs = errs.T
 
+    # If not using Fe, convert data to [X/Mg] and remove [Fe/H] from the equation
+    if feh_denom==False:
+        test = 0
+        print(data[:,test])
+        for i in range(len(data[1,:])):
+            
+            if data[1,i] > -990:
+                # Convert [X/Fe] -> [X/Mg]
+                for elem in range(2,data.shape[0]):
+                    data[elem,i] = data[elem,i] - data[1,i]
+                    errs[elem,i] = np.sqrt(errs[elem,i]**2. + errs[1,i]**2.)
+
+                # Convert [Mg/Fe] -> [Mg/H]
+                data[1,i] = data[1,i] + data[0,i]
+                errs[1,i] = np.sqrt(errs[1,i]**2. + errs[0,i]**2.)
+        
+            else:
+                data[:,i] = -999.
+
+        # Remove [Fe/H] from data
+        data = np.delete(data,0,0)
+        errs = np.delete(errs,0,0)
+        print(data[:,test])
+
     return data, errs
 
 if __name__ == "__main__":
 
     # Test to make sure script is working
-    data, errs = getdata('Scl', source='dart', c=True, ba=True, eu=True) #mn=True, 
-    #print(data.shape)
-    #print(data[:,0])
+    data, errs = getdata('Scl', source='dart', c=True, ba=True, eu=True, feh_denom=False) #mn=True, 
+    print(data.shape)
+    #print(data[:,2])

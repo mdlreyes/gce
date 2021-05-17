@@ -21,7 +21,7 @@ import dtd
 import gce_yields as gce_yields
 import gce_plot
 
-def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, empiricalfit=False):
+def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, empiricalfit=False, feh_denom=True):
     """Galactic chemical evolution model.
 
     Takes in additional parameters from params.py, reads yields using gce_yields.py, 
@@ -38,6 +38,7 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
                         rather than literature yield sets
         empiricalfit (bool): If True, use additional parameters to set yields
                         (note: pars must include these additional parameters!)
+        feh_denom (bool): If True, use [Fe/H] as x-axis of plots; otherwise use [Mg/H]
 
     Returns:
         model (array): All outputs of model.
@@ -317,7 +318,7 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
 
     if plot:
         gce_plot.makeplots(model[:timestep-1], atomic, title=title, plot=True, skip_end_dots=-10, 
-        abunds=True, time=False, params=True, datasource='both')
+        abunds=True, time=False, params=False, datasource='both', feh=feh_denom)
 
     if amr is not None:
         modeldata = np.hstack((model['eps'][:timestep-1,snindex['fe']], model['t'][:timestep-1, None]))
