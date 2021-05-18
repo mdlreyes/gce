@@ -226,8 +226,8 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
     if feh_denom==False:
 
         # Temporary: add another row to data table, including [Fe/Mg]
-        data = np.vstack((data, data[0,:]))
-        errs = np.vstack((errs, errs[0,:]))
+        #data = np.vstack((data, data[0,:]))
+        #errs = np.vstack((errs, errs[0,:]))
 
         for i in range(len(data[1,:])):
 
@@ -238,8 +238,8 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
                     errs[elem,i] = np.sqrt(errs[elem,i]**2. + errs[1,i]**2.)
 
                 # Temporary: convert [Fe/H] -> [Fe/Mg]
-                data[-1,i] = -data[1,i]
-                errs[-1,i] = errs[1,i]
+                #data[-1,i] = -data[1,i]
+                #errs[-1,i] = errs[1,i]
 
                 # Convert [Mg/Fe] -> [Mg/H]
                 data[1,i] = data[1,i] + data[0,i]
