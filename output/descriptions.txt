@@ -37,11 +37,17 @@ empiricaltest_nofe.npy
     > 1e5 steps over 32 walkers
 
 empiricaltest_withbaeu_short.npy
-    > same params as empiricaltest_combinedsample.npy, but not fitting C
+    > same params as empiricaltest_combinedsample.npy, but also fitting Ba/Eu (no r-process removal)
     > datasource = 'both'
     > 1e5 steps over 32 walkers
 
 empiricaltest_noc_short.npy
     > same params as empiricaltest_combinedsample.npy, but not fitting C
+    > datasource = 'both'
+    > 1e5 steps over 32 walkers
+
+empiricaltest_nofe_baeu_short.npy
+    > same params as empiricaltest_combinedsample.npy, but not fitting Fe
+    > also fitting Ba (removing r-process contribution using statistical correction)
     > datasource = 'both'
     > 1e5 steps over 32 walkers

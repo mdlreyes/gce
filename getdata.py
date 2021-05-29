@@ -289,7 +289,7 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
     # If not using Fe, convert data to [X/Mg] and remove [Fe/H] from the equation
     if feh_denom==False:
 
-        # Temporary: add another row to data table, including [Fe/Mg]
+        # Temporary (needed for plotting): add another row to data table, including [Fe/Mg]
         #data = np.vstack((data, data[0,:]))
         #errs = np.vstack((errs, errs[0,:]))
 

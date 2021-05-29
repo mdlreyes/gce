@@ -29,7 +29,7 @@ empirical = True
 
 # Which elements to fit?
 baeu = True
-fe = False
+fe = True
 c = True
 
 # Put in initial guesses for parameters 
