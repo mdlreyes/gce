@@ -6,6 +6,28 @@ Compiles spectroscopic data from data/ folder.
 
 import numpy as np
 from astropy.io import ascii
+from numpy.random import default_rng
+
+# Backend for matplotlib on mahler
+import matplotlib
+matplotlib.use('TkAgg')
+import matplotlib.pyplot as plt
+
+# Do some formatting stuff with matplotlib
+from matplotlib import rc
+from matplotlib.ticker import MultipleLocator, AutoMinorLocator, MaxNLocator, FormatStrFormatter
+rc('font', family='serif')
+rc('axes', labelsize=14) 
+rc('xtick', labelsize=10)
+rc('ytick', labelsize=10)
+rc('xtick.major', size=8)
+rc('ytick.major', size=8)
+rc('legend', fontsize=12, frameon=False)
+rc('text',usetex=True)
+rc('xtick',direction='in')
+rc('ytick',direction='in')
+import cmasher as cmr
+matplotlib.rcParams['text.latex.preamble']=[r"\usepackage{amsmath}"]
 
 # Systematic errors
 # Fe/H and alpha/Fe calculated by Evan on 12/28/17
@@ -15,7 +37,7 @@ syserr = {'Fe':0.10103081, 'alpha':0.084143983, 'Mg':0.076933658,
         'C':0.100, 'Ba':0.100, 'Mn':0.100}
 
 def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outlier_reject=True, 
-    removerprocess=True, feh_denom=True):
+    removerprocess='statistical', feh_denom=True):
     """Compiles observed abundances from literature tables.
 
     Args:
@@ -24,7 +46,8 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
         c, ba, mn, eu (bool): Keywords to decide which elements to include 
                         along with [Fe/H], [Mg/Fe], [Si/Fe], [Ca/Fe]
         outlier_reject (bool): If 'True', do remove high-C and high-Ba outliers
-        removerprocess (bool): If 'True', subtract r-process contribution using Duggan+18 method
+        removerprocess (str): If not 'None', subtract r-process contribution using Duggan+18 method
+                        (options: 'individual' = individual stars; 'statistical' = fit line to [Ba/Eu] vs [Fe/H])
         feh_denom (bool): If 'True', return [Fe/H] and other elements as [X/Fe];
                         otherwise, don't return [Fe/H] and convert [X/Fe] -> [X/Mg]
 
@@ -135,21 +158,64 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
 
             # Add barium if needed
             if ba:
-                if removerprocess:
+                if removerprocess is not None:
                     bafe = table['[Ba/Fe]'].reshape(table['[Ba/Fe]'].shape[0],1)
                     eufe = table['[Eu/Fe]'].reshape(table['[Eu/Fe]'].shape[0],1)
                     ba_errs = table['[Ba/Fe]err'].reshape(table['[Ba/Fe]err'].shape[0],1)
                     eu_errs = table['[Eu/Fe]err'].reshape(table['[Eu/Fe]err'].shape[0],1)
 
-                    # Compute fraction of r-process elements
-                    rfrac = (10.**(-1.062)/10.**(2.209) - 10.**(-((bafe-eufe)+(2.13-0.51))))/((10.**(-1.062)/10.**(2.209)) - (10.**(0.494)/10.**(1.446)))
-                    rfrac[rfrac < 0.] = 0.
-                    rfrac[rfrac > 1.] = 1.
+                    if removerprocess=='individual':
+                        # Compute fraction of r-process elements
+                        rfrac = (10.**(-1.062)/10.**(2.209) - 10.**(-((bafe-eufe)+(2.13-0.51))))/((10.**(-1.062)/10.**(2.209)) - (10.**(0.494)/10.**(1.446)))
+                        rfrac[rfrac < 0.] = 0.
+                        rfrac[rfrac > 1.] = 1.
 
-                    # Compute s-process contribution to [Ba/Fe]
-                    bafe_s = bafe + np.log10(1.-rfrac)
-                    bafe_s[~np.isfinite(bafe_s)] = -999.
-                    bafe_s[eufe < -90] = -999.
+                        # Compute s-process contribution to [Ba/Fe]
+                        bafe_s = bafe + np.log10(1.-rfrac)
+                        bafe_s[~np.isfinite(bafe_s)] = -999.
+                        bafe_s[eufe < -90] = -999.
+
+                    elif removerprocess=='statistical':
+                        # Fit line to [Ba/Eu] vs [Fe/H]
+                        feh = table['[Fe/H]'].reshape(table['[Fe/H]'].shape[0],1)
+                        fe_errs = table['[Fe/H]err'].reshape(table['[Fe/H]err'].shape[0],1)
+
+                        # Use MC bootstrapping method
+                        idx = np.where((feh > -990.) & (bafe > -90.) & (eufe > -90.) & (fe_errs > 0.) & (ba_errs > 0.) & (eu_errs > 0.))[0]
+                        rng = default_rng()
+                        niter = 10000
+                        fe_iter = rng.normal(loc=feh[idx], scale=fe_errs[idx], size=(feh[idx].shape[0], niter))
+                        ba_iter = rng.normal(loc=bafe[idx], scale=ba_errs[idx], size=(bafe[idx].shape[0], niter))
+                        eu_iter = rng.normal(loc=eufe[idx], scale=eu_errs[idx], size=(eufe[idx].shape[0], niter))
+                        coeffs = np.zeros((2,niter))
+                        for i in range(niter):
+                            coeffs[:,i] = np.polyfit(fe_iter[:,i], ba_iter[:,i]-eu_iter[:,i], 1)
+                        print(np.percentile(coeffs, 50, axis=1))
+                        p = np.poly1d(np.percentile(coeffs, 50, axis=1))
+                        
+                        # Test plot
+                        '''
+                        plt.errorbar(feh[idx], bafe[idx]-eufe[idx], xerr=fe_errs[idx], yerr=np.sqrt(ba_errs[idx]**2. + eu_errs[idx]**2.), 
+                            mfc='white', mec=plt.cm.Set3(3), ecolor=plt.cm.Set3(3), linestyle='None', marker='o', markersize=6, linewidth=0.5)
+                        plt.plot([-2.5,-0.75], p([-2.5,-0.75]), ls='-', color='k', label=r'$y={:.2f}x+{:.2f}$'.format(*p))
+                        plt.xlim((-2.5,-0.75))
+                        plt.xlabel('[Fe/H]')
+                        plt.ylabel('[Ba/Eu]')
+                        plt.legend(loc='upper left')
+                        plt.savefig('plots/baeu_rcorrection.png', bbox_inches='tight')
+                        plt.show()
+                        '''
+                        
+                        # Compute fraction of r-process elements
+                        baeu = p(feh)
+                        baeu[np.where(feh < -990.)] = -999.
+                        rfrac = (10.**(-1.062)/10.**(2.209) - 10.**(-(baeu+(2.13-0.51))))/((10.**(-1.062)/10.**(2.209)) - (10.**(0.494)/10.**(1.446)))
+                        rfrac[rfrac < 0.] = 0.
+                        rfrac[rfrac > 1.] = 1.
+
+                        # Compute s-process contribution to [Ba/Fe]
+                        bafe_s = bafe + np.log10(1.-rfrac)
+                        bafe_s[~np.isfinite(bafe_s)] = -999.
 
                     # Add to tables
                     data = np.hstack([data,bafe_s])
@@ -258,6 +324,6 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
 if __name__ == "__main__":
 
     # Test to make sure script is working
-    data, errs = getdata('Scl', source='deimos', c=True, ba=True, mn=True, eu=True, feh_denom=False)
-    print(data.shape)
+    data, errs = getdata('Scl', source='dart', c=True, ba=True, mn=True, eu=True, feh_denom=True, removerprocess='statistical')
+    #print(data.shape)
     #print(data[:,2])

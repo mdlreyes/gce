@@ -96,7 +96,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
     # Open observed data
     elem_data, delem_data = getdata(galaxy='Scl', source='deimos', c=True, ba=True, mn=True, eu=True, feh_denom=feh)
     if datasource=='dart' or datasource=='both':
-        elem_data_dart, delem_data_dart = getdata(galaxy='Scl', source='dart', c=True, ba=True, mn=True, eu=True, removerprocess=True, feh_denom=feh)
+        elem_data_dart, delem_data_dart = getdata(galaxy='Scl', source='dart', c=True, ba=True, mn=True, eu=True, removerprocess='statistical', feh_denom=feh)
     
     # Map content of observed elem_data to index
     if feh:
@@ -233,7 +233,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
             if label == elem_names[56]:
                 axs[i+1].set_yticks([-2,-1,0,1])
                 if feh:
-                    axs[i+1].set_ylim([-2,2])
+                    axs[i+1].set_ylim([-2.5,2])
                 else:
                     axs[i+1].set_ylim([-3,2])
 

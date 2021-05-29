@@ -325,7 +325,7 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
         np.save(amr, modeldata)
 
     if sfh is not None:
-        modeldata = np.vstack((model['mdot'], model['t']))
+        modeldata = np.vstack((model['mdot'][:timestep-1], model['t'][:timestep-1]))
         np.save(sfh, modeldata)
 
     return model[:timestep-1], atomic

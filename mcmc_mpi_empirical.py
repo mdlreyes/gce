@@ -28,7 +28,7 @@ datasource = 'both'
 empirical = True
 
 # Which elements to fit?
-baeu = False
+baeu = True
 fe = False
 c = True
 
@@ -343,8 +343,8 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
 
 # Define observed data
 if datasource=='both':
-    elem_dart, delem_dart = getdata(galaxy='Scl', source='dart', c=c, ba=baeu, removerprocess=baeu, feh_denom=fe) #, eu=baeu)
-    elem_deimos, delem_deimos = getdata(galaxy='Scl', source='deimos', c=c, ba=baeu, removerprocess=baeu, feh_denom=fe) #, eu=baeu)
+    elem_dart, delem_dart = getdata(galaxy='Scl', source='dart', c=c, ba=baeu, removerprocess='statistical', feh_denom=fe) #, eu=baeu)
+    elem_deimos, delem_deimos = getdata(galaxy='Scl', source='deimos', c=c, ba=baeu, removerprocess='statistical', feh_denom=fe) #, eu=baeu)
 
     # Don't use [Fe/H] from DART?
     elem_dart[0,:] = -999.
@@ -354,7 +354,7 @@ if datasource=='both':
     delem_data = np.hstack((delem_dart, delem_deimos))
 
 else:  
-    elem_data, delem_data = getdata(galaxy='Scl', source=datasource, c=c, ba=baeu, removerprocess=baeu, feh_denom=fe) #, eu=baeu) #mn=True)
+    elem_data, delem_data = getdata(galaxy='Scl', source=datasource, c=c, ba=baeu, removerprocess='statistical', feh_denom=fe) #, eu=baeu) #mn=True)
 
 nelems, nstars = elem_data.shape
 print('Numbers:', nelems, nstars)
