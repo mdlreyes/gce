@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 
 # Do some formatting stuff with matplotlib
 from matplotlib import rc
-from matplotlib.ticker import MultipleLocator, AutoMinorLocator, MaxNLocator, FormatStrFormatter
 rc('font', family='serif')
 rc('axes', labelsize=14) 
 rc('xtick', labelsize=10)
@@ -26,7 +25,6 @@ rc('legend', fontsize=12, frameon=False)
 rc('text',usetex=True)
 rc('xtick',direction='in')
 rc('ytick',direction='in')
-import cmasher as cmr
 matplotlib.rcParams['text.latex.preamble']=[r"\usepackage{amsmath}"]
 
 # Systematic errors
