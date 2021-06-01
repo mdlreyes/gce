@@ -52,6 +52,45 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
     Returns:
         data, errs (array): Observed data and errors
     """  
+
+    # Get info for r-process correction if needed
+    if removerprocess=='statistical':
+        # Get data from DART table
+        darttable = ascii.read("data/hill19.dat")
+        bafe = darttable['[Ba/Fe]'].reshape(darttable['[Ba/Fe]'].shape[0],1)
+        eufe = darttable['[Eu/Fe]'].reshape(darttable['[Eu/Fe]'].shape[0],1)
+        ba_errs = darttable['[Ba/Fe]err'].reshape(darttable['[Ba/Fe]err'].shape[0],1)
+        eu_errs = darttable['[Eu/Fe]err'].reshape(darttable['[Eu/Fe]err'].shape[0],1)
+
+        # Fit line to [Ba/Eu] vs [Fe/H]
+        feh = darttable['[Fe/H]'].reshape(darttable['[Fe/H]'].shape[0],1)
+        fe_errs = darttable['[Fe/H]err'].reshape(darttable['[Fe/H]err'].shape[0],1)
+
+        # Use MC bootstrapping method
+        idx = np.where((feh > -990.) & (bafe > -90.) & (eufe > -90.) & (fe_errs > 0.) & (ba_errs > 0.) & (eu_errs > 0.))[0]
+        rng = default_rng()
+        niter = 10000
+        fe_iter = rng.normal(loc=feh[idx], scale=fe_errs[idx], size=(feh[idx].shape[0], niter))
+        ba_iter = rng.normal(loc=bafe[idx], scale=ba_errs[idx], size=(bafe[idx].shape[0], niter))
+        eu_iter = rng.normal(loc=eufe[idx], scale=eu_errs[idx], size=(eufe[idx].shape[0], niter))
+        coeffs = np.zeros((2,niter))
+        for i in range(niter):
+            coeffs[:,i] = np.polyfit(fe_iter[:,i], ba_iter[:,i]-eu_iter[:,i], 1)
+        print(np.percentile(coeffs, 50, axis=1))
+        p = np.poly1d(np.percentile(coeffs, 50, axis=1))
+
+        # Test plot
+        '''
+        plt.errorbar(feh[idx], bafe[idx]-eufe[idx], xerr=fe_errs[idx], yerr=np.sqrt(ba_errs[idx]**2. + eu_errs[idx]**2.), 
+            mfc='white', mec=plt.cm.Set3(3), ecolor=plt.cm.Set3(3), linestyle='None', marker='o', markersize=6, linewidth=0.5)
+        plt.plot([-2.5,-0.75], p([-2.5,-0.75]), ls='-', color='k', label=r'$y={:.2f}x+{:.2f}$'.format(*p))
+        plt.xlim((-2.5,-0.75))
+        plt.xlabel('[Fe/H]')
+        plt.ylabel('[Ba/Eu]')
+        plt.legend(loc='upper left')
+        plt.savefig('plots/baeu_rcorrection.png', bbox_inches='tight')
+        plt.show()
+        '''
     
     if source=='deimos':
         # Open files
@@ -90,9 +129,22 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
 
             # Cross-match with barium table if needed
             if ba: 
-                if names[i] in table_ba['Name']:
+                if names[i] in table_ba['Name'] and removerprocess != 'individual':
                     ba_idx = np.where(table_ba['Name'] == names[i])
-                    newdata = np.concatenate((newdata,table_ba['[Ba/Fe]'][ba_idx]))
+
+                    bafe = table_ba['[Ba/Fe]'][ba_idx]
+
+                    if removerprocess == 'statistical':
+                        # Compute fraction of r-process elements
+                        baeu = p(table['[Fe/H]'][ba_idx])
+                        rfrac = (10.**(-1.062)/10.**(2.209) - 10.**(-(baeu+(2.13-0.51))))/((10.**(-1.062)/10.**(2.209)) - (10.**(0.494)/10.**(1.446)))
+                        if rfrac < 0.: rfrac = 0.
+                        elif rfrac > 1.: rfrac = 1.
+
+                        # Compute s-process contribution to [Ba/Fe]
+                        bafe += np.log10(1.-rfrac)
+
+                    newdata = np.concatenate((newdata,bafe))
                     newerrs = np.concatenate((newerrs,np.sqrt(table_ba['e_[Ba/Fe]'][ba_idx]**2. + syserr['Ba'])))
                 else:
                     newdata = np.concatenate((newdata,[-999.]))
@@ -174,36 +226,6 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
                         bafe_s[eufe < -90] = -999.
 
                     elif removerprocess=='statistical':
-                        # Fit line to [Ba/Eu] vs [Fe/H]
-                        feh = table['[Fe/H]'].reshape(table['[Fe/H]'].shape[0],1)
-                        fe_errs = table['[Fe/H]err'].reshape(table['[Fe/H]err'].shape[0],1)
-
-                        # Use MC bootstrapping method
-                        idx = np.where((feh > -990.) & (bafe > -90.) & (eufe > -90.) & (fe_errs > 0.) & (ba_errs > 0.) & (eu_errs > 0.))[0]
-                        rng = default_rng()
-                        niter = 10000
-                        fe_iter = rng.normal(loc=feh[idx], scale=fe_errs[idx], size=(feh[idx].shape[0], niter))
-                        ba_iter = rng.normal(loc=bafe[idx], scale=ba_errs[idx], size=(bafe[idx].shape[0], niter))
-                        eu_iter = rng.normal(loc=eufe[idx], scale=eu_errs[idx], size=(eufe[idx].shape[0], niter))
-                        coeffs = np.zeros((2,niter))
-                        for i in range(niter):
-                            coeffs[:,i] = np.polyfit(fe_iter[:,i], ba_iter[:,i]-eu_iter[:,i], 1)
-                        print(np.percentile(coeffs, 50, axis=1))
-                        p = np.poly1d(np.percentile(coeffs, 50, axis=1))
-                        
-                        # Test plot
-                        '''
-                        plt.errorbar(feh[idx], bafe[idx]-eufe[idx], xerr=fe_errs[idx], yerr=np.sqrt(ba_errs[idx]**2. + eu_errs[idx]**2.), 
-                            mfc='white', mec=plt.cm.Set3(3), ecolor=plt.cm.Set3(3), linestyle='None', marker='o', markersize=6, linewidth=0.5)
-                        plt.plot([-2.5,-0.75], p([-2.5,-0.75]), ls='-', color='k', label=r'$y={:.2f}x+{:.2f}$'.format(*p))
-                        plt.xlim((-2.5,-0.75))
-                        plt.xlabel('[Fe/H]')
-                        plt.ylabel('[Ba/Eu]')
-                        plt.legend(loc='upper left')
-                        plt.savefig('plots/baeu_rcorrection.png', bbox_inches='tight')
-                        plt.show()
-                        '''
-                        
                         # Compute fraction of r-process elements
                         baeu = p(feh)
                         baeu[np.where(feh < -990.)] = -999.

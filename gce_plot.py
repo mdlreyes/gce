@@ -174,7 +174,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
 
             # Plot observed [X/Fe]
             if label in obs_idx:
-                if datasource=='deimos' or datasource=='both' and label!='Ba':
+                if datasource=='deimos' or datasource=='both': # and label!='Ba':
                     obs_data = elem_data[obs_idx[label],obsmask]
                     obs_errs = delem_data[obs_idx[label],obsmask]
                     if feh:
