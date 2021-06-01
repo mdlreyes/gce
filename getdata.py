@@ -141,7 +141,7 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
                         rfrac = (10.**(-1.062)/10.**(2.209) - 10.**(-(baeu+(2.13-0.51))))/((10.**(-1.062)/10.**(2.209)) - (10.**(0.494)/10.**(1.446)))
                         if rfrac < 0.: rfrac = 0.
                         elif rfrac > 1.: rfrac = 1.
-                        
+
                         # Compute s-process contribution to [Ba/Fe]
                         if rfrac < 1:
                             bafe += np.log10(1.-rfrac)
@@ -349,6 +349,6 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
 if __name__ == "__main__":
 
     # Test to make sure script is working
-    data, errs = getdata('Scl', source='deimos', c=True, ba=True, mn=True, eu=True, feh_denom=True, removerprocess='statistical')
-    #print(data.shape)
-    #print(data[:,2])
+    #data, errs = getdata('Scl', source='deimos', c=True, ba=True, mn=True, eu=True, feh_denom=True, removerprocess='statistical')
+    elem_dart, delem_dart = getdata(galaxy='Scl', source='dart', c=True, ba=True, removerprocess='statistical', feh_denom=True) #, eu=baeu)   
+    #print(elem_dart[-1,:])

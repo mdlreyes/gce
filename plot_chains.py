@@ -78,4 +78,4 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, 
 
 if __name__ == "__main__":
 
-    plotmcmc(file='output/empiricalfinal_withfeba.npy', burnin=10000, empiricalfit=True, c=True, fe=True)
+    plotmcmc(file='output/empiricaltest_withfeba_short.npy', burnin=1000, empiricalfit=True, c=True, fe=True)

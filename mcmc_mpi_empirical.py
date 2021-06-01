@@ -349,6 +349,9 @@ if datasource=='both':
     # Don't use [Fe/H] from DART?
     elem_dart[0,:] = -999.
 
+    # Don't use [Ba/Fe] from DEIMOS?
+    elem_deimos[-1,:] = -999.
+
     # Combine datasets
     elem_data = np.hstack((elem_dart, elem_deimos))
     delem_data = np.hstack((delem_dart, delem_deimos))

@@ -52,8 +52,8 @@ empiricaltest_nofe_baeu_short.npy
     > datasource = 'both'
     > 1e5 steps over 32 walkers
 
-empiricalfinal_withfeba.npy
+empiricaltest_withfeba_short.npy
     > same params as empiricaltest_combinedsample.npy
     > also fitting Ba (removing r-process contribution using statistical correction)
     > datasource = 'both'
-    > 1e6 steps over 32 walkers
+    > 1e5 steps over 32 walkers

@@ -70,14 +70,14 @@ if __name__ == "__main__":
     #scl_powell = [1.07520357, 0.16244134, 4.23355874, 0.99247777, 0.69161203, 0.58384897, 0.68119825, 1.34567668, 0.60438552, 0.16198303, 3.36670239]
     
     scl_mcmc_widerpriors = [0.57925062, 0.25511282, 4.73242679, 0.78293811, 0.76362412, 0.23648493, 0.5921274, 1.32518867, 0.74821858, 0.21047607, 2.0407864]
-    scl_test_nofe = [1.0668918, 0.1758647, 4.34917587, 0.8366728, 1.14919742, 0.61846894, 0.8, 0.97536312, 0.99847981, 0.0317845, 0.56556294]
+    #scl_test_nofe = [1.0668918, 0.1758647, 4.34917587, 0.8366728, 1.14919742, 0.61846894, 0.8, 0.97536312, 0.99847981, 0.0317845, 0.56556294]
     #scl_test_baeu = [0.59231386, 0.24635045, 4.68516065, 0.5798797, 0.94214962, 1.38412127, 0.58593614, 1.32270303, 0.7562073, 0.2149663, 3.06525529]
     #scl_test_noc = [0.56632929, 0.25848466, 4.73030317, 0.75939287, 0.79235297, 0.25081187, 0.58697101, 1., 0.75303671, 0.20477863, 0.6]
     #scl_test_testc = [0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685, 0.5921274, 1.32518867, 0.74821858, 0.21047607, 2.0407864]
     #scl_test_nofe_baeu = [0.28067497, 0.33577663, 3.96807903, 2.94723046, 0.91793318, 4.440447, 0.8, 1.18306658, 1.06405578, 0.05100093, 0.77536968]
-    scl_test_baeu = [0.37058018, 0.34174627, 5.00070144, 1.14339484, 0.64834232, 1.16376263, 0.40123118, 1.28697119, 1.94881828, 0.43073337, 0.91368446]
+    scl_test_baeu = [0.25865113, 0.39865368, 4.64887724, 0.61163984, 0.6056791 , 0.48667341, 0.40166305, 1.28388772, 1.59726585, 0.40740912, 0.9384386 ]
 
     model, atomic = gce.runmodel(scl_mcmc_widerpriors, plot=True, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic = gce.runmodel(scl_test_nofe, plot=True, title="Sculptor dSph (no Fe)", empirical=True, empiricalfit=True, feh_denom=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic = gce.runmodel(scl_test_nofe_baeu, plot=True, title="Sculptor dSph (no Fe, with Ba)", empirical=True, empiricalfit=True, feh_denom=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
-    #model, atomic = gce.runmodel(scl_test_baeu, plot=True, title="Sculptor dSph (with Fe and Ba)", empirical=True, empiricalfit=True, feh_denom=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
+    model, atomic = gce.runmodel(scl_test_baeu, plot=True, title="Sculptor dSph (with Fe and Ba)", empirical=True, empiricalfit=True, feh_denom=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
