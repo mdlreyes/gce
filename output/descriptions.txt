@@ -57,3 +57,9 @@ empiricaltest_withfeba_short.npy
     > also fitting Ba (removing r-process contribution using statistical correction)
     > datasource = 'both'
     > 1e5 steps over 32 walkers
+
+empiricaltest_dartba_short.npy
+    > same params as empiricaltest_combinedsample.npy
+    > also fitting Ba from DART only (removing r-process contribution using statistical correction)
+    > datasource = 'both'
+    > 1e5 steps over 32 walkers

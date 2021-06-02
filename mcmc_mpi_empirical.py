@@ -21,7 +21,7 @@ import emcee
 from multiprocessing import Pool
 
 # Variables for MCMC run
-nsteps = 100
+nsteps = 250
 nwalkers = 32
 parallel = True
 datasource = 'both'
@@ -104,11 +104,11 @@ if empirical==False:
     # Interpolate yield tables over mass
     f_ii_mass = interp1d(M_SN, yield_ii, axis=2, bounds_error=False, copy=False, assume_sorted=True)
     ii_yield_mass = f_ii_mass(m_himass) # Compute yields of masses of stars that will explode
-    ii_yield_mass[:,:,idx_bad] = 0.
+    #ii_yield_mass[:,:,idx_bad] = 0.
 
     f_agb_mass = interp1d(M_AGB, yield_agb, axis=2, bounds_error=False, copy=False, assume_sorted=True)
     agb_yield_mass = f_agb_mass(m_intmass) # Compute yields of masses of stars that will produce AGB winds
-    agb_yield_mass[:,:,idx_bad_agb] = 0.
+    #agb_yield_mass[:,:,idx_bad_agb] = 0.
 
     # Interpolate yield tables over metallicity
     f_ia_metallicity = interp1d(z_II, yield_ia, axis=1, bounds_error=False, copy=False, assume_sorted=True) 
@@ -444,7 +444,7 @@ def lnprior(parameters):
 
     # Define uniform priors, based on values in Table 2 of Kirby+11
     if (0. < f_in_norm0 < 5.) and (0. < f_in_t0 < 1.) and (0. < f_out < 20.) and (0. < sfr_norm < 10.) and (0. < sfr_exp < 2.) and (0. < mgas0 < 20.) and \
-        (0.4 < fe_ia < 0.9) and (0. < cexp_ii < 2.) and (0. < mgnorm_ii < 2.) and (0. < canorm_ii < 0.5) and (0.4 < cnorm_agb < 5.):
+        (0. < fe_ia < 0.9) and (0. < cexp_ii < 2.) and (0. < mgnorm_ii < 2.) and (0. < canorm_ii < 0.5) and (0.4 < cnorm_agb < 5.):
         return 0.0
     return -np.inf
 
