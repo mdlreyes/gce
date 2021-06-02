@@ -4,6 +4,10 @@ isochrone.py
 Some test code to mess around with isochrones
 """
 
+# Import packages for plotting - comment out if not on stravinsky
+import cycler
+import cmasher as cmr
+
 #Backend for python3 on stravinsky
 import matplotlib
 matplotlib.use('TkAgg')
@@ -97,10 +101,6 @@ def readlifetimes(grid='dartmouth'):
 
 def plotlifetimes(grid='dartmouth'):
     """ Plot stellar lifetimes as a function of mass. """
-
-    # Import packages for plotting
-    import cycler
-    import cmasher as cmr
 
     # Get data
     ages = np.load(grid+'_ages.npy')
