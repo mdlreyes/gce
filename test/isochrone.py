@@ -47,37 +47,40 @@ def readlifetimes(grid='dartmouth'):
                 else:
                     metalname = 'p'+metalname
 
-                # Open file with first range of ages (0.25-1 Gyr)
-                filename = griddir+'feh'+metalname+'afe'+alphaname+'.ugriz_2'
-                agecounter = 0
-                with open(filename,'r') as file:  
-                    lines = file.readlines()
-                    for idx, line in enumerate(lines):
-                        if line != '\n':
-                            ln_list = line.split()
-                            if ln_list[0].startswith('#AGE='):
-                                ages[metal_idx,alpha_idx,agecounter] = ln_list[1]
-                                agecounter += 1
-                        elif lines[idx-1] != '\n':
-                            ln_list = lines[idx-1].split()
-                            masses[metal_idx,alpha_idx,agecounter-1] = ln_list[1]
+                try:
+                    # Open file with first range of ages (0.25-1 Gyr)
+                    filename = griddir+'feh'+metalname+'afe'+alphaname+'.ugriz_2'
+                    agecounter = 0
+                    with open(filename,'r') as file:  
+                        lines = file.readlines()
+                        for idx, line in enumerate(lines):
+                            if line != '\n':
+                                ln_list = line.split()
+                                if ln_list[0].startswith('#AGE='):
+                                    ages[metal_idx,alpha_idx,agecounter] = ln_list[1]
+                                    agecounter += 1
+                            elif lines[idx-1] != '\n':
+                                ln_list = lines[idx-1].split()
+                                masses[metal_idx,alpha_idx,agecounter-1] = ln_list[1]
 
-                # Open file with second range of ages (>1 Gyr)
-                agecounter -= 1
-                with open(filename[:-2],'r') as file:  
-                    lines = file.readlines()
-                    for idx, line in enumerate(lines):
-                        if line != '\n':
-                            if line.startswith('#AGE='):
-                                print(agecounter)
-                                ages[metal_idx,alpha_idx,agecounter] = float(line[5:11])
-                                agecounter += 1
-                        elif lines[idx-1] != '\n':
-                            ln_list = lines[idx-1].split()
-                            print(agecounter-1)
-                            masses[metal_idx,alpha_idx,agecounter-1] = ln_list[1]
-                    ln_list = line.split()
-                    masses[0,0,-1] = ln_list[1]
+                    # Open file with second range of ages (>1 Gyr)
+                    agecounter -= 1
+                    with open(filename[:-2],'r') as file:  
+                        lines = file.readlines()
+                        for idx, line in enumerate(lines):
+                            if line != '\n':
+                                if line.startswith('#AGE='):
+                                    print(agecounter)
+                                    ages[metal_idx,alpha_idx,agecounter] = float(line[5:11])
+                                    agecounter += 1
+                            elif lines[idx-1] != '\n':
+                                ln_list = lines[idx-1].split()
+                                print(agecounter-1)
+                                masses[metal_idx,alpha_idx,agecounter-1] = ln_list[1]
+                        ln_list = line.split()
+                        masses[0,0,-1] = ln_list[1]
+                except:
+                    pass
 
     np.save('isochrone_ages', ages)
     np.save('isochrone_masses', masses)
