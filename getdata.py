@@ -108,6 +108,9 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
                         np.sqrt(table['e_[Si/Fe]'][idx]**2. + syserr['Si']**2.),
                         np.sqrt(table['e_[Ca/Fe]'][idx]**2. + syserr['Ca']**2.)]).T
 
+        # List of elements that's in data table
+        elems = ['fe','mg','si','ca']
+
         # Cross-match data
         finaldata = []
         finalerrs = []
@@ -119,6 +122,7 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
 
             # Cross-match with carbon table if needed
             if c: 
+                elems.append('c')
                 if names[i] in table_c['Name']:
                     c_idx = np.where(table_c['Name'] == names[i])
                     newdata = np.concatenate((newdata,table_c['[C/Fe]c'][c_idx]))
@@ -129,6 +133,7 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
 
             # Cross-match with barium table if needed
             if ba: 
+                elems.append('ba')
                 if names[i] in table_ba['Name'] and removerprocess != 'individual':
                     ba_idx = np.where(table_ba['Name'] == names[i])
 
@@ -157,6 +162,7 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
 
             # Cross-match with manganese table if needed
             if mn: 
+                elems.append('mn')
                 if names[i] in table_mn['ID']:
                     mn_idx = np.where(table_mn['ID'] == names[i])
                     newdata = np.concatenate((newdata,table_mn['MnFe'][mn_idx]))
@@ -167,6 +173,7 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
 
             # No Eu data, so just put in an empty row for now
             if eu: 
+                elems.append('eu')
                 newdata = np.concatenate((newdata,[-999.]))
                 newerrs = np.concatenate((newerrs,[-999.]))
 
@@ -200,9 +207,12 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
             names = table['Star']
             data = np.asarray([table['[Fe/H]'], table['[Mg/Fe]'], table['[Si/Fe]'], table['[Ca/Fe]']]).T
             errs = np.asarray([table['[Fe/H]err'], table['[Mg/Fe]err'], table['[Si/Fe]err'], table['[Ca/Fe]err']]).T
+            elems = ['fe','mg','si','ca']
 
             # Cross-match with carbon table if needed (currently assuming no C available)
             if c:
+                elems.append('c')
+
                 c_data = -999.0 * np.ones_like(table['[Fe/H]'])
                 c_data = c_data.reshape(c_data.shape[0],1)
                 data = np.hstack([data, c_data])
@@ -213,6 +223,8 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
 
             # Add barium if needed
             if ba:
+                elems.append('ba')
+
                 if removerprocess is not None:
                     bafe = table['[Ba/Fe]'].reshape(table['[Ba/Fe]'].shape[0],1)
                     eufe = table['[Eu/Fe]'].reshape(table['[Eu/Fe]'].shape[0],1)
@@ -255,6 +267,7 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
 
             # Cross-match with manganese table if needed
             if mn:
+                elems.append('mn')
                 finaldata = []
                 finalerrs = []
 
@@ -279,6 +292,7 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
 
             # Add europium if needed
             if eu:
+                elems.append('eu')
                 if removerprocess:
                     bafe = table['[Ba/Fe]'].reshape(table['[Ba/Fe]'].shape[0],1)
                     eufe = table['[Eu/Fe]'].reshape(table['[Eu/Fe]'].shape[0],1)
@@ -341,14 +355,16 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
 
 
         # Remove [Fe/H] from data
-        data = np.delete(data,0,0)
-        errs = np.delete(errs,0,0)
+        data = np.delete(data,0,axis=0)
+        errs = np.delete(errs,0,axis=0)
+        del elems[0]
 
-    return data, errs
+    return data, errs, elems
 
 if __name__ == "__main__":
 
     # Test to make sure script is working
     #data, errs = getdata('Scl', source='deimos', c=True, ba=True, mn=True, eu=True, feh_denom=True, removerprocess='statistical')
-    elem_dart, delem_dart = getdata(galaxy='Scl', source='dart', c=True, ba=True, removerprocess='statistical', feh_denom=True) #, eu=baeu)   
-    #print(elem_dart[-1,:])
+    elem_dart, delem_dart, elems = getdata(galaxy='Scl', source='dart', c=True, ba=True, removerprocess='statistical', feh_denom=True) #, eu=baeu)   
+    print(elems)
+    # print(elem_dart[-1,:])

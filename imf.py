@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 
 def imf(mass_array, imf_model):
 

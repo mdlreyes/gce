@@ -111,18 +111,39 @@ def plotlifetimes(grid='dartmouth'):
         alphas = [-0.2,0.,0.2,0.4,0.6,0.8]  # [alpha/Fe]
 
         # Define colormaps
-        metalcolor = cmr.bubblegum_r(np.linspace(0,1,len(metals),endpoint=True))
+        metalcolor = cmr.bubblegum(np.linspace(0,1,len(metals),endpoint=True))
+        alphals = [':','-','--','dashdot',(0,(1,10)),(0,(5,10))]
 
+        # Plot metallicities at fixed alpha
+        plt.figure()
         for metal_idx, metal in enumerate(metals):
-            age = ages[metal_idx,0,:]
-            mass = masses[metal_idx,0,:]
+            age = ages[metal_idx,1,:]
+            mass = masses[metal_idx,1,:]
             if np.any(np.isclose(age, 0)) or np.any(np.isclose(mass, 0)):
-                print('test', metal, alphas[0])
-            plt.plot(mass, age, color=metalcolor[metal_idx], label=r"[Fe/H] = {:.2f}".format(metal))
-            print(metal, mass, age)
-        plt.legend()
+                print('test', metal, alphas[1])
+            else:
+                plt.plot(mass, age, color=metalcolor[metal_idx], ls=alphals[1], label=r"[Fe/H] = {:.2f}".format(metal))
+        legend = plt.legend(title=r"[$\alpha$/Fe] = {:.1f}".format(alphas[1]))
+        plt.setp(legend.get_title(),fontsize='16')
         plt.xlabel(r'Mass ($M_{\odot}$)', fontsize=14)
         plt.ylabel(r'Lifetime (Gyr)', fontsize=14)
+        plt.savefig(grid+'_lifetimes_fe.png', bbox_inches='tight')
+        plt.show()
+
+        # Plot alphas at fixed metallicity
+        plt.figure()
+        for alpha_idx, alpha in enumerate(alphas):
+            age = ages[2,alpha_idx,:]
+            mass = masses[2,alpha_idx,:]
+            if np.any(np.isclose(age, 0)) or np.any(np.isclose(mass, 0)):
+                print('test', metals[2], alpha)
+            else:
+                plt.plot(mass, age, color=metalcolor[2], ls=alphals[alpha_idx], label=r"[$\alpha$/Fe] = {:.1f}".format(alpha))
+        legend = plt.legend(title=r"[Fe/H] = {:.2f}".format(metals[2]))
+        plt.setp(legend.get_title(),fontsize='16')
+        plt.xlabel(r'Mass ($M_{\odot}$)', fontsize=14)
+        plt.ylabel(r'Lifetime (Gyr)', fontsize=14)
+        plt.savefig(grid+'_lifetimes_alpha.png', bbox_inches='tight')
         plt.show()
 
     return

@@ -343,14 +343,16 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
 
 # Define observed data
 if datasource=='both':
-    elem_dart, delem_dart = getdata(galaxy='Scl', source='dart', c=c, ba=baeu, removerprocess='statistical', feh_denom=fe) #, eu=baeu)
-    elem_deimos, delem_deimos = getdata(galaxy='Scl', source='deimos', c=c, ba=baeu, removerprocess='statistical', feh_denom=fe) #, eu=baeu)
+    elem_dart, delem_dart, elemtest_dart = getdata(galaxy='Scl', source='dart', c=c, ba=baeu, removerprocess='statistical', feh_denom=fe) #, eu=baeu)
+    elem_deimos, delem_deimos, elemtest_deimos = getdata(galaxy='Scl', source='deimos', c=c, ba=baeu, removerprocess='statistical', feh_denom=fe) #, eu=baeu)
 
     # Don't use [Fe/H] from DART?
-    elem_dart[0,:] = -999.
+    if fe:
+        elem_dart[0,:] = -999.
 
     # Don't use [Ba/Fe] from DEIMOS?
-    elem_deimos[-1,:] = -999.
+    if baeu:
+        elem_deimos[-1,:] = -999.
 
     # Combine datasets
     elem_data = np.hstack((elem_dart, elem_deimos))
