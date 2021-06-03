@@ -94,9 +94,9 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         labels.append('Fe')
 
     # Open observed data
-    elem_data, delem_data = getdata(galaxy='Scl', source='deimos', c=True, ba=True, mn=True, eu=True, removerprocess='statistical', feh_denom=feh)
+    elem_data, delem_data, _ = getdata(galaxy='Scl', source='deimos', c=True, ba=True, mn=True, eu=True, removerprocess='statistical', feh_denom=feh)
     if datasource=='dart' or datasource=='both':
-        elem_data_dart, delem_data_dart = getdata(galaxy='Scl', source='dart', c=True, ba=True, mn=True, eu=True, removerprocess='statistical', feh_denom=feh)
+        elem_data_dart, delem_data_dart, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, mn=True, eu=True, removerprocess='statistical', feh_denom=feh)
     
     # Map content of observed elem_data to index
     if feh:
