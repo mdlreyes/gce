@@ -78,9 +78,11 @@ if __name__ == "__main__":
     scl_test_baeu = [0.25865113, 0.39865368, 4.64887724, 0.61163984, 0.6056791 , 0.48667341, 0.40166305, 1.28388772, 1.59726585, 0.40740912, 0.9384386 ]
     #scl_test_dartba = [0.25545342, 0.34787294, 3.99876785, 0.67584706, 0.84561568, 4.80238424, 0.37151047, 1.36368857, 1.33738063, 0.17706523, 0.98077824]
     scl_test_dartba = [0.34156907, 0.32722443, 4.12776806, 1.03324403, 0.99353997, 0.01626088, 0.37568131, 1.35980557, 1.42740846, 0.20203422, 1.01131155]
+    scl_test_dartba_ba = [0.3470929, 0.34110975, 4.66965458, 0.54777558, 0.83855841, 0.44430054, 0.48249221, 1.30660492, 1.03088238, 0.31379955, 1.22168084, 0.98670632, 0.00841393]
 
-    #model, atomic = gce.runmodel(scl_mcmc_widerpriors, plot=True, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
+    model, atomic = gce.runmodel(scl_mcmc_widerpriors, plot=True, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic = gce.runmodel(scl_test_nofe, plot=True, title="Sculptor dSph (no Fe)", empirical=True, empiricalfit=True, feh_denom=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic = gce.runmodel(scl_test_nofe_baeu, plot=True, title="Sculptor dSph (no Fe, with Ba)", empirical=True, empiricalfit=True, feh_denom=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     model, atomic = gce.runmodel(scl_test_baeu, plot=True, title="Sculptor dSph (with DART and DEIMOS Ba)", empirical=True, empiricalfit=True, feh_denom=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
     model, atomic = gce.runmodel(scl_test_dartba, plot=True, title="Sculptor dSph (with DART Ba)", empirical=True, empiricalfit=True, feh_denom=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
+    model, atomic = gce.runmodel(scl_test_dartba_ba, plot=True, title="Sculptor dSph (with DART Ba) - Ba params", empirical=True, empiricalfit=True, feh_denom=True) #, amr="plots/amr_test", sfh="plots/sfh_test")

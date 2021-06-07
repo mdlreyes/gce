@@ -21,7 +21,7 @@ import emcee
 from multiprocessing import Pool
 
 # Variables for MCMC run
-nsteps = 250
+nsteps = 100
 nwalkers = 32
 parallel = True
 datasource = 'both'
@@ -464,7 +464,7 @@ def lnprior(parameters):
     # Define uniform priors, based on values in Table 2 of Kirby+11
     if (0. < f_in_norm0 < 5.) and (0. < f_in_t0 < 1.) and (0. < f_out < 20.) and (0. < sfr_norm < 10.) and (0. < sfr_exp < 2.) and (0. < mgas0 < 1.) and \
         (0. < fe_ia < 0.9) and (0. < cexp_ii < 2.) and (0. < mgnorm_ii < 2.) and (0. < canorm_ii < 0.5) and (0.4 < cnorm_agb < 5.) and \
-        (0. < banorm_agb < 1.) and (0. < bamean_agb < 1.):
+        (0. < banorm_agb < 2.) and (-1. < bamean_agb < 1.):
         return 0.0
     return -np.inf
 

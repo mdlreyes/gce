@@ -161,6 +161,12 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
         mgnorm_ii = pars[8]     # Mg normalization for CCSN yields
         canorm_ii = pars[9]     # Ca normalization for CCSN yields
         cnorm_agb = pars[10]    # C normalization for AGB yields
+        if len(pars) > 11:
+            banorm_agb = pars[11]
+            bamean_agb = pars[12]
+        else:
+            banorm_agb = 0.33
+            bamean_agb = 0.3
 
     # Define parameters for pristine gas 
     pristine = np.zeros(nel)    # Pristine element fractions by mass (dimensionless)
@@ -248,9 +254,9 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
         if model['z'][timestep] > 0.:
             # Put AGB yields in future array
             if empiricalfit:
-                M_II_arr[:,timestep+goodidxnew] += n_agb * f_agb_metallicity(model['z'][timestep], cexp_ii, mgnorm_ii, canorm_ii)[:,:len(n_agb)]
+                M_AGB_arr[:,timestep+goodidxnew] += n_agb * f_agb_metallicity(model['z'][timestep], cnorm_agb, banorm_agb, bamean_agb)[:,:len(n_agb)]
             else:
-                M_II_arr[:,timestep+goodidxnew] += n_agb * f_agb_metallicity(model['z'][timestep])[:,:len(n_agb)]
+                M_AGB_arr[:,timestep+goodidxnew] += n_agb * f_agb_metallicity(model['z'][timestep])[:,:len(n_agb)]
 
         # Eq. 15: outflows IN CURRENT TIMESTEP (depends on gas mass fraction x_el)
         if model['mgas'][timestep] > 0.0: 
