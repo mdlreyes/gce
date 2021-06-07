@@ -69,3 +69,9 @@ empiricaltest_dartba.npy
     > also fitting Ba from DART only (removing r-process contribution using statistical correction)
     > datasource = 'both'
     > 1e6 steps over 32 walkers
+
+empiricaltest_dartba_ba_short.npy
+    > same params as empiricaltest_combinedsample.npy, plus additional params for Ba yields
+    > also fitting Ba from DART only (removing r-process contribution using statistical correction)
+    > datasource = 'both'
+    > 1e5 steps over 32 walkers

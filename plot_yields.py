@@ -232,12 +232,12 @@ def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False
                 yields[10,:,:] = np.array([[1e-11 * normal(mass, (3400*metal + 0.4), 2.2, 0.65) for metal in Z] for mass in M]).T # Eu
             elif yieldsource=='fit_agb':
                 # Default constants for now
-                c2 = 0.33
-                c3 = 0.3
+                c2 = fit[11] #0.33
+                c3 = fit[12] #1.0
                 c4 = 0.5
                 c5 = 0.2
                 yields[2,:,:] = fit[4]*np.array([[1e-3 * normal(mass, (1.68-220*metal), 2, 0.6) for metal in Z] for mass in M]).T # C
-                yields[9,:,:] = c2*np.array([[1e-8 * normal(mass, (1000*metal + 0.2), 2.3-c3, (0.75-100*metal)) for metal in Z] for mass in M]).T # Ba
+                yields[9,:,:] = c2*np.array([[1e-8 * normal(mass, (1000*metal + 0.2), 3.0-c3, (0.75-100*metal)) for metal in Z] for mass in M]).T # Ba
                 yields[10,:,:] = c4*np.array([[1e-11 * normal(mass, (3400*metal + 0.4), 2.2-c5, 0.65) for metal in Z] for mass in M]).T # Eu
 
         else:
@@ -508,7 +508,7 @@ def plotyields(yieldtype, fit=None, func=None, empirical=False, empiricalfit=Non
         # Do other formatting
         if yieldtype in ['CCSN', 'AGB']:
             axs[idx_elem].yaxis.set_major_formatter(FormatStrFormatter('%.1f'))
-            if (yieldtype=='CCSN' and elem_names[elem] in ['C','Mg','Ca']) or (yieldtype=='AGB' and elem_names[elem] in ['Ca']):
+            if (yieldtype=='CCSN' and elem_names[elem] in ['C','Mg','Ca']) or (yieldtype=='AGB' and elem_names[elem] in ['C','Ba']):
                 axs[idx_elem].text(0.95, textdy, r'\textbf{'+elem_names[elem]+'}', transform=axs[idx_elem].transAxes, fontsize=12, color='C1', horizontalalignment='right') #, bbox=dict(fc=cwheelfit[-1], ec='k', linewidth=0.5))
             else:
                 axs[idx_elem].text(0.95, textdy, elem_names[elem], transform=axs[idx_elem].transAxes, fontsize=12, horizontalalignment='right') #, bbox=dict(fc='None', ec='k', linewidth=0.5))
@@ -552,5 +552,6 @@ if __name__ == "__main__":
 
     # Plot yields
     #getyields('nom13', empirical=False, weakrprocess=True)
-    plotyields('CCSN', empirical=False, empiricalfit=[0.8, 1., 1., 0., 0.6], weakrprocess=True)
+    #plotyields('CCSN', empirical=False, empiricalfit=[0.8, 1., 1., 0., 0.6], weakrprocess=True)
     #plotyields('CCSN', empirical=False, empiricalfit=[0.59413107, 1.32532419, 0.74524346, 0.20701649, 2.0645546])
+    plotyields('AGB', empirical=False, empiricalfit=[0.43854598, 0.3021717, 4.87396125, 0.56277687, 0.87992501, 0.43563824, 0.52890217, 1.24037174, 1.03809957, 0.27136905, 0.51592859, 0.33, 1.])
