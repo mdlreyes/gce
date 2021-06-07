@@ -33,7 +33,10 @@ fe = True
 c = True
 
 # Put in initial guesses for parameters 
-params_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6] # initial values
+params_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6, 0.33, 0.3] # initial values
+if baeu==False:
+    del params_init[12]
+    del params_init[11]
 if c==False:
     del params_init[10]
     del params_init[7]
@@ -172,6 +175,12 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
     else:
         cexp_ii = 1.
         cnorm_agb = 0.6
+    if baeu:
+        banorm_agb = pars[11]
+        bamean_agb = pars[12]
+    else:
+        banorm_agb=0.33
+        bamean_agb=0.3
     mgnorm_ii = pars[8]     # Mg normalization for CCSN yields
     canorm_ii = pars[9]     # Ca normalization for CCSN yields
 
@@ -244,7 +253,7 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
         # Eq. 13: AGB yields IN THE FUTURE
         if model['z'][timestep] > 0.:
             # Put AGB yields in future array
-            M_AGB_arr[:,timestep+goodidxnew] += n_agb * f_agb_metallicity(model['z'][timestep], cnorm_agb)[:,:len(n_agb)]
+            M_AGB_arr[:,timestep+goodidxnew] += n_agb * f_agb_metallicity(model['z'][timestep], cnorm_agb, banorm_agb, bamean_agb)[:,:len(n_agb)]
 
         # Eq. 15: outflows IN CURRENT TIMESTEP (depends on gas mass fraction x_el)
         if model['mgas'][timestep] > 0.0: 
@@ -429,24 +438,33 @@ def neglnlike(parameters):
 # Define the priors
 def lnprior(parameters):
 
-    if c and fe:
-        f_in_norm0, f_in_t0, f_out, sfr_norm, sfr_exp, mgas0, fe_ia, cexp_ii, mgnorm_ii, canorm_ii, cnorm_agb = parameters
-    elif ~c and fe:
-        f_in_norm0, f_in_t0, f_out, sfr_norm, sfr_exp, mgas0, fe_ia, mgnorm_ii, canorm_ii = parameters
-        cexp_ii = 1.
-        cnorm_agb = 0.6
-    elif c and ~fe:
-        f_in_norm0, f_in_t0, f_out, sfr_norm, sfr_exp, mgas0, cexp_ii, mgnorm_ii, canorm_ii, cnorm_agb = parameters
-        fe_ia = 0.8
-    elif ~c and ~fe:
-        f_in_norm0, f_in_t0, f_out, sfr_norm, sfr_exp, mgas0, mgnorm_ii, canorm_ii = parameters
-        cexp_ii = 1.
-        cnorm_agb = 0.6
-        fe_ia = 0.8
+    # Default parameters
+    f_in_norm0, f_in_t0, f_out, sfr_norm, sfr_exp, mgas0 = parameters[:6]
+    cexp_ii = 1.
+    cnorm_agb = 0.6
+    fe_ia = 0.8
+    banorm_agb=0.33
+    bamean_agb=0.3
+
+    if fe:
+        fe_ia = parameters[6]
+        if c:
+            cexp_ii, mgnorm_ii, canorm_ii, cnorm_agb = parameters[7:11]
+        else:
+            mgnorm_ii, canorm_ii = parameters[7:9]
+    else:
+        if c:
+            cexp_ii, mgnorm_ii, canorm_ii, cnorm_agb = parameters[6:10]
+        else:
+            mgnorm_ii, canorm_ii = parameters[6:8]
+    if baeu:
+        banorm_agb, bamean_agb = parameters[-2:]
+
 
     # Define uniform priors, based on values in Table 2 of Kirby+11
     if (0. < f_in_norm0 < 5.) and (0. < f_in_t0 < 1.) and (0. < f_out < 20.) and (0. < sfr_norm < 10.) and (0. < sfr_exp < 2.) and (0. < mgas0 < 1.) and \
-        (0. < fe_ia < 0.9) and (0. < cexp_ii < 2.) and (0. < mgnorm_ii < 2.) and (0. < canorm_ii < 0.5) and (0.4 < cnorm_agb < 5.):
+        (0. < fe_ia < 0.9) and (0. < cexp_ii < 2.) and (0. < mgnorm_ii < 2.) and (0. < canorm_ii < 0.5) and (0.4 < cnorm_agb < 5.) and \
+        (0. < banorm_agb < 1.) and (0. < bamean_agb < 1.):
         return 0.0
     return -np.inf
 
@@ -472,12 +490,15 @@ print('Result from Powell: ', params_init)
 
 # Sample the log-probability function using emcee - first, initialize the walkers
 ndim = len(params_init)
-dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513, 0.01, 0.01, 0.01, 0.01, 0.01] / np.sqrt(6.)
+dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01] / np.sqrt(13.)
+if baeu==False:
+    dpar = np.delete(dpar,12)
+    dpar = np.delete(dpar,11)
 if c==False:
     dpar = np.delete(dpar,10)
     dpar = np.delete(dpar,7)
 if fe==False:
-    dpar = np.delete(dpar, 6)
+    dpar = np.delete(dpar,6)
 
 pos = []
 for i in range(nwalkers):

@@ -30,7 +30,7 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, 
 
     names = [r"$A_{\mathrm{in}}$", r"$\tau_{\mathrm{in}}$", r"$A_{\mathrm{out}}$", r"$A_{\star}$", r"$\alpha$", r"$M_{\mathrm{gas},0}$"]
     if empiricalfit:
-        names += [r"$\mathrm{Fe}_{\mathrm{Ia}}$", r"$\mathrm{expC}_{\mathrm{II}}$", r"$\mathrm{normMg}_{\mathrm{II}}$", r"$\mathrm{normCa}_{\mathrm{II}}$", r"$\mathrm{normC}_{\mathrm{AGB}}$"]
+        names += [r"$\mathrm{Fe}_{\mathrm{Ia}}$", r"$\mathrm{expC}_{\mathrm{II}}$", r"$\mathrm{normMg}_{\mathrm{II}}$", r"$\mathrm{normCa}_{\mathrm{II}}$", r"$\mathrm{normC}_{\mathrm{AGB}}$", r"$\mathrm{normBa}_{\mathrm{AGB}}$", r"$\mathrm{meanBa}_{\mathrm{AGB}}$"]
         if c==False:
             del names[7]
             del names[10]
@@ -78,4 +78,4 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, 
 
 if __name__ == "__main__":
 
-    plotmcmc(file='output/chain.npy', burnin=1000, empiricalfit=True, c=True, fe=True)
+    plotmcmc(file='chain.npy', burnin=0, empiricalfit=True, c=True, fe=True)

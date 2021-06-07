@@ -600,7 +600,7 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source
 
         # Interpolate to match SN mass array
         ba_li14_weakr = np.interp(M_SN, M_li14, ba_li14_weakr)
-        eu_ces06_weakr = np.interp(M, M_ces06, eu_ces06_weakr)
+        eu_ces06_weakr = np.interp(M_SN, M_ces06, eu_ces06_weakr)
 
         # Add to SNII yield arrays, assuming no Z dependence
         for i in range(len(z_II)):
@@ -768,7 +768,7 @@ def initialize_empirical(yield_path='yields/', r_process_keyword='none', imfweig
             yields /= dN_dM
             return yields
 
-        def f_agb_metallicity(metallicity, cnorm_agb, banorm_agb=0.33, bamean_agb=-0.3, eunorm_agb=0.5, eumean_agb=-0.2):
+        def f_agb_metallicity(metallicity, cnorm_agb, banorm_agb=0.33, bamean_agb=0.3, eunorm_agb=0.5, eumean_agb=0.2):
             yields = np.zeros((nel,len(AGB_mass)))
             dN_dM = imf.imf(AGB_mass, imfweight)
 
@@ -784,8 +784,8 @@ def initialize_empirical(yield_path='yields/', r_process_keyword='none', imfweig
 
             # Yields with parameters to vary
             yields[2,:] = cnorm_agb * 1e-3 * (1.68-220*metallicity)*np.exp(-((AGB_mass-2)/0.6)**2/2)/(0.6*normpdfc)  # C
-            yields[9,:] = banorm_agb * 1e-8 * (1000*metallicity + 0.2)*np.exp(-((AGB_mass-(2.3+bamean_agb))/(0.75-100*metallicity))**2/2)/((0.75-100*metallicity)*normpdfc)  # Ba
-            yields[10,:] = eunorm_agb * 1e-11 * (3400*metallicity + 0.4)*np.exp(-((AGB_mass-(2.2+eumean_agb))/0.65)**2/2)/(0.65*normpdfc)  # Eu
+            yields[9,:] = banorm_agb * 1e-8 * (1000*metallicity + 0.2)*np.exp(-((AGB_mass-(2.3-bamean_agb))/(0.75-100*metallicity))**2/2)/((0.75-100*metallicity)*normpdfc)  # Ba
+            yields[10,:] = eunorm_agb * 1e-11 * (3400*metallicity + 0.4)*np.exp(-((AGB_mass-(2.2-eumean_agb))/0.65)**2/2)/(0.65*normpdfc)  # Eu
 
             yields /= dN_dM
             return yields
