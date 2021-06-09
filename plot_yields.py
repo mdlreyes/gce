@@ -554,4 +554,4 @@ if __name__ == "__main__":
     #getyields('nom13', empirical=False, weakrprocess=True)
     #plotyields('CCSN', empirical=False, empiricalfit=[0.8, 1., 1., 0., 0.6], weakrprocess=True)
     #plotyields('CCSN', empirical=False, empiricalfit=[0.59413107, 1.32532419, 0.74524346, 0.20701649, 2.0645546])
-    plotyields('AGB', empirical=False, empiricalfit=[0.43854598, 0.3021717, 4.87396125, 0.56277687, 0.87992501, 0.43563824, 0.52890217, 1.24037174, 1.03809957, 0.27136905, 0.51592859, 0.33, 1.])
+    plotyields('AGB', empirical=False, empiricalfit=[0.45488486, 0.29451152, 4.7214058, 0.57051713, 0.90860354, 0.36811399, 0.54901945, 1.31771318, 0.81434372, 0.22611351, 1.64741211, 0.93501212, 0.034125])

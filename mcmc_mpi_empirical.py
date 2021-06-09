@@ -29,7 +29,7 @@ empirical = True
 
 # Which elements to fit?
 baeu = True
-fe = True
+fe = False
 c = True
 
 # Put in initial guesses for parameters 
@@ -381,8 +381,8 @@ dmgas_obs = 1.e3
 def neglnlike(parameters):
 
     # Don't even bother to compute likelihood if any of the parameters are negative
-    if np.any(np.asarray(parameters) < 0.):
-        return 1e10
+    #if np.any(np.asarray(parameters) < 0.):
+    #    return 1e10
 
     if fe==False:
         parameters = np.insert(parameters, 6, 0.8)
