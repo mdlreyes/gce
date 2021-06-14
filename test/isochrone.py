@@ -94,8 +94,8 @@ def readlifetimes(grid='dartmouth'):
                 except:
                     pass
 
-    np.save(grid+'_ages', ages)
-    np.save(grid+'_masses', masses)
+        np.save(grid+'_ages', ages)
+        np.save(grid+'_masses', masses)
 
     return
 
@@ -148,6 +148,82 @@ def plotlifetimes(grid='dartmouth'):
 
     return
 
+def plotbpass():
+    """ Plot BPASS stellar lifetimes. """
+
+    # Metallicities
+    Z = [1.00E-05, 0.0001, 0.001, 0.002, 0.003, 0.004, 0.006, 0.008, 0.01, 0.014, 0.02, 0.03, 0.04]
+
+    # Create array to hold data
+    data = np.zeros((2, len(Z), 283))
+
+    # Read in BPASS file
+    with open('bpass.csv','r') as file:  
+        lines = file.readlines()
+        currentfeh = 0
+        currentcounter = 0
+        for idx, line in enumerate(lines):
+            ls = line.split(',')
+            if ls[1].startswith('LOAD') or ls[1]=='0' or ls[1].startswith('Metal'):
+                pass
+            elif np.any(np.isclose(Z,float(ls[1]))):
+                fehidx = np.where(np.isclose(Z,float(ls[1])))[0]
+                if fehidx[0]==currentfeh:
+                    # Put in initial stellar mass (Msun)
+                    data[0, fehidx, currentcounter] = float(ls[2])
+                    # Put in H-burning lifetime (yr)
+                    data[1, fehidx, currentcounter] = float(ls[3])
+                    
+                    # Increment current counter
+                    currentcounter += 1
+                else:
+                    # Put in initial stellar mass (Msun)
+                    data[0, fehidx, 0] = float(ls[2])
+                    # Put in H-burning lifetime (yr)
+                    data[1, fehidx, 0] = float(ls[3])
+
+                    # Increment current [Fe/H]
+                    currentcounter = 1
+                    currentfeh += 1
+
+        # Compute relevant metallicities
+        feharray = np.log10(np.array(Z)/0.0134) # Solar metallicity from Asplund+2009
+        goodidx = np.where(feharray < -0.5)[0]
+
+        # Define colormaps
+        metalcolor = cmr.gem(np.linspace(0,1,len(feharray[goodidx]),endpoint=True))
+
+        # Plot stellar lifetimes at various metallicities
+        plt.figure()
+        for feh_idx, feh in enumerate(feharray[goodidx]):
+            age = data[1,feh_idx,:] / 1e9  # Convert to Gyr
+            mass = data[0,feh_idx,:]
+
+            # Get relevant masses
+            massidx = np.where((mass > 0.865) & (mass < 100))[0]
+
+            plt.plot(np.log10(mass[massidx]), age[massidx], color=metalcolor[feh_idx], lw=1, label=r"[Fe/H] = {:.2f}".format(feh))
+
+        # Plot empirical equations
+        masses = np.linspace(0.865,100,1000)
+        t = np.zeros(len(masses))
+        t = 10.** ((0.334 - np.sqrt(1.790-0.2232*(7.764-np.log10(masses))))/0.1116) 
+        t[masses > 6.6] = 1.2*masses[masses > 6.6]**(-1.85) + 0.003
+        #t *= 1e9  # Convert from Gyr to yr
+        plt.plot(np.log10(masses), t, color='r', ls='--', lw=2, label='From equations')
+
+        # Format plot
+        legend = plt.legend()
+        plt.xlabel(r'Log(Mass) [$M_{\odot}$]', fontsize=14)
+        plt.ylabel(r'Lifetime (Gyr)', fontsize=14)
+        plt.ylim(-0.05,1.5)
+        plt.xlim(0,2)
+        plt.savefig('bpass_lifetimes.png', bbox_inches='tight')
+        plt.show()
+
+    return
+
 if __name__ == "__main__":
     #readlifetimes()
-    plotlifetimes()
+    #plotlifetimes()
+    plotbpass()

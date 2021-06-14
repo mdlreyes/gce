@@ -74,16 +74,16 @@ if __name__ == "__main__":
     #scl_test_baeu = [0.59231386, 0.24635045, 4.68516065, 0.5798797, 0.94214962, 1.38412127, 0.58593614, 1.32270303, 0.7562073, 0.2149663, 3.06525529]
     #scl_test_noc = [0.56632929, 0.25848466, 4.73030317, 0.75939287, 0.79235297, 0.25081187, 0.58697101, 1., 0.75303671, 0.20477863, 0.6]
     #scl_test_testc = [0.70157967, 0.26730922, 5.3575732, 0.47251228, 0.82681450, 0.49710685, 0.5921274, 1.32518867, 0.74821858, 0.21047607, 2.0407864]
-    #scl_test_nofe_baeu = [0.28067497, 0.33577663, 3.96807903, 2.94723046, 0.91793318, 4.440447, 0.8, 1.18306658, 1.06405578, 0.05100093, 0.77536968]
+    scl_test_nofe_baeu = [0.28067497, 0.33577663, 3.96807903, 2.94723046, 0.91793318, 4.440447, 0.8, 1.18306658, 1.06405578, 0.05100093, 0.77536968]
     scl_test_baeu = [0.25865113, 0.39865368, 4.64887724, 0.61163984, 0.6056791 , 0.48667341, 0.40166305, 1.28388772, 1.59726585, 0.40740912, 0.9384386 ]
     #scl_test_dartba = [0.25545342, 0.34787294, 3.99876785, 0.67584706, 0.84561568, 4.80238424, 0.37151047, 1.36368857, 1.33738063, 0.17706523, 0.98077824]
-    scl_test_dartba = [0.34156907, 0.32722443, 4.12776806, 1.03324403, 0.99353997, 0.01626088, 0.37568131, 1.35980557, 1.42740846, 0.20203422, 1.01131155]
-    #scl_test_dartba_ba = [0.45488486, 0.29451152, 4.7214058, 0.57051713, 0.90860354, 0.36811399, 0.54901945, 1.31771318, 0.81434372, 0.22611351, 1.64741211, 0.93501212, 0.034125]
-    scl_test_dartba_ba = [0.45488486, 0.29451152, 4.7214058, 0.57051713, 0.90860354, 0.36811399, 0.54901945, 1.31771318, 0.81434372, 0.22611351, 1.64741211, 4., 0.]
+    #scl_test_dartba = [0.34156907, 0.32722443, 4.12776806, 1.03324403, 0.99353997, 0.01626088, 0.37568131, 1.35980557, 1.42740846, 0.20203422, 1.01131155]
+    scl_test_dartba_ba = [0.45488486, 0.29451152, 4.7214058, 0.57051713, 0.90860354, 0.36811399, 0.54901945, 1.31771318, 0.81434372, 0.22611351, 1.64741211, 0.93501212, 0.034125]
+    scl_test_nofe_ba = [0.42794853, 0.31232367, 4.78964132, 1.82808763, 0.32359375, 0.60169182, 1.18813925, 0.87157664, 0.40730233, 2.00392269, 0.78205837, 0.08880501]
 
     #model, atomic = gce.runmodel(scl_mcmc_widerpriors, plot=True, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic = gce.runmodel(scl_test_nofe, plot=True, title="Sculptor dSph (no Fe)", empirical=True, empiricalfit=True, feh_denom=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic = gce.runmodel(scl_test_nofe_baeu, plot=True, title="Sculptor dSph (no Fe, with Ba)", empirical=True, empiricalfit=True, feh_denom=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic = gce.runmodel(scl_test_baeu, plot=True, title="Sculptor dSph (with DART and DEIMOS Ba)", empirical=True, empiricalfit=True, feh_denom=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
-    #model, atomic = gce.runmodel(scl_test_dartba, plot=True, title="Sculptor dSph (with DART Ba)", empirical=True, empiricalfit=True, feh_denom=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
-    model, atomic = gce.runmodel(scl_test_dartba_ba, plot=True, title="Sculptor dSph (with DART Ba) - Ba params", empirical=True, empiricalfit=True, feh_denom=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
+    model, atomic = gce.runmodel(scl_test_dartba_ba, plot=True, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
+    #model, atomic = gce.runmodel(scl_test_nofe_ba, plot=True, title="Sculptor dSph (no Fe, with DART Ba)", empirical=True, empiricalfit=True, feh_denom=False) #, amr="plots/amr_test", sfh="plots/sfh_test")

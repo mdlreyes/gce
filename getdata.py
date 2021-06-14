@@ -353,7 +353,6 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
             else:
                 data[:,i] = -999.
 
-
         # Remove [Fe/H] from data
         data = np.delete(data,0,axis=0)
         errs = np.delete(errs,0,axis=0)

@@ -232,8 +232,8 @@ def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False
                 yields[10,:,:] = np.array([[1e-11 * normal(mass, (3400*metal + 0.4), 2.2, 0.65) for metal in Z] for mass in M]).T # Eu
             elif yieldsource=='fit_agb':
                 # Default constants for now
-                c2 = fit[11] #0.33
-                c3 = fit[12] #1.0
+                c2 = fit[5] #0.33
+                c3 = fit[6] #1.0
                 c4 = 0.5
                 c5 = 0.2
                 yields[2,:,:] = fit[4]*np.array([[1e-3 * normal(mass, (1.68-220*metal), 2, 0.6) for metal in Z] for mass in M]).T # C
@@ -553,5 +553,5 @@ if __name__ == "__main__":
     # Plot yields
     #getyields('nom13', empirical=False, weakrprocess=True)
     #plotyields('CCSN', empirical=False, empiricalfit=[0.8, 1., 1., 0., 0.6], weakrprocess=True)
-    #plotyields('CCSN', empirical=False, empiricalfit=[0.59413107, 1.32532419, 0.74524346, 0.20701649, 2.0645546])
-    plotyields('AGB', empirical=False, empiricalfit=[0.45488486, 0.29451152, 4.7214058, 0.57051713, 0.90860354, 0.36811399, 0.54901945, 1.31771318, 0.81434372, 0.22611351, 1.64741211, 0.93501212, 0.034125])
+    #[1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6, 0.33, 1.0] 
+    plotyields('IaSN', empirical=False, empiricalfit=[0.54901945, 1.31771318, 0.81434372, 0.22611351, 1.64741211, 0.93501212, 0.034125])

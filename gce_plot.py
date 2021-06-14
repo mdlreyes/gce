@@ -221,6 +221,8 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
                 denom_label = '/Fe]'
             else:
                 denom_label = '/Mg]'
+            if label == 'Ba':
+                denom_label = denom_label + r'$_{s}$'
             axs[i+1].set_ylabel('['+label+denom_label)
             axs[i+1].plot([-6,0],[0,0],':k')
 

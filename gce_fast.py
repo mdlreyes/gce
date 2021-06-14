@@ -156,14 +156,19 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
 
     if empiricalfit:
         # Additional free parameters from yields
-        fe_ia = pars[6]         # Fe yield from IaSNe
-        cexp_ii = pars[7]       # C exponent for CCSN yields
-        mgnorm_ii = pars[8]     # Mg normalization for CCSN yields
-        canorm_ii = pars[9]     # Ca normalization for CCSN yields
-        cnorm_agb = pars[10]    # C normalization for AGB yields
+        if feh_denom:
+            fe_ia = pars[6]         # Fe yield from IaSNe
+            fe_idx = 6
+        else:
+            fe_ia = 0.8
+            fe_idx = 5
+        cexp_ii = pars[fe_idx+1]       # C exponent for CCSN yields
+        mgnorm_ii = pars[fe_idx+2]     # Mg normalization for CCSN yields
+        canorm_ii = pars[fe_idx+3]     # Ca normalization for CCSN yields
+        cnorm_agb = pars[fe_idx+4]    # C normalization for AGB yields
         if len(pars) > 11:
-            banorm_agb = pars[11]
-            bamean_agb = pars[12]
+            banorm_agb = pars[fe_idx+5]
+            bamean_agb = pars[fe_idx+6]
         else:
             banorm_agb = 0.33
             bamean_agb = 0.3
