@@ -29,7 +29,7 @@ empirical = True
 
 # Which elements to fit?
 baeu = True
-fe = False
+fe = True
 c = True
 
 # Put in initial guesses for parameters 
@@ -201,7 +201,7 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
     # While (the age of the universe at a given timestep is less than the age of the universe at z = 0)
     # AND [ (less than 10 Myr has passed) 
     # OR (gas remains within the galaxy at a given time step AND the gas mass in iron at the previous timestep is subsolar) ]
-    while ((timestep < (n-1)) and ((timestep*delta_t <= 0.010) or 
+    while ((timestep < (n-1)) and ((timestep*delta_t <= 0.10) or 
     ( (model['mgas'][timestep] > 0.0) and (model['eps'][timestep-1,snindex['fe']] < 0.0) ) )):
 
         if model['mgas'][timestep] < 0.: 
@@ -218,7 +218,11 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
             model['z'][timestep] =  0.0
 
         # Eq. 5: SFR (Msun Gyr**-1) set by generalization of K-S law                                                            
-        model['mdot'][timestep] = sfr_norm * model['mgas'][timestep]**sfr_exp / 1.e6**(sfr_exp-1.0)
+        #model['mdot'][timestep] = sfr_norm * model['mgas'][timestep]**sfr_exp / 1.e6**(sfr_exp-1.0)
+        if timestep > 50:
+            model['mdot'][timestep] = sfr_norm * model['mgas'][timestep-50]**sfr_exp / 1.e6**(sfr_exp-1.0)
+        else:
+            model['mdot'][timestep] = 0.
 
         # Eq. 10: rate of Ia SNe that will explode IN THE FUTURE
         n_ia = model['mdot'][timestep] * n_wd       # Number of Type Ia SNe that will explode in the future

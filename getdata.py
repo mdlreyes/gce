@@ -7,6 +7,7 @@ Compiles spectroscopic data from data/ folder.
 import numpy as np
 from astropy.io import ascii
 from numpy.random import default_rng
+import csv
 
 # Backend for matplotlib on mahler
 import matplotlib
@@ -360,10 +361,74 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
 
     return data, errs, elems
 
+def maketable(source):
+    """ Make LaTeX table. """
+    
+    # DEIMOS table
+    if source=='deimos':
+        elem_deimos, delem_deimos, _ = getdata(galaxy='Scl', source='deimos', c=True, ba=True, removerprocess='statistical', mn=True, feh_denom=True, outlier_reject=False)
+        table = ascii.read("data/kirby10.dat").filled(-999)
+        idx = np.where(table['dSph']=='Scl')
+        names = table['Name'][idx]
+
+        elem_deimos_nos, delem_deimos_nos, _ = getdata(galaxy='Scl', source='deimos', c=True, ba=True, removerprocess=None, mn=True, feh_denom=True, outlier_reject=False)
+
+        # Open text file
+        workfile = 'output/deimos.txt'
+        with open(workfile, 'w', newline='') as f:
+            for i in range(len(names)):
+                ra = str(table['RAh'][idx][i]).zfill(2)+' '+str(table['RAm'][idx][i]).zfill(2)+' '+str(table['RAs'][idx][i])
+                dec = str(table['DE-'][idx][i])+str(table['DEd'][idx][i])+' '+str(table['DEm'][idx][i])+' '+str(table['DEs'][idx][i])
+                feh = '$'+str(elem_deimos[0,i])+'\pm'+"{:.2f}".format(delem_deimos[0,i])+'$'
+                mgfe = '$'+str(elem_deimos[1,i])+'\pm'+"{:.2f}".format(delem_deimos[1,i])+'$'
+                sife = '$'+str(elem_deimos[2,i])+'\pm'+"{:.2f}".format(delem_deimos[2,i])+'$'
+                cafe = '$'+str(elem_deimos[3,i])+'\pm'+"{:.2f}".format(delem_deimos[3,i])+'$'
+                cfe = '$'+str(elem_deimos[4,i])+'\pm'+"{:.2f}".format(delem_deimos[4,i])+'$'
+                mnfe = '$'+str(elem_deimos[6,i])+'\pm'+"{:.2f}".format(delem_deimos[6,i])+'$'
+                bafe_s = '$'+"{:.2f}".format(elem_deimos[5,i])+'\pm'+"{:.2f}".format(delem_deimos[5,i])+'$'
+                bafe = '$'+str(elem_deimos_nos[5,i])+'\pm'+"{:.2f}".format(delem_deimos_nos[5,i])+'$'
+                line = ['Scl', table['Name'][idx][i], ra, dec, feh, mgfe, sife, cafe, cfe, mnfe, bafe, bafe_s, '\\\\']
+                writer = csv.writer(f, delimiter='&')
+                writer.writerow(line)
+    
+    # DART table
+    if source=='dart':
+        elem_dart, delem_dart, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, removerprocess='statistical', mn=True, feh_denom=True, outlier_reject=False)
+        table = ascii.read("data/hill19.dat")
+        names = np.array(table['Star'])
+        coordtable = ascii.read("data/dartcoords.dat")
+        coordnames = np.array(coordtable['Star'])
+
+        elem_dart_nos, delem_dart_nos, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, removerprocess=None, mn=True, feh_denom=True, outlier_reject=False)
+        
+        # Open text file
+        workfile = 'output/dart.txt'
+        with open(workfile, 'w', newline='') as f:
+            for i, name in enumerate(names):
+                if name+' ' in coordnames:
+                    idx = np.where(np.asarray(coordtable['Star'])==name+' ')
+                    ra = np.array(coordtable['RAJ2000'])[idx][0]
+                    dec = np.array(coordtable['DEJ2000'])[idx][0]
+                    
+                    feh = '$'+str(elem_dart[0,i])+'\pm'+"{:.2f}".format(delem_dart[0,i])+'$'
+                    mgfe = '$'+str(elem_dart[1,i])+'\pm'+"{:.2f}".format(delem_dart[1,i])+'$'
+                    sife = '$'+str(elem_dart[2,i])+'\pm'+"{:.2f}".format(delem_dart[2,i])+'$'
+                    cafe = '$'+str(elem_dart[3,i])+'\pm'+"{:.2f}".format(delem_dart[3,i])+'$'
+                    cfe = '$'+str(elem_dart[4,i])+'\pm'+"{:.2f}".format(delem_dart[4,i])+'$'
+                    mnfe = '$'+"{:.2f}".format(elem_dart[6,i])+'\pm'+"{:.2f}".format(delem_dart[6,i])+'$'
+                    bafe_s = '$'+"{:.2f}".format(elem_dart[5,i])+'\pm'+"{:.2f}".format(delem_dart[5,i])+'$'
+                    bafe = '$'+str(elem_dart_nos[5,i])+'\pm'+"{:.2f}".format(delem_dart_nos[5,i])+'$'
+                    line = ['Scl', name, ra, dec, feh, mgfe, sife, cafe, cfe, mnfe, bafe, bafe_s, '\\\\']
+                    writer = csv.writer(f, delimiter='&')
+                    writer.writerow(line)
+
+    return
+
 if __name__ == "__main__":
 
     # Test to make sure script is working
     #data, errs = getdata('Scl', source='deimos', c=True, ba=True, mn=True, eu=True, feh_denom=True, removerprocess='statistical')
-    elem_dart, delem_dart, elems = getdata(galaxy='Scl', source='dart', c=True, ba=True, removerprocess='statistical', feh_denom=True) #, eu=baeu)   
-    print(elems)
+    #elem_dart, delem_dart, elems = getdata(galaxy='Scl', source='dart', c=True, ba=True, removerprocess='statistical', feh_denom=True) #, eu=baeu)   
+    #print(elems)
     # print(elem_dart[-1,:])
+    maketable('dart')

@@ -196,7 +196,7 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
     # While (the age of the universe at a given timestep is less than the age of the universe at z = 0)
     # AND [ (less than 10 Myr has passed) 
     # OR (gas remains within the galaxy at a given time step AND the gas mass in iron at the previous timestep is subsolar) ]
-    while ((timestep < (n-1)) and ((timestep*delta_t <= 0.010) or 
+    while ((timestep < (n-1)) and ((timestep*delta_t <= 0.10) or 
     ( (model['mgas'][timestep] > 0.0) and (model['eps'][timestep-1,snindex['fe']] < 0.0) ) )):
 
         if model['mgas'][timestep] < 0.: 
@@ -214,8 +214,12 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
 
         #print(model['z'][timestep], model['mgas'][timestep], model['abund'][timestep-1,snindex['h']], model['abund'][timestep-1,snindex['he']])
 
-        # Eq. 5: SFR (Msun Gyr**-1) set by generalization of K-S law                                                            
-        model['mdot'][timestep] = sfr_norm * model['mgas'][timestep]**sfr_exp / 1.e6**(sfr_exp-1.0)
+        # Eq. 5: SFR (Msun Gyr**-1) set by generalization of K-S law
+        #model['mdot'][timestep] = sfr_norm * model['mgas'][timestep]**sfr_exp / 1.e6**(sfr_exp-1.0)
+        if timestep > 50:
+            model['mdot'][timestep] = sfr_norm * model['mgas'][timestep-50]**sfr_exp / 1.e6**(sfr_exp-1.0)
+        else:
+            model['mdot'][timestep] = 0.
 
         # Eq. 10: rate of Ia SNe that will explode IN THE FUTURE
         n_ia = model['mdot'][timestep] * n_wd       # Number of Type Ia SNe that will explode in the future
@@ -301,6 +305,7 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
                     model['eps'][timestep,elem] = np.log10(model['abund'][timestep,elem]/weight[elem])
 
         model['eps'][timestep] = 12.0 + model['eps'][timestep] - model['eps'][timestep,0] - eps_sun # Logarithmic number density relative to hydrogen, relative to sun
+        #print('test', model['eps'][timestep,snindex['fe']])
 
         # Calculate the stellar mass of the galaxy at a given timestep,
         # using trapezoidal rule to integrate from previous timestep
