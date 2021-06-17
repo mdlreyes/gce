@@ -99,3 +99,8 @@ sfdelay_med.npy
     > same as empiricaltest_dartba_ba, but with a 50 Myr delay applied to SF
     > datasource = 'both'
     > 5e5 steps over 32 walkers
+
+iaDTD_lownorm_med.npy
+    > same as empiricaltest_dartba_ba, but with Maoz+17 Ia DTD (lower normalization than Maoz+10)
+    > datasource = 'both'
+    > 5e5 steps over 32 walkers

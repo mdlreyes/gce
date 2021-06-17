@@ -343,6 +343,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         plt.setp([a.minorticks_on() for a in fig.axes[:]])
         plt.suptitle("Final mass: %.2f x $10^6$ M$_\odot$"%(model['mgal'][-1]/1e6), y=0.97)
         print('test', model['mgal'][-1]/1e6, model['mstar'][-1]/1e6)
+        print('final time:', model['t'][-1])
         axs[0].set_title(title, y = 1.15)
         axs = axs.ravel()    
         
