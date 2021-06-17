@@ -18,6 +18,15 @@ def dtd_ia(t,ia_model): #(Gyr)
         w = np.where(t <= t_ia)[0]
         if len(w) > 0: rate[w] = 0.0
         return rate #SNe Gyr**-1 (M_sun)**-1
+
+    elif ia_model == 'maoz17':
+        #Note that this DTD is for field galaxies (Maoz & Graur 2017), 
+        #where the SN Ia rate is lower than the rate in cluster galaxies
+        t_ia = 1e-1 #Gyr
+        rate = (0.2e-3)*t**(-1.1)
+        w = np.where(t <= t_ia)[0]
+        if len(w) > 0: rate[w] = 0.0
+        return rate #SNe Gyr**-1 (M_sun)**-1
         
     elif ia_model == 'mannucci06':
         t_ia = 3.752e-2 #Gyr

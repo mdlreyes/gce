@@ -7,8 +7,8 @@ Type Ia SNe DTD and IMF
 # Closed box model
 name = 'sfr-law'
 
-# Ia delay-time distribution: 'mannucci06', 'maoz10'
-ia_model = 'maoz10'
+# Ia delay-time distribution: 'maoz10', 'maoz17'
+ia_model = 'maoz17'
 
 # Initial mass function: 'kroupa93' ('kroupa01', 'chabrier03', 'salpeter55' - not yet implemented)
 imf_model = 'kroupa93'

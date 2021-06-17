@@ -72,10 +72,10 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, 
     if c==False:
         outputparams = np.insert(outputparams, 7, 1.)
         outputparams = np.append(outputparams, 0.6)
-    print(outputparams)
+    print(outputparams, sep=',')
 
     return
 
 if __name__ == "__main__":
 
-    plotmcmc(file='output/chain.npy', burnin=10000, empiricalfit=True, c=True, fe=True)
+    plotmcmc(file='output/chain.npy', burnin=5000, empiricalfit=True, c=True, fe=True)

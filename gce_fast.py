@@ -21,7 +21,7 @@ import dtd
 import gce_yields as gce_yields
 import gce_plot
 
-def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, empiricalfit=False, feh_denom=True):
+def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, empiricalfit=False, feh_denom=True, delay=True):
     """Galactic chemical evolution model.
 
     Takes in additional parameters from params.py, reads yields using gce_yields.py, 
@@ -39,6 +39,7 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
         empiricalfit (bool): If True, use additional parameters to set yields
                         (note: pars must include these additional parameters!)
         feh_denom (bool): If True, use [Fe/H] as x-axis of plots; otherwise use [Mg/H]
+        delay (bool): If True, delay SF by 50 Myr
 
     Returns:
         model (array): All outputs of model.
@@ -194,9 +195,14 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
     timestep = 0 
 
     # While (the age of the universe at a given timestep is less than the age of the universe at z = 0)
-    # AND [ (less than 10 Myr has passed) 
+    # AND [ (less than 10 Myr *or some other max time* has passed) 
     # OR (gas remains within the galaxy at a given time step AND the gas mass in iron at the previous timestep is subsolar) ]
-    while ((timestep < (n-1)) and ((timestep*delta_t <= 0.10) or 
+    if delay:
+        maxtime = 0.10
+    else:
+        maxtime = 0.01
+
+    while ((timestep < (n-1)) and ((timestep*delta_t <= maxtime) or 
     ( (model['mgas'][timestep] > 0.0) and (model['eps'][timestep-1,snindex['fe']] < 0.0) ) )):
 
         if model['mgas'][timestep] < 0.: 
@@ -215,11 +221,13 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
         #print(model['z'][timestep], model['mgas'][timestep], model['abund'][timestep-1,snindex['h']], model['abund'][timestep-1,snindex['he']])
 
         # Eq. 5: SFR (Msun Gyr**-1) set by generalization of K-S law
-        #model['mdot'][timestep] = sfr_norm * model['mgas'][timestep]**sfr_exp / 1.e6**(sfr_exp-1.0)
-        if timestep > 50:
-            model['mdot'][timestep] = sfr_norm * model['mgas'][timestep-50]**sfr_exp / 1.e6**(sfr_exp-1.0)
+        if delay==False:
+            model['mdot'][timestep] = sfr_norm * model['mgas'][timestep]**sfr_exp / 1.e6**(sfr_exp-1.0)
         else:
-            model['mdot'][timestep] = 0.
+            if timestep > 50:
+                model['mdot'][timestep] = sfr_norm * model['mgas'][timestep-50]**sfr_exp / 1.e6**(sfr_exp-1.0)
+            else:
+                model['mdot'][timestep] = 0.
 
         # Eq. 10: rate of Ia SNe that will explode IN THE FUTURE
         n_ia = model['mdot'][timestep] * n_wd       # Number of Type Ia SNe that will explode in the future
