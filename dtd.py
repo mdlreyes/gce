@@ -29,8 +29,16 @@ def dtd_ia(t,ia_model): #(Gyr)
         return rate #SNe Gyr**-1 (M_sun)**-1
 
     elif ia_model == 'highmindelay':
-        #Lower minimum delay time
+        #Higher minimum delay time
         t_ia = 5e-1 #Gyr
+        rate = (1e-3)*t**(-1.1)
+        w = np.where(t <= t_ia)[0]
+        if len(w) > 0: rate[w] = 0.0
+        return rate #SNe Gyr**-1 (M_sun)**-1
+
+    elif ia_model == 'lowmindelay':
+        #Lower minimum delay time
+        t_ia = 5e-2 #Gyr
         rate = (1e-3)*t**(-1.1)
         w = np.where(t <= t_ia)[0]
         if len(w) > 0: rate[w] = 0.0
