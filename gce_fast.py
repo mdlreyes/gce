@@ -21,7 +21,7 @@ import dtd
 import gce_yields as gce_yields
 import gce_plot
 
-def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, empiricalfit=False, feh_denom=True, delay=True):
+def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, empiricalfit=False, feh_denom=True, delay=False, reioniz=False):
     """Galactic chemical evolution model.
 
     Takes in additional parameters from params.py, reads yields using gce_yields.py, 
@@ -40,6 +40,7 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
                         (note: pars must include these additional parameters!)
         feh_denom (bool): If True, use [Fe/H] as x-axis of plots; otherwise use [Mg/H]
         delay (bool): If True, delay SF by 50 Myr
+        reioniz (bool): If True, simulate reionization by stopping gas infall at z~8.8 (0.6 Gyr)
 
     Returns:
         model (array): All outputs of model.
@@ -180,8 +181,13 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
     pristine[1] = 0.2486        # Helium from BBN
     pristine=pristine
 
-    # Initialize model
-    model['f_in'] = f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)                                                                                
+    # Initialize gas inflow
+    model['f_in'] = f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)   
+    if reioniz:
+        reioniz_idx = np.where(model['t'] > 0.6)
+        model['f_in'][reioniz_idx] = 0.  # Reionization heating effectively stops gas inflow after z ~ 8.8
+
+    # Initialize other model inputs                                                                             
     model['abund'][0,0] = model['mgas'][0]*pristine[0]    # Set initial gas mass of H
     model['abund'][0,1] = model['mgas'][0]*pristine[1]    # Set initial gas mass of He
     model['mgal'][0] = model['mgas'][0]   # Set the initial galaxy mass to the initial gas mass    

@@ -104,3 +104,13 @@ iaDTD_lownorm_med.npy
     > same as empiricaltest_dartba_ba, but with Maoz+17 Ia DTD (lower normalization than Maoz+10)
     > datasource = 'both'
     > 5e5 steps over 32 walkers
+
+iaDTD_highmindelay_med.npy
+    > same as empiricaltest_dartba_ba, but with Maoz+10 Ia DTD and min delay time = 0.5 Gyr
+    > datasource = 'both'
+    > 5e5 steps over 32 walkers
+
+iaDTD_lowmindelay_med.npy
+    > same as empiricaltest_dartba_ba, but with Maoz+10 Ia DTD and min delay time = 0.05 Gyr
+    > datasource = 'both'
+    > 5e5 steps over 32 walkers
