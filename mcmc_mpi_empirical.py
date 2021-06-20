@@ -27,6 +27,7 @@ parallel = True
 datasource = 'both'
 empirical = True
 delay = False
+reioniz = True
 
 # Which elements to fit?
 baeu = True
@@ -185,8 +186,13 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
     mgnorm_ii = pars[8]     # Mg normalization for CCSN yields
     canorm_ii = pars[9]     # Ca normalization for CCSN yields
 
-    # Initialize model
-    model['f_in'] = f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)                                                                                
+    # Initialize gas inflow
+    model['f_in'] = f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)
+    if reioniz:
+        reioniz_idx = np.where(model['t'] > 0.6)
+        model['f_in'][reioniz_idx] = 0.  # Reionization heating effectively stops gas inflow after z ~ 8.8
+
+    # Initialize other model parameters
     model['abund'][0,0] = model['mgas'][0]*pristine[0]    # Set initial gas mass of H
     model['abund'][0,1] = model['mgas'][0]*pristine[1]    # Set initial gas mass of He
     model['mgal'][0] = model['mgas'][0]   # Set the initial galaxy mass to the initial gas mass    
