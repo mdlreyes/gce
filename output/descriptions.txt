@@ -114,3 +114,13 @@ iaDTD_lowmindelay_med.npy
     > same as empiricaltest_dartba_ba, but with Maoz+10 Ia DTD and min delay time = 0.05 Gyr
     > datasource = 'both'
     > 5e5 steps over 32 walkers
+
+iaDTD_medhimindelay_med.npy
+    > same as empiricaltest_dartba_ba, but with Maoz+10 Ia DTD and min delay time = 0.2 Gyr
+    > datasource = 'both'
+    > 5e5 steps over 32 walkers
+
+sfdelay_med.npy
+    > same as empiricaltest_dartba_ba, but with gas infall turned off after 0.6 Gyr (to simulate heating from reionization)
+    > datasource = 'both'
+    > 5e5 steps over 32 walkers

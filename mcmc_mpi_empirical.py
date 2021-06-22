@@ -27,7 +27,8 @@ parallel = True
 datasource = 'both'
 empirical = True
 delay = False
-reioniz = True
+reioniz = False
+rampressure = True
 
 # Which elements to fit?
 baeu = True
@@ -35,7 +36,9 @@ fe = True
 c = True
 
 # Put in initial guesses for parameters 
-params_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6, 0.33, 1.0] # initial values
+params_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6, 0.33, 1.0, 0.] # initial values
+if rampressure==False:
+    del params_init[13]
 if baeu==False:
     del params_init[12]
     del params_init[11]
@@ -282,6 +285,8 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
             x_el = np.zeros(nel)
 
         model['mout'][timestep,:] = f_out * x_el * (model['II_rate'][timestep] + model['Ia_rate'][timestep]) 
+        if rampressure and model['eps'][timestep-1,snindex['fe']] > -1.5:
+            model['mout'][timestep,:] += x_el * pars[13] * 1e6 
 
         # Now put all the parts of the model together!
 
@@ -463,6 +468,7 @@ def lnprior(parameters):
     fe_ia = 0.8
     banorm_agb=0.33
     bamean_agb=1.0
+    ramconst = 0.
 
     if fe:
         fe_ia = parameters[6]
@@ -476,13 +482,15 @@ def lnprior(parameters):
         else:
             mgnorm_ii, canorm_ii = parameters[6:8]
     if baeu:
-        banorm_agb, bamean_agb = parameters[-2:]
+        banorm_agb, bamean_agb = parameters[11:13]
+    if rampressure:
+        ramconst = parameters[-1]
 
 
     # Define uniform priors, based on values in Table 2 of Kirby+11
     if (0. < f_in_norm0 < 5.) and (0. < f_in_t0 < 1.) and (0. < f_out < 20.) and (0. < sfr_norm < 10.) and (0. < sfr_exp < 2.) and (0. < mgas0 < 1.) and \
         (0. < fe_ia < 0.9) and (0. < cexp_ii < 2.) and (0. < mgnorm_ii < 2.) and (0. < canorm_ii < 0.5) and (0.4 < cnorm_agb < 5.) and \
-        (0. < banorm_agb < 1.) and (0. < bamean_agb < 2.):
+        (0. < banorm_agb < 1.) and (0. < bamean_agb < 2.) and (0. <= ramconst < 5.):
         return 0.0
     return -np.inf
 
@@ -506,39 +514,43 @@ params_init = result["x"]
 print('Result from Powell: ', params_init)
 '''
 
-# Sample the log-probability function using emcee - first, initialize the walkers
-ndim = len(params_init)
-dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01] / np.sqrt(13.)
-if baeu==False:
-    dpar = np.delete(dpar,12)
-    dpar = np.delete(dpar,11)
-if c==False:
-    dpar = np.delete(dpar,10)
-    dpar = np.delete(dpar,7)
-if fe==False:
-    dpar = np.delete(dpar,6)
+if __name__=="__main__":
 
-pos = []
-for i in range(nwalkers):
-    a = params_init + dpar*np.random.randn(ndim)
-    #a[a < 0.] = 0.
-    pos.append(a)
+    # Sample the log-probability function using emcee - first, initialize the walkers
+    ndim = len(params_init)
+    dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01] / np.sqrt(14.)
+    if rampressure==False:
+        dpar = np.delete(dpar,13)
+    if baeu==False:
+        dpar = np.delete(dpar,12)
+        dpar = np.delete(dpar,11)
+    if c==False:
+        dpar = np.delete(dpar,10)
+        dpar = np.delete(dpar,7)
+    if fe==False:
+        dpar = np.delete(dpar,6)
 
-print('Starting sampler')
+    pos = []
+    for i in range(nwalkers):
+        a = params_init + dpar*np.random.randn(ndim)
+        #a[a < 0.] = 0.
+        pos.append(a)
 
-if parallel:
-    # Run parallel MCMC
-    with Pool() as pool:
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, pool=pool)
+    print('Starting sampler')
+
+    if parallel:
+        # Run parallel MCMC
+        with Pool() as pool:
+            sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, pool=pool)
+            sampler.run_mcmc(pos, nsteps, progress=True)
+
+            # Save the chain so we don't have to run this again
+            np.save('chain', sampler.chain, allow_pickle=True, fix_imports=True)
+
+    else:
+        # Run serial MCMC
+        sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob)
         sampler.run_mcmc(pos, nsteps, progress=True)
 
         # Save the chain so we don't have to run this again
         np.save('chain', sampler.chain, allow_pickle=True, fix_imports=True)
-
-else:
-    # Run serial MCMC
-    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob)
-    sampler.run_mcmc(pos, nsteps, progress=True)
-
-    # Save the chain so we don't have to run this again
-    np.save('chain', sampler.chain, allow_pickle=True, fix_imports=True)

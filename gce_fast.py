@@ -20,8 +20,9 @@ import params
 import dtd
 import gce_yields as gce_yields
 import gce_plot
+from mcmc_mpi_empirical import neglnlike
 
-def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, empiricalfit=False, feh_denom=True, delay=False, reioniz=False):
+def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, empiricalfit=False, feh_denom=True, delay=False, reioniz=False, ia_dtd='maoz10', rampressure=False):
     """Galactic chemical evolution model.
 
     Takes in additional parameters from params.py, reads yields using gce_yields.py, 
@@ -53,7 +54,7 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
     t = np.arange(n)*delta_t    # time passed in model array -- age universe (Gyr)
 
     # Prepare arrays for SNe and AGB calculations
-    n_wd = dtd.dtd_ia(t, params.ia_model) * delta_t      # Fraction of stars that will explode as Type Ia SNe in future
+    n_wd = dtd.dtd_ia(t, ia_dtd) * delta_t      # Fraction of stars that will explode as Type Ia SNe in future
 
     m_himass, n_himass = dtd.dtd_ii(t, params.imf_model)       # Mass and fraction of stars that will explode in the future
     goodidx = np.where((m_himass > params.M_SN_min) & (m_himass < params.M_SN_max))[0]  # Limit to timesteps where stars will explode as CCSN
@@ -289,7 +290,9 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
             # Otherwise, if there is no gas, then the gas mass fraction is zero
             x_el = np.zeros(nel)
 
-        model['mout'][timestep,:] = f_out * x_el * (model['II_rate'][timestep] + model['Ia_rate'][timestep]) 
+        model['mout'][timestep,:] = f_out * x_el * (model['II_rate'][timestep] + model['Ia_rate'][timestep])
+        if rampressure and model['eps'][timestep-1,snindex['fe']] > -1.5:
+                model['mout'][timestep,:] += x_el * 1e6 #0.43 * (1+f_out) * sfr_norm
 
         # Now put all the parts of the model together!
 
@@ -358,7 +361,10 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
         modeldata = np.vstack((model['mdot'][:timestep-1], model['t'][:timestep-1]))
         np.save(sfh, modeldata)
 
-    return model[:timestep-1], atomic
+    # Compute likelihood
+    ll = -neglnlike(pars)
+
+    return model[:timestep-1], atomic, ll
 
     '''
     model2, atomic2 = gce_model(pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB, snindex, pristine, n_wd, n_himass, f_ii_metallicity, n_intmass, f_agb_metallicity, agb_yield_mass, f_ia_metallicity)

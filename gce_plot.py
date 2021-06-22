@@ -18,7 +18,7 @@ from getdata import getdata
 import params as paramfile
 from astropy.io import ascii  # only needed for SFH test stuff
 from astropy.cosmology import FlatLambdaCDM  # needed to compute redshifts
-cosmo = FlatLambdaCDM(H0=67.7, Om0=0.310)
+cosmo = FlatLambdaCDM(H0=67.4, Om0=0.315)  # using Planck (2018) params
 import astropy.units as u
 from astropy.cosmology import z_at_value
 

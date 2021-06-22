@@ -18,7 +18,7 @@ rc('text',usetex=True)
 import numpy as np
 import corner
 
-def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, c=True, fe=True):
+def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, c=True, fe=True, rampressure=True):
 
     # Load file
     chainfile = np.load(file)
@@ -30,10 +30,12 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, 
 
     names = [r"$A_{\mathrm{in}}$", r"$\tau_{\mathrm{in}}$", r"$A_{\mathrm{out}}$", r"$A_{\star}$", r"$\alpha$", r"$M_{\mathrm{gas},0}$"]
     if empiricalfit:
-        names += [r"$\mathrm{Fe}_{\mathrm{Ia}}$", r"$\mathrm{expC}_{\mathrm{II}}$", r"$\mathrm{normMg}_{\mathrm{II}}$", r"$\mathrm{normCa}_{\mathrm{II}}$", r"$\mathrm{normC}_{\mathrm{AGB}}$", r"$\mathrm{normBa}_{\mathrm{AGB}}$", r"$\mathrm{meanBa}_{\mathrm{AGB}}$"]
+        names += [r"$\mathrm{Fe}_{\mathrm{Ia}}$", r"$\mathrm{expC}_{\mathrm{II}}$", r"$\mathrm{normMg}_{\mathrm{II}}$", r"$\mathrm{normCa}_{\mathrm{II}}$", r"$\mathrm{normC}_{\mathrm{AGB}}$", r"$\mathrm{normBa}_{\mathrm{AGB}}$", r"$\mathrm{meanBa}_{\mathrm{AGB}}$", r"$\eta$"]
+        if rampressure==False:
+            del names[13]
         if c==False:
-            del names[7]
             del names[10]
+            del names[7]
         if fe==False:
             del names[6]
 
@@ -72,10 +74,12 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, 
     if c==False:
         outputparams = np.insert(outputparams, 7, 1.)
         outputparams = np.append(outputparams, 0.6)
+    if rampressure==False:
+        outputparams = np.append(outputparams, 0.)
     print(*outputparams, sep=',')
 
     return
 
 if __name__ == "__main__":
 
-    plotmcmc(file='output/iaDTD_lowmindelay_med.npy', burnin=5000, empiricalfit=True, c=True, fe=True)
+    plotmcmc(file='chain.npy', burnin=0, empiricalfit=True, c=True, fe=True)
