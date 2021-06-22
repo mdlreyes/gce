@@ -292,7 +292,7 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
 
         model['mout'][timestep,:] = f_out * x_el * (model['II_rate'][timestep] + model['Ia_rate'][timestep])
         if rampressure and model['eps'][timestep-1,snindex['fe']] > -1.5:
-                model['mout'][timestep,:] += x_el * 1e6 #0.43 * (1+f_out) * sfr_norm
+                model['mout'][timestep,:] += x_el * pars[13] * 1e6 #0.43 * (1+f_out) * sfr_norm
 
         # Now put all the parts of the model together!
 
@@ -361,10 +361,15 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
         modeldata = np.vstack((model['mdot'][:timestep-1], model['t'][:timestep-1]))
         np.save(sfh, modeldata)
 
-    # Compute likelihood
-    ll = -neglnlike(pars)
+    # Compute AIC/BIC
+    k = 13  # Number of free parameters
+    if rampressure:
+        k += 1
+    n = 474  # Number of stars
+    aic = 2*k - 2*neglnlike(pars)
+    bic = np.log(n)*k - 2*neglnlike(pars)
 
-    return model[:timestep-1], atomic, ll
+    return model[:timestep-1], atomic, aic
 
     '''
     model2, atomic2 = gce_model(pars, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB, snindex, pristine, n_wd, n_himass, f_ii_metallicity, n_intmass, f_agb_metallicity, agb_yield_mass, f_ia_metallicity)

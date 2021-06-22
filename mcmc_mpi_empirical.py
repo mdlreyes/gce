@@ -21,14 +21,14 @@ import emcee
 from multiprocessing import Pool
 
 # Variables for MCMC run
-nsteps = 100
+nsteps = 15625
 nwalkers = 32
 parallel = True
 datasource = 'both'
 empirical = True
 delay = False
 reioniz = False
-rampressure = True
+rampressure = False
 
 # Which elements to fit?
 baeu = True

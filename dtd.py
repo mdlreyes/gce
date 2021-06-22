@@ -51,6 +51,14 @@ def dtd_ia(t,ia_model): #(Gyr)
         w = np.where(t <= t_ia)[0]
         if len(w) > 0: rate[w] = 0.0
         return rate #SNe Gyr**-1 (M_sun)**-1
+
+    elif ia_model == 'index05':
+        #Power law index = -0.5
+        t_ia = 1e-1 #Gyr
+        rate = (1e-3)*t**(-0.5)
+        w = np.where(t <= t_ia)[0]
+        if len(w) > 0: rate[w] = 0.0
+        return rate #SNe Gyr**-1 (M_sun)**-1
         
     elif ia_model == 'mannucci06':
         t_ia = 3.752e-2 #Gyr

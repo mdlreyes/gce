@@ -124,3 +124,8 @@ sfdelay_med.npy
     > same as empiricaltest_dartba_ba, but with gas infall turned off after 0.6 Gyr (to simulate heating from reionization)
     > datasource = 'both'
     > 5e5 steps over 32 walkers
+
+rampressure_med.npy
+    > same as empiricaltest_dartba_ba, but with a simplified ram pressure stripping model (including free parameter describing constant gas outflow)
+    > datasource = 'both'
+    > 5e5 steps over 32 walkers
