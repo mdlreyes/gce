@@ -88,6 +88,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         if elem != 1:
             labels_h.append(elem_names[elem])
         snindex[elem_names[elem]] = idx
+    labels.remove('Mn')  # Try removing Mn from plots
 
     if feh==False:
         labels.remove('Mg')
