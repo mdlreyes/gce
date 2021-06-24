@@ -30,13 +30,13 @@ matplotlib.rcParams['text.latex.preamble']=[r"\usepackage{amsmath}"]
 
 # Systematic errors
 # Fe/H and alpha/Fe calculated by Evan on 12/28/17
-# C/Fe from Kirby+15, Ba/Fe from Duggan+18, Mn/Fe from de los Reyes+20
+# C/Fe from Kirby+15, Ba/Fe from Duggan+18, Mn/Fe from de los Reyes+20, Ni/Fe from Kirby+18
 syserr = {'Fe':0.10103081, 'alpha':0.084143983, 'Mg':0.076933658,
         'Si':0.099193360, 'Ca':0.11088295, 'Ti':0.10586739,
-        'C':0.100, 'Ba':0.100, 'Mn':0.100}
+        'C':0.100, 'Ba':0.100, 'Mn':0.100, 'Ni':0.077}
 
-def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outlier_reject=True, 
-    removerprocess='statistical', feh_denom=True):
+def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, ni=False, eu=False, 
+    outlier_reject=True, removerprocess='statistical', feh_denom=True):
     """Compiles observed abundances from literature tables.
 
     Args:
@@ -99,6 +99,7 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
         table_c = ascii.read("data/kirby15.dat").filled(-999)
         table_ba = ascii.read("data/duggan18.dat")
         table_mn = ascii.read("data/delosreyes20.dat")
+        table_ni = ascii.read("data/kirby18.dat").filled(-999)
 
         # Create tables that include all abundances and errors
         idx = np.where(table['dSph']=='Scl')
@@ -112,6 +113,12 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
         # List of elements that's in data table
         elems = ['fe','mg','si','ca']
 
+        if c: elems.append('c')
+        if ba: elems.append('ba')
+        if mn: elems.append('mn')
+        if eu: elems.append('eu')
+        if ni: elems.append('ni')
+
         # Cross-match data
         finaldata = []
         finalerrs = []
@@ -123,7 +130,6 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
 
             # Cross-match with carbon table if needed
             if c: 
-                elems.append('c')
                 if names[i] in table_c['Name']:
                     c_idx = np.where(table_c['Name'] == names[i])
                     newdata = np.concatenate((newdata,table_c['[C/Fe]c'][c_idx]))
@@ -134,7 +140,6 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
 
             # Cross-match with barium table if needed
             if ba: 
-                elems.append('ba')
                 if names[i] in table_ba['Name'] and removerprocess != 'individual':
                     ba_idx = np.where(table_ba['Name'] == names[i])
 
@@ -163,7 +168,6 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
 
             # Cross-match with manganese table if needed
             if mn: 
-                elems.append('mn')
                 if names[i] in table_mn['ID']:
                     mn_idx = np.where(table_mn['ID'] == names[i])
                     newdata = np.concatenate((newdata,table_mn['MnFe'][mn_idx]))
@@ -174,9 +178,17 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
 
             # No Eu data, so just put in an empty row for now
             if eu: 
-                elems.append('eu')
                 newdata = np.concatenate((newdata,[-999.]))
                 newerrs = np.concatenate((newerrs,[-999.]))
+
+            if ni:
+                if names[i] in table_ni['Name']:
+                    ni_idx = np.where((table_ni['Name'] == names[i]) & (table_ni['System']=='Sculptor'))
+                    newdata = np.concatenate((newdata,table_ni['NiFe'][ni_idx]))
+                    newerrs = np.concatenate((newerrs,np.sqrt(table_ni['e_NiFe'][ni_idx]**2. + syserr['Ni'])))
+                else:
+                    newdata = np.concatenate((newdata,[-999.]))
+                    newerrs = np.concatenate((newerrs,[-999.]))
 
             finaldata.append(newdata)
             finalerrs.append(newerrs)
@@ -321,6 +333,15 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, eu=False, outl
                     eu_errs = table['[Eu/Fe]err'].reshape(table['[Eu/Fe]err'].shape[0],1)
                     errs = np.hstack([errs,eu_errs])
 
+            # Add nickel if needed
+            if ni:
+                elems.append('ni')
+                ni_data = table['[Ni/Fe]'].reshape(table['[Ni/Fe]'].shape[0],1)
+                data = np.hstack([data,ni_data])
+
+                ni_errs = table['[Ni/Fe]err'].reshape(table['[Ni/Fe]err'].shape[0],1)
+                errs = np.hstack([errs,ni_errs])
+
             # Mask out non-detections
             data[np.isclose(data,-99)] = -999.0
             errs[np.isclose(errs,9.9)] = -999.0
@@ -366,12 +387,12 @@ def maketable(source):
     
     # DEIMOS table
     if source=='deimos':
-        elem_deimos, delem_deimos, _ = getdata(galaxy='Scl', source='deimos', c=True, ba=True, removerprocess='statistical', mn=True, feh_denom=True, outlier_reject=False)
+        elem_deimos, delem_deimos, _ = getdata(galaxy='Scl', source='deimos', c=True, ba=True, removerprocess='statistical', mn=True, ni=True, feh_denom=True, outlier_reject=False)
         table = ascii.read("data/kirby10.dat").filled(-999)
         idx = np.where(table['dSph']=='Scl')
         names = table['Name'][idx]
 
-        elem_deimos_nos, delem_deimos_nos, _ = getdata(galaxy='Scl', source='deimos', c=True, ba=True, removerprocess=None, mn=True, feh_denom=True, outlier_reject=False)
+        elem_deimos_nos, delem_deimos_nos, _ = getdata(galaxy='Scl', source='deimos', c=True, ba=True, removerprocess=None, mn=True, ni=True, feh_denom=True, outlier_reject=False)
 
         # Open text file
         workfile = 'output/deimos.txt'
@@ -385,21 +406,22 @@ def maketable(source):
                 cafe = '$'+str(elem_deimos[3,i])+'\pm'+"{:.2f}".format(delem_deimos[3,i])+'$'
                 cfe = '$'+str(elem_deimos[4,i])+'\pm'+"{:.2f}".format(delem_deimos[4,i])+'$'
                 mnfe = '$'+str(elem_deimos[6,i])+'\pm'+"{:.2f}".format(delem_deimos[6,i])+'$'
+                nife = '$'+str(elem_deimos[7,i])+'\pm'+"{:.2f}".format(delem_deimos[7,i])+'$'
                 bafe_s = '$'+"{:.2f}".format(elem_deimos[5,i])+'\pm'+"{:.2f}".format(delem_deimos[5,i])+'$'
                 bafe = '$'+str(elem_deimos_nos[5,i])+'\pm'+"{:.2f}".format(delem_deimos_nos[5,i])+'$'
-                line = ['Scl', table['Name'][idx][i], ra, dec, feh, mgfe, sife, cafe, cfe, mnfe, bafe, bafe_s, '\\\\']
+                line = ['Scl', table['Name'][idx][i], ra, dec, feh, mgfe, sife, cafe, cfe, mnfe, nife, bafe, bafe_s, '\\\\']
                 writer = csv.writer(f, delimiter='&')
                 writer.writerow(line)
     
     # DART table
     if source=='dart':
-        elem_dart, delem_dart, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, removerprocess='statistical', mn=True, feh_denom=True, outlier_reject=False)
+        elem_dart, delem_dart, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, removerprocess='statistical', mn=True, ni=True, feh_denom=True, outlier_reject=False)
         table = ascii.read("data/hill19.dat")
         names = np.array(table['Star'])
         coordtable = ascii.read("data/dartcoords.dat")
         coordnames = np.array(coordtable['Star'])
 
-        elem_dart_nos, delem_dart_nos, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, removerprocess=None, mn=True, feh_denom=True, outlier_reject=False)
+        elem_dart_nos, delem_dart_nos, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, removerprocess=None, mn=True, ni=True, feh_denom=True, outlier_reject=False)
         
         # Open text file
         workfile = 'output/dart.txt'
@@ -416,9 +438,10 @@ def maketable(source):
                     cafe = '$'+str(elem_dart[3,i])+'\pm'+"{:.2f}".format(delem_dart[3,i])+'$'
                     cfe = '$'+str(elem_dart[4,i])+'\pm'+"{:.2f}".format(delem_dart[4,i])+'$'
                     mnfe = '$'+"{:.2f}".format(elem_dart[6,i])+'\pm'+"{:.2f}".format(delem_dart[6,i])+'$'
+                    nife = '$'+"{:.2f}".format(elem_dart[7,i])+'\pm'+"{:.2f}".format(delem_dart[7,i])+'$'
                     bafe_s = '$'+"{:.2f}".format(elem_dart[5,i])+'\pm'+"{:.2f}".format(delem_dart[5,i])+'$'
                     bafe = '$'+str(elem_dart_nos[5,i])+'\pm'+"{:.2f}".format(delem_dart_nos[5,i])+'$'
-                    line = ['Scl', name, ra, dec, feh, mgfe, sife, cafe, cfe, mnfe, bafe, bafe_s, '\\\\']
+                    line = ['Scl', name, ra, dec, feh, mgfe, sife, cafe, cfe, mnfe, nife, bafe, bafe_s, '\\\\']
                     writer = csv.writer(f, delimiter='&')
                     writer.writerow(line)
 
@@ -427,8 +450,9 @@ def maketable(source):
 if __name__ == "__main__":
 
     # Test to make sure script is working
-    #data, errs = getdata('Scl', source='deimos', c=True, ba=True, mn=True, eu=True, feh_denom=True, removerprocess='statistical')
+    #data, errs, elems = getdata('Scl', source='deimos', c=True, ba=True, mn=True, eu=True, ni=True, feh_denom=True, removerprocess='statistical')
+    #print(len(np.where(data[-1,:]>-990)[0]))
     #elem_dart, delem_dart, elems = getdata(galaxy='Scl', source='dart', c=True, ba=True, removerprocess='statistical', feh_denom=True) #, eu=baeu)   
     #print(elems)
-    # print(elem_dart[-1,:])
+    #print(elem_dart[-1,:])
     maketable('dart')

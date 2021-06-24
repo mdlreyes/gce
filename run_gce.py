@@ -80,14 +80,15 @@ if __name__ == "__main__":
     #scl_test_dartba = [0.34156907, 0.32722443, 4.12776806, 1.03324403, 0.99353997, 0.01626088, 0.37568131, 1.35980557, 1.42740846, 0.20203422, 1.01131155]
     scl_test_dartba_ba = [0.45488486, 0.29451152, 4.7214058, 0.57051713, 0.90860354, 0.36811399, 0.54901945, 1.31771318, 0.81434372, 0.22611351, 1.64741211, 0.93501212, 0.034125]
     scl_test_nofe_ba = [0.42794853, 0.31232367, 4.78964132, 1.82808763, 0.32359375, 0.60169182, 1.18813925, 0.87157664, 0.40730233, 2.00392269, 0.78205837, 0.08880501]
-    scl_test_bothba_ba = [0.43936705, 0.30507695, 4.94212835, 0.49191929, 0.83307305, 0.40318864, 0.5627217, 1.291076, 0.85956343, 0.28562448, 1.56742018, 0.89342641, 0.01507226]
+    scl_test_bothba_ba = [0.43936705, 0.30507695, 4.94212835, 0.49191929, 0.83307305, 0.40318864, 0.5627217, 1.291076, 0.85956343, 0.28562448, 1.56742018, 0.89342641, 0.01507226, 0.]
     scl_delaySFtest = [0.36963815, 0.34288084, 5.07381209, 0.73231527, 0.62864803, 0.29277844, 0.57543231, 1.2897485, 0.84635716, 0.30015869, 1.63283893, 0.93347269, 0.01408449]
     scl_iadtd_maoz17 = [0.5164266933312606,0.22668646095205333,5.083938866111591,0.6708444072138402,0.7705726151153531,0.5831520287559541,0.8952553665964144,1.3892756558045938,0.47734137612923366,0.14861562077682866,0.435341510493796,0.33493152648882035,0.013300279965722219]
     scl_iadtd_himin = [0.12655011964708354,0.48083816401816953,4.774355073300842,1.0142068952827288,0.13937182878786417,0.9673484547698562,0.8931868300415441,1.548247398565755,0.40718356024183644,0.037801676437251096,0.5965616973892593,0.8185482795511301,1.3007176610686921]
     scl_iadtd_lomin = [0.5671755376691066,0.29287428128668863,5.015868834444396,0.30612159610634737,1.0034407937884338,0.4612588576531018,0.44599230385432126,1.161552777383641,1.2779361777765668,0.43394265803765714,1.326460414915983,0.9806089731602307,0.0059330597053563775]
     scl_iadtd_medhimin_test = [0.32165536155176916,0.3415165671993969,5.054721133238549,3.5632320350817865,1.0464037822992545,0.9464582131538404,0.6492806071357978,1.397581711321233,0.6605083959242006,0.14957742487647682,1.0149023011422285,0.46062328788695467,0.06506835776883141]
     scl_iadtd_medhimin = [0.2581362038956129,0.3671543880935386,4.884509919096489,0.519627246584796,0.6921089016677752,0.7093941886457517,0.667125036335381,1.4048235865635883,0.6442822761890015,0.17279690215969257,1.076567643613428,0.5756914070867104,0.0789755064127836]
-    scl_iadtd_loindex = []
+    scl_iadtd_loindex = [0.31309403734878677,0.32698844029546187,5.119860962340789,0.5074794913085319,0.7677725611456582,0.27817942445348165,0.7747072609145225,1.3579266977743019,0.6409945773107304,0.24639512831333843,0.8835860105097602,0.5557520537168783,0.023556275510243575]
+    scl_iadtd_hiindex = [0.5446693466306317,0.3092340505074539,4.662881112688744,0.6610461169621856,0.6648004259776421,0.22834192428764163,0.434048932393723,1.2372641358088885,1.21868854143266,0.30455907377622926,2.5503064633438433,0.9921019155833941,0.00552116094663595]
     scl_reioniz = [0.6411130691937341,0.24774922551128908,4.643962259917035,0.780729799230917,0.8778813431231577,0.612699567249839,0.6460839575200857,1.325818097299844,0.7336606535374587,0.26137519407263077,2.7368268789441252,0.9896010405595509,0.0056036256827435346]
     scl_rampressure = [0.40324345287403596,0.31993145962170993,4.678875833236568,0.4311305388839332,0.901133475075236,0.3874332761124177,0.5687645229241343,1.2899619752803073,0.8487435966713881,0.2857591805747674,1.5867499800816725,0.9139277884487471,0.013695390962180884,2.761601093904625]
 
@@ -96,10 +97,12 @@ if __name__ == "__main__":
     #model, atomic, _ = gce.runmodel(scl_test_nofe_baeu, plot=True, title="Sculptor dSph (no Fe, with Ba)", empirical=True, empiricalfit=True, feh_denom=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, _ = gce.runmodel(scl_test_nofe_ba, plot=True, title="Sculptor dSph (no Fe, with DART Ba)", empirical=True, empiricalfit=True, feh_denom=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     
-    model, atomic, _ = gce.runmodel(scl_test_bothba_ba, plot=True, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
+    #model, atomic, _ = gce.runmodel(scl_test_bothba_ba, plot=True, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, _ = gce.runmodel(scl_delaySFtest, plot=True, title="Sculptor dSph (delayed SF)", empirical=True, empiricalfit=True, feh_denom=True, delay=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, _ = gce.runmodel(scl_iadtd_maoz17, plot=True, title="Sculptor dSph (Maoz+17 field Ia DTD)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='maoz17') #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, _ = gce.runmodel(scl_iadtd_lomin, plot=True, title="Sculptor dSph (min Ia delay time = 50 Myr)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='lowmindelay')
     #model, atomic, _ = gce.runmodel(scl_iadtd_medhimin, plot=True, title="Sculptor dSph (min Ia delay time = 200 Myr)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='medhidelay')
+    #model, atomic, _ = gce.runmodel(scl_iadtd_loindex, plot=True, title="Sculptor dSph (Ia DTD index = -0.5)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='index05')    
+    model, atomic, _ = gce.runmodel(scl_iadtd_hiindex, plot=True, title="Sculptor dSph (Ia DTD index = -1.5)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='index15')    
     #model, atomic, _ = gce.runmodel(scl_reioniz, plot=True, title="Sculptor dSph (reionization)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=True)
     #model, atomic, _ = gce.runmodel(scl_rampressure, plot=True, title="Sculptor dSph (ram pressure)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, rampressure=True)

@@ -75,7 +75,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
     plot_atomic = atomic
 
     # Create labels
-    elem_names = {1:'H', 2:'He', 6:'C', 8:'O', 12:'Mg', 14:'Si', 20:'Ca', 22:'Ti', 25:'Mn', 26:'Fe', 56:'Ba'}
+    elem_names = {1:'H', 2:'He', 6:'C', 8:'O', 12:'Mg', 14:'Si', 20:'Ca', 22:'Ti', 25:'Mn', 26:'Fe', 28:'Ni', 56:'Ba'}
     snindex = {}
     labels = []
     labels_h = []
@@ -88,22 +88,22 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         if elem != 1:
             labels_h.append(elem_names[elem])
         snindex[elem_names[elem]] = idx
-    labels.remove('Mn')  # Try removing Mn from plots
+    #labels.remove('Mn')  # Try removing Mn from plots
 
     if feh==False:
         labels.remove('Mg')
         labels.append('Fe')
 
     # Open observed data
-    elem_data, delem_data, _ = getdata(galaxy='Scl', source='deimos', c=True, ba=True, mn=True, eu=True, removerprocess='statistical', feh_denom=feh)
+    elem_data, delem_data, _ = getdata(galaxy='Scl', source='deimos', c=True, ba=True, mn=True, eu=True, ni=True, removerprocess='statistical', feh_denom=feh)
     if datasource=='dart' or datasource=='both':
-        elem_data_dart, delem_data_dart, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, mn=True, eu=True, removerprocess='statistical', feh_denom=feh)
+        elem_data_dart, delem_data_dart, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, mn=True, eu=True, ni=True, removerprocess='statistical', feh_denom=feh)
     
     # Map content of observed elem_data to index
     if feh:
-        obs_idx = {'Fe':0, 'Mg':1, 'Si':2, 'Ca':3, 'C':4, 'Ba':5, 'Mn':6, 'Eu':7}
+        obs_idx = {'Fe':0, 'Mg':1, 'Si':2, 'Ca':3, 'C':4, 'Ba':5, 'Mn':6, 'Eu':7, 'Ni':8}
     else:
-        obs_idx = {'Mg':0, 'Si':1, 'Ca':2, 'C':3, 'Ba':4, 'Mn':5, 'Eu':6, 'Fe':7}
+        obs_idx = {'Mg':0, 'Si':1, 'Ca':2, 'C':3, 'Ba':4, 'Mn':5, 'Eu':6, 'Ni':7, 'Fe':8}
     print(elem_names, snindex, labels, obs_idx)
 
     if abunds:
@@ -185,7 +185,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
                     totalerrs = np.sqrt(delem_data[obs_idx[label],obsmask]**2. + x_errs**2.)
                     goodidx = np.where((x_obs > -990) & (obs_data > -990) & 
                                     (np.abs(obs_errs) < 0.4) & (np.abs(x_errs) < 0.4))[0]
-                    print(label, obs_idx[label], len(obs_data), len(obs_data[goodidx]))
+                    print(label, i, obs_idx[label], snindex[label], len(obs_data), len(obs_data[goodidx]))
                     #axs[i+1].scatter(feh_obs[goodidx], obs_data[goodidx], c='r', s=0.8/(totalerrs[goodidx])**2., alpha=0.5)
                     axs[i+1].errorbar(x_obs[goodidx], obs_data[goodidx], xerr=x_errs[goodidx], yerr=obs_errs[goodidx], 
                                     color=plt.cm.Set3(0), linestyle='None', marker='o', markersize=3, alpha=0.7, linewidth=0.5)
@@ -200,6 +200,8 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
                     totalerrs = np.sqrt(delem_data_dart[obs_idx[label],obsmask_dart]**2. + x_errs**2.)
                     goodidx = np.where((x_obs_dart > -990) & (obs_data > -990) & 
                                     (np.abs(obs_errs) < 0.4) & (np.abs(x_errs) < 0.4))[0]
+                    if label=='Ni':
+                        print('test', obs_data[goodidx])
                     #axs[i+1].scatter(feh_obs[goodidx], obs_data[goodidx], c='r', s=0.8/(totalerrs[goodidx])**2., alpha=0.5)
                     axs[i+1].errorbar(x_obs_dart[goodidx], obs_data[goodidx], xerr=x_errs[goodidx], yerr=obs_errs[goodidx], 
                                     mfc='white', mec=plt.cm.Set3(3), ecolor=plt.cm.Set3(3), linestyle='None', marker='o', markersize=3, linewidth=0.5)
@@ -239,6 +241,9 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
                     axs[i+1].set_ylim([-2.5,2])
                 else:
                     axs[i+1].set_ylim([-3,2])
+
+            if label == elem_names[28]:
+                axs[i+1].set_ylim([-1,1])
 
         if feh:
             plt.xlim([-3.5,0])

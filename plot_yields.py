@@ -144,11 +144,15 @@ def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False
         # Ia yields
         if yieldsource in ['leu18_ddt','leu18_def','shen18','leu20','fit_ia']:
             M = None
-            yields = np.array([1.e-3, 1.e-2, 0.15, 2.e-2, 1.e-3, 1., 0.8]) # Default array (no changes for Mn)
+            yields = np.array([1.e-3, 1.e-2, 0.15, 2.e-2, 1.e-3, 1., 0.8, 1.5e-3]) # Default array (no changes for Mn)
             
             # Put in Mn yields
-            mnyields = {'leu18_ddt':7.e-3, 'leu18_def':8.e-3, 'leu20':2.e-3, 'shen18':0.5e-3, 'fit_ia':2e-3}
+            mnyields = {'leu18_ddt':7.25e-3, 'leu18_def':8.21e-3, 'leu20':1.79e-3, 'shen18':0.14e-3, 'fit_ia':2e-3}
             yields[5] = mnyields[yieldsource]
+
+            # Put in Ni yields
+            niyields = {'leu18_ddt':5.65e-2, 'leu18_def':5.89e-2, 'leu20':1.53e-2, 'shen18':2.19e-2, 'fit_ia':1.5e-2}
+            yields[7] = niyields[yieldsource]
 
             # Pure deflagration yields
             if yieldsource=='leu18_def':
@@ -170,7 +174,7 @@ def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False
         # Core-collapse yields
         elif yieldsource in ['nom13','lim18','fit_ii']:
             M = np.linspace(13,40,20)
-            yields = np.zeros((11, len(Z), len(M)))
+            yields = np.zeros((12, len(Z), len(M)))
             yieldtype='CCSN'
 
             # Common yields
@@ -186,6 +190,7 @@ def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False
                 yields[3,:,:] = np.tile(1e-5 * (261*M**(-1.8) + 0.33), (len(Z),1)) # Mg
                 #yields[4,:,:] = np.tile(1e-5 * (2260*M**(-2.83) + 0.8), (len(Z),1)) # Si
                 yields[5,:,:] = np.tile(1e-6 * (15.4*M**(-1) + 0.06), (len(Z),1)) # Ca
+                yields[9,:,:] = np.tile(1e-6 * (8000*M**(-3.6)), (len(Z),1)) #Ni
             elif yieldsource=='lim18':
                 Cyields = 1e-5 * (100*M**(-1))
                 Cyields[np.where(M>30)] = 0.
@@ -193,10 +198,12 @@ def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False
                 yields[3,:,:] = np.tile(1e-5 * normal(M, 13, 19, 6.24), (len(Z),1)) # Mg
                 #yields[4,:,:] = np.tile(1e-5 * (28*M**(-0.34) - 8.38), (len(Z),1)) # Si
                 yields[5,:,:] = np.array([[1e-6 * normal(mass, 40, 17.5-3000*metal, 3) for metal in Z] for mass in M]).T # Ca
+                yields[9,:,:] = np.tile(1e-6 * (8000*M**(-3.2)), (len(Z),1)) #Ni
             elif yieldsource=='fit_ii':
                 yields[2,:,:] = np.tile(1e-5 * (100*M**(-fit[1])), (len(Z),1)) # C
                 yields[3,:,:] = np.tile(1e-5 * (fit[2] + normal(M, 13, 19, 6.24)), (len(Z),1)) # Mg
                 yields[5,:,:] = np.tile(1e-6 * (15.4*M**(-1) + 0.06), (len(Z),1)) + np.array([[fit[3] * 1e-6 * normal(mass, 40-10000*metal, 15, 3) for metal in Z] for mass in M]).T # Ca
+                yields[9,:,:] = np.tile(1e-6 * (8000*M**(-3.2)), (len(Z),1)) #Ni (use lim18 for now)
 
             if weakrprocess:
                 # Ba from Li+14
@@ -208,7 +215,7 @@ def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False
         # AGB yields
         elif yieldsource in ['cri15','kar','fit_agb']:
             M = np.linspace(1,7,20)
-            yields = np.zeros((11, len(Z), len(M)))
+            yields = np.zeros((12, len(Z), len(M)))
             yieldtype='AGB'
 
             # Common yields
@@ -220,16 +227,17 @@ def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False
             yields[6,:,:] = np.array([[1.e-8*((3400*metal)*mass**(-0.88) - (480*metal)) for metal in Z] for mass in M]).T  # Ti
             yields[7,:,:] = np.array([[1.e-7*((1500*metal)*mass**(-0.95) - (160*metal)) for metal in Z] for mass in M]).T  # Mn
             yields[8,:,:] = np.array([[1.e-5*((1500*metal)*mass**(-0.95) - (160*metal)) for metal in Z] for mass in M]).T  # Fe
+            yields[9,:,:] = np.array([[1.e-6*((840*metal)*mass**(-0.92) - (80*metal + 0.04)) for metal in Z] for mass in M]).T  # Ni 
 
             if yieldsource=='cri15':
                 yields[2,:,:] = np.tile((1e-3 * normal(M, 0.89, 1.9, 0.58)), (len(Z),1)) # C
-                yields[9,:,:] = np.array([[1e-8 * normal(mass, (400*metal - 0.1), 2, 0.5) for metal in Z] for mass in M]).T # Ba
-                yields[10,:,:] = np.array([[1e-11 * normal(mass, (2000*metal - 0.6), 2, 0.65) for metal in Z] for mass in M]).T # Eu
+                yields[10,:,:] = np.array([[1e-8 * normal(mass, (400*metal - 0.1), 2, 0.5) for metal in Z] for mass in M]).T # Ba
+                yields[11,:,:] = np.array([[1e-11 * normal(mass, (2000*metal - 0.6), 2, 0.65) for metal in Z] for mass in M]).T # Eu
             elif yieldsource=='kar':
                 yields[2,:,:] = np.array([[1e-3 * normal(mass, (1.68-220*metal), 2, 0.6) for metal in Z] for mass in M]).T # C
                 yields[3,:,:] += np.array([[1e-5 * normal(mass, (0.78-300*metal), 2.3, 0.14) for metal in Z] for mass in M]).T # Mg
-                yields[9,:,:] = np.array([[1e-8 * normal(mass, (1000*metal + 0.2), 2.3, (0.75-100*metal)) for metal in Z] for mass in M]).T # Ba
-                yields[10,:,:] = np.array([[1e-11 * normal(mass, (3400*metal + 0.4), 2.2, 0.65) for metal in Z] for mass in M]).T # Eu
+                yields[10,:,:] = np.array([[1e-8 * normal(mass, (1000*metal + 0.2), 2.3, (0.75-100*metal)) for metal in Z] for mass in M]).T # Ba
+                yields[11,:,:] = np.array([[1e-11 * normal(mass, (3400*metal + 0.4), 2.2, 0.65) for metal in Z] for mass in M]).T # Eu
             elif yieldsource=='fit_agb':
                 # Default constants for now
                 c2 = fit[5] #0.33
@@ -237,8 +245,8 @@ def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False
                 c4 = 0.5
                 c5 = 0.2
                 yields[2,:,:] = fit[4]*np.array([[1e-3 * normal(mass, (1.68-220*metal), 2, 0.6) for metal in Z] for mass in M]).T # C
-                yields[9,:,:] = c2*np.array([[1e-8 * normal(mass, (1000*metal + 0.2), 3.0-c3, (0.75-100*metal)) for metal in Z] for mass in M]).T # Ba
-                yields[10,:,:] = c4*np.array([[1e-11 * normal(mass, (3400*metal + 0.4), 2.2-c5, 0.65) for metal in Z] for mass in M]).T # Eu
+                yields[10,:,:] = c2*np.array([[1e-8 * normal(mass, (1000*metal + 0.2), 3.0-c3, (0.75-100*metal)) for metal in Z] for mass in M]).T # Ba
+                yields[11,:,:] = c4*np.array([[1e-11 * normal(mass, (3400*metal + 0.4), 2.2-c5, 0.65) for metal in Z] for mass in M]).T # Eu
 
         else:
             raise ValueError('yieldsource is not valid!')
@@ -295,8 +303,8 @@ def plotyields(yieldtype, fit=None, func=None, empirical=False, empiricalfit=Non
         leu20_yields, _, _ = getyields('leu20', empirical=empirical)
         leu18def_yields, _, _ = getyields('leu18_def', empirical=empirical)
         
-        yieldlist = [leu18ddt_yields, leu18def_yields, shen18_yields, leu20_yields]
-        yieldtitles = ['leu18_ddt', 'leu18_def', 'shen18', 'leu20']
+        yieldlist = [leu18ddt_yields, leu18def_yields, leu20_yields, shen18_yields]
+        yieldtitles = ['leu18_ddt', 'leu18_def', 'leu20', 'shen18']
 
         if empiricalfit is not None:
             fityields, _, _ = getyields('fit_ia', imfweight='kroupa93', empirical=True, fit=empiricalfit)
@@ -317,23 +325,23 @@ def plotyields(yieldtype, fit=None, func=None, empirical=False, empiricalfit=Non
     cwheelfit = [np.array(matplotlib.rcParams['axes.prop_cycle'])[x]['color'] for x in range(cwheelsize)]
 
     # Create labels
-    elem_atomic = [6, 12, 14, 20, 22, 25, 26]
-    elem_names = {1:'H', 2:'He', 6:'C', 8:'O', 12:'Mg', 14:'Si', 20:'Ca', 22:'Ti', 25:'Mn', 26:'Fe', 56:'Ba', 63:'Eu'}
+    elem_atomic = [6, 12, 14, 20, 22, 25, 26, 28]
+    elem_names = {1:'H', 2:'He', 6:'C', 8:'O', 12:'Mg', 14:'Si', 20:'Ca', 22:'Ti', 25:'Mn', 26:'Fe', 28:'Ni', 56:'Ba', 63:'Eu'}
     # Add other yields if needed
     if yieldtype in ['AGB', 'CCSN']:
         elem_atomic = [1,2] + elem_atomic
     if yieldtype=='AGB':
-        elem_atomic = elem_atomic + [56, 63]
+        elem_atomic = elem_atomic + [56] #, 63]
 
     if yieldtype in ['CCSN'] and weakrprocess:
-        elem_atomic = [56, 63]
+        elem_atomic = [56] #, 63]
     
     # Create and format plot
     if yieldtype=='CCSN' or yieldtype=='AGB':
         if weakrprocess:
             fig, axs = plt.subplots(len(elem_atomic), figsize=(5,4),sharex=True)
         else:
-            figsizes = {'CCSN':(5,12), 'AGB':(5,14)}
+            figsizes = {'CCSN':(5,13), 'AGB':(5,14)}
             fig, axs = plt.subplots(len(elem_atomic), figsize=figsizes[yieldtype],sharex=True)
         fig.subplots_adjust(bottom=0.06,top=0.96,left=0.2,wspace=0.29,hspace=0)
         plt.setp([a.yaxis.set_major_locator(MaxNLocator(nbins=5,prune='upper')) for a in [fig.axes[-1]]])
@@ -389,8 +397,8 @@ def plotyields(yieldtype, fit=None, func=None, empirical=False, empiricalfit=Non
 
                 '''
                 # If needed, put in manual power law fits
-                if func is not None and idx_yields==1:
-                    popt = func[idx_elem]
+                if func is not None and idx_yields==1 and elem in [28]:
+                    popt = func
                     if np.all(np.isclose(popt, 0.)):
                         continue
                     elif fit=='powerlaw':
@@ -413,14 +421,14 @@ def plotyields(yieldtype, fit=None, func=None, empirical=False, empiricalfit=Non
                     axs[idx_elem].add_artist(legend)
 
                 # If needed, try fitting the Nom+13 data
-                if func is None and fit in ['exp', 'powerlaw', 'lognorm', 'norm', 'powernorm', 'linearnorm'] and idx_yields==0 and elem in [56, 63]:
+                if func is None and fit in ['exp', 'powerlaw', 'lognorm', 'norm', 'powernorm', 'linearnorm'] and idx_yields==0 and elem in [25,28]:
                     try:
                         if fit=='exp':
                             popt, pcov = curve_fit(exp, masslist[idx_yields], yields[idx_elem, 3, :]/(10**base10), p0=[10, 0.1, 0])
                             fitline, = axs[idx_elem].plot(masslist[idx_yields], exp(masslist[idx_yields], *popt), ls='-', marker='None', color='c', 
                                     lw=2, label=r"$y = {:.1f}e^{{-{:.2f}x}} + {:.2f}$".format(*popt), zorder=100)
                         elif fit=='powerlaw':
-                            popt, pcov = curve_fit(powerlaw, masslist[idx_yields], yields[idx_elem, 0, :]/(10**base10), p0=[1, 0, 0])
+                            popt, pcov = curve_fit(powerlaw, masslist[idx_yields], yields[idx_elem, 4, :]/(10**base10), p0=[1, 0, 0])
                             print(elem, popt)
                             fitline, = axs[idx_elem].plot(masslist[idx_yields], powerlaw(masslist[idx_yields], *popt), ls='-', marker='None', color='c', 
                                     lw=2, label=r"$y = {:.1f}x^{{-{:.2f}}} + {:.2f}$".format(*popt), zorder=100)
@@ -479,6 +487,9 @@ def plotyields(yieldtype, fit=None, func=None, empirical=False, empiricalfit=Non
                     legend._legend_box.align = "left"
                     plt.gca().add_artist(legend)
 
+                if elem==28:
+                    print(titles[yieldtitles[idx_yields]], yields[idx_elem, 0]/(10**base10))
+
                 if idx_yields==0:
                     ticklabels.append(elem_names[elem]+' ($10^{'+str(int(base10))+'}M_{\odot}$)')
 
@@ -521,7 +532,7 @@ def plotyields(yieldtype, fit=None, func=None, empirical=False, empiricalfit=Non
         print(ticklabels)
         ax.yaxis.set_ticklabels(ticklabels[::-1])
 
-        plt.gca().get_yticklabels()[1].set_color('C1') 
+        plt.gca().get_yticklabels()[2].set_color('C1') 
     
         # Create legends
         #legend = plt.legend(handles=handles, loc='upper left', fontsize=10, 
@@ -555,3 +566,4 @@ if __name__ == "__main__":
     #plotyields('CCSN', empirical=False, empiricalfit=[0.8, 1., 1., 0., 0.6], weakrprocess=True)
     #[1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6, 0.33, 1.0] 
     plotyields('IaSN', empirical=False, empiricalfit=[0.54901945, 1.31771318, 0.81434372, 0.22611351, 1.64741211, 0.93501212, 0.034125])
+    #plotyields('IaSN', empirical=False) #fit='powerlaw', func=[840*Z, (0.9), -(80*Z + 0.04)])

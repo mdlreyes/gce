@@ -12,6 +12,7 @@ import time
 
 # Import packages
 import numpy as np
+from numpy.ma.core import masked_not_equal
 from scipy.interpolate import interp1d
 import sys
 
@@ -22,7 +23,9 @@ import gce_yields as gce_yields
 import gce_plot
 from mcmc_mpi_empirical import neglnlike
 
-def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, empiricalfit=False, feh_denom=True, delay=False, reioniz=False, ia_dtd='maoz10', rampressure=False):
+def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, empiricalfit=False, 
+            feh_denom=True, delay=False, reioniz=False, ia_dtd='maoz10', rampressure=False,
+            mn=None, ni=None, ba=None):
     """Galactic chemical evolution model.
 
     Takes in additional parameters from params.py, reads yields using gce_yields.py, 
@@ -125,6 +128,7 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
             Ia_source=params.Ia_source, II_source=params.II_source, AGB_source=params.AGB_source, 
             r_process_keyword=params.r_process_keyword,
             II_mass=m_himass, AGB_mass=m_intmass, fit=empiricalfit)
+        print(nel, atomic)
 
         #print('empirical', f_ii_metallicity(0)[np.where(atomic == 6)[0],:25])
         #return
@@ -139,7 +143,8 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
             'ti':np.where(atomic == 22)[0],
             'fe':np.where(atomic == 26)[0],
             'ba':np.where(atomic == 56)[0],
-            'mn':np.where(atomic == 25)[0]}
+            'mn':np.where(atomic == 25)[0],
+            'ni':np.where(atomic == 28)[0]}
 
     # Create array to hold model outputs
     model = np.zeros(n, dtype=[('t','float64'),('f_in','float64'),('mgas','float64'),\
@@ -246,7 +251,12 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
         if model['z'][timestep] > 0.:
             # Put Type Ia yields in future array
             if empiricalfit:
-                M_Ia_arr[:,timestep:] += n_ia[:(n-timestep)][None,:] * f_ia_metallicity(model['z'][timestep], fe_ia)[:,None]
+                if mn is not None:
+                    M_Ia_arr[:,timestep:] += n_ia[:(n-timestep)][None,:] * f_ia_metallicity(model['z'][timestep], fe_ia, mn_ia=mn)[:,None]
+                elif ni is not None:
+                    M_Ia_arr[:,timestep:] += n_ia[:(n-timestep)][None,:] * f_ia_metallicity(model['z'][timestep], fe_ia, ni_ia=ni)[:,None]
+                else:
+                    M_Ia_arr[:,timestep:] += n_ia[:(n-timestep)][None,:] * f_ia_metallicity(model['z'][timestep], fe_ia)[:,None]
             else:
                 M_Ia_arr[:,timestep:] += n_ia[:(n-timestep)][None,:] * f_ia_metallicity(model['z'][timestep])[:,None]
 

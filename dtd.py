@@ -67,6 +67,16 @@ def dtd_ia(t,ia_model): #(Gyr)
         w = np.where(t <= t_ia)[0]
         if len(w) > 0: rate[w] = 0.0
         return rate #SNe Gyr**-1 (M_sun)**-1
+
+    elif ia_model == 'cutoff':
+        #Mimicking a single degenerate Ia DTD, with a cut-off at 1 Gyr where power law index goes from -1 to -2
+        t_ia = 1e-1 #Gyr
+        rate = (1e-3)*t**(-1)
+        w = np.where(t <= t_ia)[0]
+        if len(w) > 0: rate[w] = 0.0
+        w_cutoff = np.where(t > 1)[0] # Gyr
+        if len(w_cutoff) > 0: rate[w_cutoff] = (1e-3)*t[w_cutoff]**(-2)
+        return rate #SNe Gyr**-1 (M_sun)**-1
         
     elif ia_model == 'mannucci06':
         t_ia = 3.752e-2 #Gyr
@@ -134,25 +144,27 @@ def dtd_agb(t,imf_model):
 
     return m_agb, n_agb
 
-def plot_dtd(imf_model='kroupa93'):
+def plot_dtd(model):
     """Plot delay-time distributions."""
 
     t = np.arange(0.001,13.6,0.001)
 
     dtd_ia_maoz10 = dtd_ia(t, ia_model='maoz10')
     dtd_ia_mannucci06 = dtd_ia(t, ia_model='mannucci06')
+    dtd_ia_model = dtd_ia(t, ia_model=model)
 
     plt.loglog(t*1e9, dtd_ia_maoz10, 'k-', label='Type Ia (Maoz et al. 2010)')
     plt.plot(t*1e9, dtd_ia_mannucci06, 'k--', label='Type Ia (Mannucci et al. 2006)')
+    plt.plot(t*1e9, dtd_ia_model, 'k:', label='Type Ia ('+model+')')
     #plt.plot(t, dtd_agb(t, imf_model)[0], 'b-', label='AGB')
     #plt.plot(t, dtd_ii(t, imf_model)[0], 'r-', label='Type Ia')
     plt.legend()
     plt.xlabel('Delay time (yr)')
     plt.ylabel('')
-    plt.xlim(0,1e8)
+    #plt.xlim(0,1e8)
     plt.show()
 
     return
 
 if __name__ == "__main__":
-    plot_dtd()
+    plot_dtd('cutoff')
