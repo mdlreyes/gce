@@ -13,6 +13,7 @@ def dtd_ia(t,ia_model): #(Gyr)
     #Note that this DTD is for cluster environments, where the SN Ia rate is based
     #on data from galaxy clusters from z = 0 to z = 1.45 (Maoz et al. 2010)
     #The given exponent is based on the minimum iron constraint (-1.1 \pm 0.2)
+    # Actually, check Freundlich & Maoz (2021) for DTD...
         t_ia = 1e-1 #Gyr
         rate = (1e-3)*t**(-1.1)
         w = np.where(t <= t_ia)[0]
@@ -144,6 +145,15 @@ def dtd_agb(t,imf_model):
 
     return m_agb, n_agb
 
+def dtd_nsm(t):
+    """DTD for NSMs"""
+
+    t_ia = 1e-2  # (Gyr) from Fig 7 of Cote+17
+    rate = (0.0059*1.6e-2)*t**(-1.5)  # normalization from Simonetti+19
+    w = np.where(t <= t_ia)[0]
+    if len(w) > 0: rate[w] = 0.0
+    return rate  # NSM Gyr**-1 (M_sun)**-1
+
 def plot_dtd(model):
     """Plot delay-time distributions."""
 
@@ -152,10 +162,12 @@ def plot_dtd(model):
     dtd_ia_maoz10 = dtd_ia(t, ia_model='maoz10')
     dtd_ia_mannucci06 = dtd_ia(t, ia_model='mannucci06')
     dtd_ia_model = dtd_ia(t, ia_model=model)
+    dtd_nsm_model = dtd_nsm(t)
 
     plt.loglog(t*1e9, dtd_ia_maoz10, 'k-', label='Type Ia (Maoz et al. 2010)')
     plt.plot(t*1e9, dtd_ia_mannucci06, 'k--', label='Type Ia (Mannucci et al. 2006)')
     plt.plot(t*1e9, dtd_ia_model, 'k:', label='Type Ia ('+model+')')
+    plt.plot(t*1e9, dtd_nsm_model, 'r', label='NSM')
     #plt.plot(t, dtd_agb(t, imf_model)[0], 'b-', label='AGB')
     #plt.plot(t, dtd_ii(t, imf_model)[0], 'r-', label='Type Ia')
     plt.legend()

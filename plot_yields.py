@@ -207,10 +207,10 @@ def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False
 
             if weakrprocess:
                 # Ba from Li+14
-                yields[9,:,:] = np.tile(1e-12 * (1560*M**(-1.80) + 0.14 - normal(M,480,5,5.5)), (len(Z),1))
+                yields[10,:,:] = np.tile(1e-12 * (1560*M**(-1.80) + 0.14 - normal(M,480,5,5.5)), (len(Z),1))
 
                 # Eu from Matteucci+14
-                yields[10,:,:] = np.tile(1e-11 * (77600*M**(-4.31)), (len(Z),1))
+                yields[11,:,:] = np.tile(1e-11 * (77600*M**(-4.31)), (len(Z),1))
 
         # AGB yields
         elif yieldsource in ['cri15','kar','fit_agb']:
@@ -334,7 +334,7 @@ def plotyields(yieldtype, fit=None, func=None, empirical=False, empiricalfit=Non
         elem_atomic = elem_atomic + [56] #, 63]
 
     if yieldtype in ['CCSN'] and weakrprocess:
-        elem_atomic = [56] #, 63]
+        elem_atomic = [56, 63]
     
     # Create and format plot
     if yieldtype=='CCSN' or yieldtype=='AGB':
@@ -565,5 +565,5 @@ if __name__ == "__main__":
     #getyields('nom13', empirical=False, weakrprocess=True)
     #plotyields('CCSN', empirical=False, empiricalfit=[0.8, 1., 1., 0., 0.6], weakrprocess=True)
     #[1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6, 0.33, 1.0] 
-    plotyields('IaSN', empirical=False, empiricalfit=[0.54901945, 1.31771318, 0.81434372, 0.22611351, 1.64741211, 0.93501212, 0.034125])
+    plotyields('CCSN', empirical=True, empiricalfit=[0.54901945, 1.31771318, 0.81434372, 0.22611351, 1.64741211, 0.93501212, 0.034125], weakrprocess=True)
     #plotyields('IaSN', empirical=False) #fit='powerlaw', func=[840*Z, (0.9), -(80*Z + 0.04)])

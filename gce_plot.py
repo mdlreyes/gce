@@ -200,8 +200,6 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
                     totalerrs = np.sqrt(delem_data_dart[obs_idx[label],obsmask_dart]**2. + x_errs**2.)
                     goodidx = np.where((x_obs_dart > -990) & (obs_data > -990) & 
                                     (np.abs(obs_errs) < 0.4) & (np.abs(x_errs) < 0.4))[0]
-                    if label=='Ni':
-                        print('test', obs_data[goodidx])
                     #axs[i+1].scatter(feh_obs[goodidx], obs_data[goodidx], c='r', s=0.8/(totalerrs[goodidx])**2., alpha=0.5)
                     axs[i+1].errorbar(x_obs_dart[goodidx], obs_data[goodidx], xerr=x_errs[goodidx], yerr=obs_errs[goodidx], 
                                     mfc='white', mec=plt.cm.Set3(3), ecolor=plt.cm.Set3(3), linestyle='None', marker='o', markersize=3, linewidth=0.5)

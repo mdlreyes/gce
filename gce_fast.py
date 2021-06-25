@@ -25,7 +25,7 @@ from mcmc_mpi_empirical import neglnlike
 
 def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, empiricalfit=False, 
             feh_denom=True, delay=False, reioniz=False, ia_dtd='maoz10', rampressure=False,
-            mn=None, ni=None, ba=None):
+            mn=None, ni=None, rprocess='none'):
     """Galactic chemical evolution model.
 
     Takes in additional parameters from params.py, reads yields using gce_yields.py, 
@@ -69,11 +69,14 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
     m_intmass = m_intmass[goodidx_agb]
     n_intmass = n_intmass[goodidx_agb]
 
+    if rprocess in ['rare_event_only', 'both']:
+        n_nsm = dtd.dtd_nsm(t) * delta_t      # Fraction of stars that will explode as NSMs
+
     if empirical==False:
         # Load all sources of chemical yields
         nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB = gce_yields.initialize_yields(
             Ia_source=params.Ia_source, II_source=params.II_source, 
-            AGB_source=params.AGB_source, r_process_keyword=params.r_process_keyword)
+            AGB_source=params.AGB_source, r_process_keyword=rprocess)
         atomic = SN_yield['atomic']
 
         # Linearly extrapolate supernova yields to min/max progenitor masses
@@ -124,10 +127,9 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
 
     # Get empirical yields
     else:
-        nel, eps_sun, atomic, weight, f_ia_metallicity, f_ii_metallicity, f_agb_metallicity = gce_yields.initialize_empirical(
+        nel, eps_sun, atomic, weight, f_ia_metallicity, f_ii_metallicity, f_agb_metallicity, f_nsm_metallicity = gce_yields.initialize_empirical(
             Ia_source=params.Ia_source, II_source=params.II_source, AGB_source=params.AGB_source, 
-            r_process_keyword=params.r_process_keyword,
-            II_mass=m_himass, AGB_mass=m_intmass, fit=empiricalfit)
+            r_process_keyword=rprocess, II_mass=m_himass, AGB_mass=m_intmass, fit=empiricalfit)
         print(nel, atomic)
 
         #print('empirical', f_ii_metallicity(0)[np.where(atomic == 6)[0],:25])
@@ -259,6 +261,11 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
                     M_Ia_arr[:,timestep:] += n_ia[:(n-timestep)][None,:] * f_ia_metallicity(model['z'][timestep], fe_ia)[:,None]
             else:
                 M_Ia_arr[:,timestep:] += n_ia[:(n-timestep)][None,:] * f_ia_metallicity(model['z'][timestep])[:,None]
+
+        # Add in NSMs if needed
+        if rprocess in ['rare_event_only', 'both']:
+            n_nsmexplosion = model['mdot'][timestep] * n_nsm       # Number of NSMs that will explode in the future
+            M_Ia_arr[:,timestep:] += n_nsmexplosion[:(n-timestep)][None,:] * f_nsm_metallicity()[:,None]
 
         # Eq. 8: rate of Type II SNe that will explode IN THE FUTURE
         goodidxnew = goodidx

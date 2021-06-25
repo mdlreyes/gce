@@ -125,7 +125,7 @@ if empirical==False:
 
 # Get empirical yields
 else:
-    nel, eps_sun, atomic, weight, f_ia_metallicity, f_ii_metallicity, f_agb_metallicity = gce_yields.initialize_empirical(
+    nel, eps_sun, atomic, weight, f_ia_metallicity, f_ii_metallicity, f_agb_metallicity, _ = gce_yields.initialize_empirical(
         Ia_source=params.Ia_source, II_source=params.II_source, AGB_source=params.AGB_source, 
         r_process_keyword=params.r_process_keyword,
         II_mass=m_himass, AGB_mass=m_intmass, fit=True)

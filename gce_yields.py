@@ -732,18 +732,24 @@ def initialize_empirical(yield_path='yields/', r_process_keyword='none', imfweig
 
     # Return functions with free parameters
     else:
+
+        # NSM yield function
+        if r_process_keyword in ['rare_event_only','both']:   
+            def f_nsm_metallicity():
+                yields = np.zeros(12)
+                # Note: these are average Ba, Eu yields for a "main" r-process event (Li+2014)
+                yields[10] = 2.3e-6  # Ba
+                yields[11] = 2.27e-7  # Eu
+                return yields
+        else:
+            f_nsm_metallicity = None
+
         # Ia yield function
-        def f_ia_metallicity(metallicity, fe_ia, mn_ia=2e-3, ni_ia=1.5e-2, ba_ia=2.3e-6, eu_ia=2.27e-7):
+        def f_ia_metallicity(metallicity, fe_ia, mn_ia=2e-3, ni_ia=1.5e-2):
             yields = np.array([0., 0., 1.e-3, 1.e-2, 0.15, 2.e-2, 1.e-3, 2.e-3, 0.8, 1.5e-2, 0., 0.])
             yields[7] = mn_ia  # Mn
             yields[8] = fe_ia  # Fe
             yields[9] = ni_ia  # Ni
-
-            if r_process_keyword in ['rare_event_only','both']:   
-
-                # Note: these are average Ba, Eu yields for a "main" r-process event (Li+2014)
-                yields[9] = ba_ia  # Ba
-                yields[10] = eu_ia  # Eu
 
             return yields
 
@@ -801,7 +807,7 @@ def initialize_empirical(yield_path='yields/', r_process_keyword='none', imfweig
             yields /= dN_dM
             return yields
 
-    return nel, eps_sun, np.asarray(atomic_num), atomic_weight, f_ia_metallicity, f_ii_metallicity, f_agb_metallicity
+    return nel, eps_sun, np.asarray(atomic_num), atomic_weight, f_ia_metallicity, f_ii_metallicity, f_agb_metallicity, f_nsm_metallicity
 
 if __name__ == "__main__":
 
