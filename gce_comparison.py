@@ -45,6 +45,7 @@ scl_iadtd_medhimin = [0.2581362038956129,0.3671543880935386,4.884509919096489,0.
 scl_iadtd_loindex = [0.31309403734878677,0.32698844029546187,5.119860962340789,0.5074794913085319,0.7677725611456582,0.27817942445348165,0.7747072609145225,1.3579266977743019,0.6409945773107304,0.24639512831333843,0.8835860105097602,0.5557520537168783,0.023556275510243575, 0.]
 scl_iadtd_hiindex = [0.5446693466306317,0.3092340505074539,4.662881112688744,0.6610461169621856,0.6648004259776421,0.22834192428764163,0.434048932393723,1.2372641358088885,1.21868854143266,0.30455907377622926,2.5503064633438433,0.9921019155833941,0.00552116094663595, 0.]
 scl_iadtd_cutoff = [0.3907399651848807,0.31789100855381613,4.976079316209285,0.4695236246906028,0.846066267741512,0.3848772970464857,0.5875359459715601,1.301460415128067,0.8259997983101177,0.28742136661443407,1.3484797631127226,0.7983782066064008,0.017047139327600602]
+scl_imf_chabrier03 = [1.2814959848003562,0.2879210967973736,5.925478381477342,0.32036367127340776,0.689240241851681,0.45907699607906804,0.8712216816504397,1.3340204961525968,0.5715974324047987,0.2772115025981421,0.8461788861477718,0.7493879610663056,0.020900346817763905]
 
 def compare_sfh(models, title):
     """Compare SFH outputs from multiple GCE models."""
@@ -61,7 +62,7 @@ def compare_sfh(models, title):
     model_loindex, _, ll_loindex = gce.runmodel(scl_iadtd_loindex, plot=False, title="Sculptor dSph (Ia DTD index = -0.5)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='index05')
     model_hiindex, _, ll_hiindex = gce.runmodel(scl_iadtd_hiindex, plot=False, title="Sculptor dSph (Ia DTD index = -1.5)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='index15')
     model_cutoff, _, ll_cutoff = gce.runmodel(scl_iadtd_cutoff, plot=False, title="Sculptor dSph (Ia DTD with cutoff)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='cutoff')
-
+    model_chabrier, _, ll_chabrier = gce.runmodel(scl_imf_chabrier03, plot=False, title="Sculptor dSph (Chabrier+03 IMF)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='cutoff')
 
     # Get model names
     modelnames = {'fiducial':model, 'reioniz':model_reioniz, 'delaysf':model_delaysf, 'rampressure':model_rampressure,

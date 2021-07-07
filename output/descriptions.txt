@@ -149,3 +149,8 @@ iaDTD_cutoff_long.npy
     > same as empiricaltest_dartba_ba, but with a broken power-law Ia DTD
     > datasource = 'both'
     > 1e6 steps over 32 walkers
+
+imf_chabrier03_med.npy
+    > same as empiricaltest_dartba_ba, but with a Chabrier+03 IMF instead of Kroupa+93
+    > datasource = 'both'
+    > 5e5 steps over 32 walkers

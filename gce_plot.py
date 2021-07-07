@@ -398,7 +398,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
             fig = plt.figure(figsize=(8,2))
         ax = plt.subplot()
         plt.title(title, fontsize=16)
-        plt.xlabel('Time (Gyr)')
+        plt.xlabel('Lookback time (Gyr)')
         plt.setp([a.minorticks_on() for a in fig.axes[:]])
         if cumulativeSFH:
             plt.ylabel('Cumulative SFH')
@@ -412,12 +412,12 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         #plt.suptitle("Final mass: %.1f x $10^6$ M$_\odot$"%(model['mgal'][-1]/1e6), y=0.97)
 
         # Add redshift axis on top
-        ages = np.array([13, 10, 8, 6, 4, 3, 2, 1.5, 1.2, 1, 0.8, 0.6])*u.Gyr
-        ageticks = [z_at_value(cosmo.age, age) for age in ages]
+        ages = np.array([13, 9, 6, 4, 3, 2, 1.5, 1.2, 1, 0.8, 0.6])*u.Gyr
+        ageticks = [13.791 - z_at_value(cosmo.age, age) for age in ages]
         ax2 = ax.twiny()
         ax2.set_xticks(ageticks)
         ax2.set_xticklabels(['{:g}'.format(age) for age in ages.value])
-        zmin, zmax = 0.0, 8.5
+        zmin, zmax = 14.0, 0
         ax.set_xlim(zmin, zmax)
         ax2.set_xlim(zmin, zmax)
         
@@ -427,20 +427,21 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
             # Compute cumulative SFH
             sfr = model['mdot']/1e5 # 1e-4 Mdot/yr
             cumsfr = np.cumsum(sfr)/np.nansum(sfr) # Compute normalized SFH
-            p1, = plt.plot(model['t'],cumsfr, ls='-', lw=2, color='k')
+            p1, = plt.plot(13.791 - model['t'],cumsfr, ls='-', lw=2, color='k')
         else:
-            p1, = plt.plot(model['t'],model['mdot']/1e5, ls='-', lw=2, color='k')
+            p1, = plt.plot(13.791 - model['t'],model['mdot']/1e5, ls='-', lw=2, color='k')
         handles.append(p1)
         labels.append('This work')
 
         # Also from other models
         bettinelli = ascii.read('data/sfhtest/bettinelli19.dat')
-        bettinelli = [bettinelli['Lookback time (Gyr)'][0] - bettinelli['Lookback time (Gyr)'], bettinelli['SFR (1e-4 Msun/y)']]
+        bettinelli = [bettinelli['Lookback time (Gyr)'], bettinelli['SFR (1e-4 Msun/y)']]
         deboer = ascii.read('data/sfhtest/deboer12.dat')
-        deboer = [deboer['Age (Gyr)'][0] - deboer['Age (Gyr)'], deboer['SFR (1e-4 Msun/y)']]
+        deboer = [deboer['Age (Gyr)'], deboer['SFR (1e-4 Msun/y)']]
         titles = ['Bettinelli et al. (2019)', 'de Boer et al. (2012)']
         linestyles = ['--', ':']
         if cumulativeSFH:
+            #bettinelli[0] = np.concatenate(([13.4],bettinelli[0]))
             bettinelli[1] = np.cumsum(bettinelli[1])/np.nansum(bettinelli[1])
             deboer[1] = np.cumsum(deboer[1])/np.nansum(deboer[1])
         for idx, data in enumerate([bettinelli, deboer]):
@@ -452,11 +453,10 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         weisz = ascii.read('data/sfhtest/weisz14.dat')
         scl_idx = np.where(weisz['ID']=='Sculptor')
         colnames = [name for name in weisz.colnames if name.startswith('f')]
-        t = [10.**float(name[1:])/1e9 for name in colnames] # Lookback in Gyr
-        t = t[0] - np.asarray(t)
-        cumsfh = np.asarray([float(weisz[name][scl_idx]) for name in colnames])
-        cumsfh_uplim = np.asarray([float(weisz['Ut'+name][scl_idx]) for name in colnames])
-        cumsfh_lolim = np.asarray([float(weisz['Lt'+name][scl_idx]) for name in colnames])
+        t = [(10.**10.15)/1e9]+[10.**float(name[1:])/1e9 for name in colnames] # Lookback in Gyr
+        cumsfh = np.asarray([0]+[float(weisz[name][scl_idx]) for name in colnames])
+        cumsfh_uplim = np.asarray([0]+[float(weisz['Ut'+name][scl_idx]) for name in colnames])
+        cumsfh_lolim = np.asarray([0]+[float(weisz['Lt'+name][scl_idx]) for name in colnames])
         if cumulativeSFH:
             print(t)
             print(cumsfh)

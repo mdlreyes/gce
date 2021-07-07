@@ -104,6 +104,9 @@ def dtd_ii(t,imf_model):
     elif imf_model=='chabrier03':
         # Integral of Chabrier IMF of M(t)
         n_himass = 0.232012599 * (m_himass)**(-2.3) * -np.concatenate((np.diff(m_himass),[0]))
+    elif imf_model=='salpeter55':
+        # Integral of Salpeter IMF of M(t)
+        n_himass = 0.156713 * (m_himass)**(-2.35) * -np.concatenate((np.diff(m_himass),[0]))
 
     m_himass[~np.isfinite(m_himass)] = 0.
     n_himass[~np.isfinite(m_himass)] = 0.
@@ -149,7 +152,7 @@ def dtd_agb(t,imf_model):
         idx_himass = np.where((m_himass >= 6.6) & (m_himass < 10))
 
         # Integral of Chabrier IMF of M(t) for 1 < M < 6.6 M_sun (imf_himass, m_lomass)
-        n_intmass = 0.232012599 * (m_himass)**(-2.3) * -np.concatenate((np.diff(m_himass),[0]))
+        n_intmass = 0.232012599 * (m_lomass)**(-2.3) * -np.concatenate((np.diff(m_lomass),[0]))
         idx_intmass = np.where((m_lomass >= 1) & (m_lomass < 6.61))
 
         # Integral of Chabrier IMF of M(t) for 0.5 < M < 1 M_sun (imf_lomass, m_lomass)
@@ -167,6 +170,18 @@ def dtd_agb(t,imf_model):
         m_agb[idx_intmass] = m_lomass[idx_intmass]
         m_agb[idx_lomass] = m_lomass[idx_lomass]
 
+    elif imf_model=='salpeter55':
+
+        # Combine arrays
+        idx_himass = np.where((m_himass >= 6.6) & (m_himass < 10))
+        idx_lomass = np.where((m_lomass >= 0.865) & (m_lomass < 6.61))
+
+        m_agb = np.zeros(len(t))
+        m_agb[idx_himass] = m_himass[idx_himass]
+        m_agb[idx_lomass] = m_lomass[idx_lomass]
+
+        # Integral of Salpeter IMF of M(t)
+        n_agb = 0.156713 * (m_agb)**(-2.35) * -np.concatenate((np.diff(m_agb),[0]))
 
     m_agb[~np.isfinite(m_agb)] = 0.
     n_agb[~np.isfinite(m_agb)] = 0.
@@ -177,7 +192,7 @@ def dtd_nsm(t):
     """DTD for NSMs"""
 
     t_nsm = 1e-1  # (Gyr) from Fig 7 of Cote+17
-    rate = (7e-4)*t**(-1.5)  # normalization & slope from Simonetti+19
+    rate = (1e-4)*t**(-1.5)  # normalization & slope from Simonetti+19
     w = np.where(t <= t_nsm)[0]
     if len(w) > 0: rate[w] = 0.0
     print('nsm:', np.trapz(rate, ))

@@ -738,8 +738,8 @@ def initialize_empirical(yield_path='yields/', r_process_keyword='none', imfweig
             def f_nsm_metallicity():
                 yields = np.zeros(12)
                 # Note: these are average Ba, Eu yields for a "main" r-process event (Li+2014)
-                yields[10] = 2.3e-6  # Ba
-                yields[11] = 2.27e-7  # Eu
+                yields[10] = 2.3e-6 # Ba
+                yields[11] = 2.27e-7 # Eu
                 return yields
         else:
             f_nsm_metallicity = None

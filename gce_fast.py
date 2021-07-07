@@ -25,7 +25,7 @@ from mcmc_mpi_empirical import neglnlike
 
 def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, empiricalfit=False, 
             feh_denom=True, delay=False, reioniz=False, ia_dtd='maoz10', rampressure=False,
-            mn=None, ni=None, rprocess='none'):
+            mn=None, ni=None, rprocess='none', imf='kroupa93'):
     """Galactic chemical evolution model.
 
     Takes in additional parameters from params.py, reads yields using gce_yields.py, 
@@ -59,12 +59,12 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
     # Prepare arrays for SNe and AGB calculations
     n_wd = dtd.dtd_ia(t, ia_dtd) * delta_t      # Fraction of stars that will explode as Type Ia SNe in future
 
-    m_himass, n_himass = dtd.dtd_ii(t, params.imf_model)       # Mass and fraction of stars that will explode in the future
+    m_himass, n_himass = dtd.dtd_ii(t, imf)       # Mass and fraction of stars that will explode in the future
     goodidx = np.where((m_himass > params.M_SN_min) & (m_himass < params.M_SN_max))[0]  # Limit to timesteps where stars will explode as CCSN
     m_himass = m_himass[goodidx]    
     n_himass = n_himass[goodidx]
 
-    m_intmass, n_intmass = dtd.dtd_agb(t, params.imf_model)    # Mass and fraction of stars that become AGBs in the future
+    m_intmass, n_intmass = dtd.dtd_agb(t, imf)    # Mass and fraction of stars that become AGBs in the future
     goodidx_agb = np.where((m_intmass > params.M_AGB_min) & (m_intmass < params.M_AGB_max))[0] # Limit to timesteps where stars between 0.865-10 M_sun will become AGB stars
     m_intmass = m_intmass[goodidx_agb]
     n_intmass = n_intmass[goodidx_agb]
