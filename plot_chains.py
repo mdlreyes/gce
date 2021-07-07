@@ -82,4 +82,4 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, 
 
 if __name__ == "__main__":
 
-    plotmcmc(file='output/iaDTD_highindex_med.npy', burnin=5000, empiricalfit=True, c=True, fe=True, rampressure=True)
+    plotmcmc(file='output/iaDTD_cutoff_long.npy', burnin=10000, empiricalfit=True, c=True, fe=True, rampressure=True)

@@ -565,5 +565,5 @@ if __name__ == "__main__":
     #getyields('nom13', empirical=False, weakrprocess=True)
     #plotyields('CCSN', empirical=False, empiricalfit=[0.8, 1., 1., 0., 0.6], weakrprocess=True)
     #[1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6, 0.33, 1.0] 
-    plotyields('CCSN', empirical=True, empiricalfit=[0.54901945, 1.31771318, 0.81434372, 0.22611351, 1.64741211, 0.93501212, 0.034125], weakrprocess=True)
+    plotyields('CCSN', empirical=False, empiricalfit=[0.54901945, 1.31771318, 0.81434372, 0.22611351, 1.64741211, 0.93501212, 0.034125], weakrprocess=True)
     #plotyields('IaSN', empirical=False) #fit='powerlaw', func=[840*Z, (0.9), -(80*Z + 0.04)])

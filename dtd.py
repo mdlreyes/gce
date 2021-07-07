@@ -98,9 +98,12 @@ def dtd_ii(t,imf_model):
     m_himass = ((t - 0.003)/1.2)**(-1/1.85)
 
     # Fraction of massive stars that will explode (as a function of time in Gyr)
-    if imf_model == 'kroupa93':
+    if imf_model=='kroupa93':
         # Integral of Kroupa IMF of M(t)
         n_himass = 0.31 * (m_himass)**(-2.7) * -np.concatenate((np.diff(m_himass),[0]))
+    elif imf_model=='chabrier03':
+        # Integral of Chabrier IMF of M(t)
+        n_himass = 0.232012599 * (m_himass)**(-2.3) * -np.concatenate((np.diff(m_himass),[0]))
 
     m_himass[~np.isfinite(m_himass)] = 0.
     n_himass[~np.isfinite(m_himass)] = 0.
@@ -116,7 +119,7 @@ def dtd_agb(t,imf_model):
     m_lomass = 10. ** (7.764 - ((1.790 - (0.334 - 0.1116 * np.log10(t)) ** 2.) / 0.2232) )
 
     # Fraction of massive stars that will produce AGB winds (as a function of time in Gyr)
-    if imf_model == 'kroupa93':
+    if imf_model=='kroupa93':
         # Integral of Kroupa IMF of M(t) for M > 6.6 M_sun (imf_himass, m_himass)
         n_himass = 0.31 * (m_himass)**(-2.7) * -np.concatenate((np.diff(m_himass),[0]))
         idx_himass = np.where((m_himass >= 6.6) & (m_himass < 10))
@@ -140,6 +143,31 @@ def dtd_agb(t,imf_model):
         m_agb[idx_intmass] = m_lomass[idx_intmass]
         m_agb[idx_lomass] = m_lomass[idx_lomass]
 
+    elif imf_model=='chabrier03':
+        # Integral of Chabrier IMF of M(t) for M > 6.6 M_sun (imf_himass, m_himass)
+        n_himass = 0.232012599 * (m_himass)**(-2.3) * -np.concatenate((np.diff(m_himass),[0]))
+        idx_himass = np.where((m_himass >= 6.6) & (m_himass < 10))
+
+        # Integral of Chabrier IMF of M(t) for 1 < M < 6.6 M_sun (imf_himass, m_lomass)
+        n_intmass = 0.232012599 * (m_himass)**(-2.3) * -np.concatenate((np.diff(m_himass),[0]))
+        idx_intmass = np.where((m_lomass >= 1) & (m_lomass < 6.61))
+
+        # Integral of Chabrier IMF of M(t) for 0.5 < M < 1 M_sun (imf_lomass, m_lomass)
+        n_lomass = 1.8902/(m_lomass*np.log(10))*np.exp(-(np.log10(m_lomass)-np.log10(0.08))**2/(2*0.69**2)) * -np.concatenate((np.diff(m_lomass),[0]))
+        idx_lomass = np.where((m_lomass >= 0.865) & (m_lomass < 1))
+
+        # Combine arrays to get total fraction of future AGB stars
+        n_agb = np.zeros(len(t))
+        n_agb[idx_himass] = n_himass[idx_himass]
+        n_agb[idx_intmass] = n_intmass[idx_intmass]
+        n_agb[idx_lomass] = n_lomass[idx_lomass]
+
+        m_agb = np.zeros(len(t))
+        m_agb[idx_himass] = m_himass[idx_himass]
+        m_agb[idx_intmass] = m_lomass[idx_intmass]
+        m_agb[idx_lomass] = m_lomass[idx_lomass]
+
+
     m_agb[~np.isfinite(m_agb)] = 0.
     n_agb[~np.isfinite(m_agb)] = 0.
 
@@ -148,10 +176,11 @@ def dtd_agb(t,imf_model):
 def dtd_nsm(t):
     """DTD for NSMs"""
 
-    t_ia = 1e-2  # (Gyr) from Fig 7 of Cote+17
-    rate = (0.0059*1.6e-2)*t**(-1.5)  # normalization from Simonetti+19
-    w = np.where(t <= t_ia)[0]
+    t_nsm = 1e-1  # (Gyr) from Fig 7 of Cote+17
+    rate = (7e-4)*t**(-1.5)  # normalization & slope from Simonetti+19
+    w = np.where(t <= t_nsm)[0]
     if len(w) > 0: rate[w] = 0.0
+    print('nsm:', np.trapz(rate, ))
     return rate  # NSM Gyr**-1 (M_sun)**-1
 
 def plot_dtd(model):
@@ -172,8 +201,9 @@ def plot_dtd(model):
     #plt.plot(t, dtd_ii(t, imf_model)[0], 'r-', label='Type Ia')
     plt.legend()
     plt.xlabel('Delay time (yr)')
-    plt.ylabel('')
+    plt.ylabel('DTD')
     #plt.xlim(0,1e8)
+    plt.savefig('plots/dtd.png', bbox_inches="tight")
     plt.show()
 
     return

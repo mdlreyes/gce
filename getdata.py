@@ -55,7 +55,7 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, ni=False, eu=F
     """  
 
     # Get info for r-process correction if needed
-    if removerprocess=='statistical':
+    if removerprocess in ['statistical','rprocessonly']:
         # Get data from DART table
         darttable = ascii.read("data/hill19.dat")
         bafe = darttable['[Ba/Fe]'].reshape(darttable['[Ba/Fe]'].shape[0],1)
@@ -146,16 +146,20 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, ni=False, eu=F
                     bafe = table_ba['[Ba/Fe]'][ba_idx]
                     bafe_err = np.sqrt(table_ba['e_[Ba/Fe]'][ba_idx]**2. + syserr['Ba'])
 
-                    if removerprocess == 'statistical':
+                    if removerprocess in ['statistical','rprocessonly']:
                         # Compute fraction of r-process elements
                         baeu = p(table['[Fe/H]'][ba_idx])
                         rfrac = (10.**(-1.062)/10.**(2.209) - 10.**(-(baeu+(2.13-0.51))))/((10.**(-1.062)/10.**(2.209)) - (10.**(0.494)/10.**(1.446)))
                         if rfrac < 0.: rfrac = 0.
                         elif rfrac > 1.: rfrac = 1.
 
-                        # Compute s-process contribution to [Ba/Fe]
                         if rfrac < 1:
-                            bafe += np.log10(1.-rfrac)
+                            # Compute s-process contribution to [Ba/Fe]
+                            if removerprocess=='statistical':
+                                bafe += np.log10(1.-rfrac)
+                            # Compute r-process contribution to [Ba/Fe]
+                            else:
+                                bafe += np.log10(rfrac)
                         else:
                             bafe = [-999.]
                             bafe_err = [-999.]
@@ -255,7 +259,7 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, ni=False, eu=F
                         bafe_s[~np.isfinite(bafe_s)] = -999.
                         bafe_s[eufe < -90] = -999.
 
-                    elif removerprocess=='statistical':
+                    elif removerprocess in ['statistical', 'rprocessonly']:
                         # Compute fraction of r-process elements
                         baeu = p(feh)
                         baeu[np.where(feh < -990.)] = -999.
@@ -263,8 +267,12 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, ni=False, eu=F
                         rfrac[rfrac < 0.] = 0.
                         rfrac[rfrac > 1.] = 1.
 
-                        # Compute s-process contribution to [Ba/Fe]
-                        bafe_s = bafe + np.log10(1.-rfrac)
+                        if removerprocess=='statistical':
+                            # Compute s-process contribution to [Ba/Fe]
+                            bafe_s = bafe + np.log10(1.-rfrac)
+                        else:
+                            # Compute r-process contribution to [Ba/Fe]
+                            bafe_s = bafe + np.log10(rfrac)
                         bafe_s[~np.isfinite(bafe_s)] = -999.
 
                     # Add to tables
@@ -447,6 +455,60 @@ def maketable(source):
 
     return
 
+def plotdata(elem='Ba', rprocess='rprocessonly'):
+    '''Plot element data [X/Fe] vs [Fe/H]'''
+
+    # Open observed data
+    elem_data, delem_data, _ = getdata(galaxy='Scl', source='deimos', c=True, ba=True, mn=True, eu=True, ni=True, removerprocess=rprocess, feh_denom=True)
+    elem_data_dart, delem_data_dart, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, mn=True, eu=True, ni=True, removerprocess=rprocess, feh_denom=True)
+    
+    # Get x-data
+    x_obs = elem_data[0,:]
+    obsmask = np.where((x_obs > -3.5) & (x_obs < 0.) & (delem_data[0,:] < 0.4))[0]
+    x_obs = x_obs[obsmask]
+
+    x_obs_dart = elem_data_dart[0,:]
+    obsmask_dart = np.where((x_obs_dart > -3.5) & (x_obs_dart < 0.) & (delem_data_dart[0,:] < 0.4))[0]
+    x_obs_dart = x_obs_dart[obsmask_dart]
+
+    # Map content of observed elem_data to index
+    obs_idx = {'Fe':0, 'Mg':1, 'Si':2, 'Ca':3, 'C':4, 'Ba':5, 'Mn':6, 'Eu':7, 'Ni':8}
+
+    # Make figure
+    fig = plt.figure(figsize=(5,3))
+    ax = plt.subplot()
+
+    # Plot observed data from DEIMOS
+    obs_data = elem_data[obs_idx[elem],obsmask]
+    obs_errs = delem_data[obs_idx[elem],obsmask]
+    x_errs = delem_data[obs_idx['Fe'],obsmask]
+    goodidx = np.where((x_obs > -990) & (obs_data > -990) & (np.abs(obs_errs) < 0.4) & (np.abs(x_errs) < 0.4))[0]
+    ax.errorbar(x_obs[goodidx], obs_data[goodidx], xerr=x_errs[goodidx], yerr=obs_errs[goodidx], 
+                color=plt.cm.Set3(0), linestyle='None', marker='o', markersize=3, alpha=0.7, linewidth=0.5)
+
+    # Plot observed data from DART
+    obs_data = elem_data_dart[obs_idx[elem],obsmask_dart]
+    obs_errs = delem_data_dart[obs_idx[elem],obsmask_dart]
+    x_errs = delem_data_dart[obs_idx['Fe'],obsmask_dart]
+    goodidx = np.where((x_obs_dart > -990) & (obs_data > -990) & (np.abs(obs_errs) < 0.4) & (np.abs(x_errs) < 0.4))[0]
+    ax.errorbar(x_obs_dart[goodidx], obs_data[goodidx], xerr=x_errs[goodidx], yerr=obs_errs[goodidx], 
+                mfc='white', mec=plt.cm.Set3(3), ecolor=plt.cm.Set3(3), linestyle='None', marker='o', markersize=3, linewidth=0.5)
+    
+    # Add title and labels
+    ylabelstr = '['+elem+'/Fe]'
+    if rprocess=='rprocessonly':
+        ylabelstr += r'$_{r}$'
+    if rprocess in ['individual', 'statistical']:
+        ylabelstr += r'$_{s}$'
+    plt.ylabel(ylabelstr)
+    plt.xlabel('[Fe/H]')
+    plt.xlim([-3.5,0])
+    plt.plot([-6,0],[0,0],':k')
+    #plt.ylim([-2.5,2.5])
+    plt.savefig('plots/'+elem+'_'+rprocess+'.png', bbox_inches='tight')
+    plt.show()
+    return
+
 if __name__ == "__main__":
 
     # Test to make sure script is working
@@ -455,4 +517,5 @@ if __name__ == "__main__":
     #elem_dart, delem_dart, elems = getdata(galaxy='Scl', source='dart', c=True, ba=True, removerprocess='statistical', feh_denom=True) #, eu=baeu)   
     #print(elems)
     #print(elem_dart[-1,:])
-    maketable('dart')
+    #maketable('dart')
+    plotdata(elem='Ba', rprocess='statistical')

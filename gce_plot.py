@@ -50,7 +50,7 @@ import cycler
 import cmasher as cmr
 
 def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl', skip_end_dots=-1, NSM=False, 
-            plot_path='plots/', abunds=True, time=True, params=True, feh=True): 
+            plot_path='plots/', abunds=True, time=True, params=True, feh=True, cumulativeSFH=True): 
     """Generates plots: [X/Fe] vs [Fe/H], [X/Fe] vs [time], model parameters vs time
 
     Args:
@@ -64,6 +64,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         plot_path (str): Path to store plots
         abunds, time, params (bool): Types of plots
         feh (bool): If 'True', plot abundances as a function of [Fe/H]; else, as a function of [Mg/H]
+        cumulativeSFH (bool): If 'True', plot cumulative SFH when plotting params
     """
 
     single_plot = False
@@ -391,15 +392,21 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         color = cmr.bubblegum(np.linspace(0,1,cwheelsize,endpoint=True))
         matplotlib.rcParams['axes.prop_cycle'] = cycler.cycler('color', color)
         cwheel = [np.array(matplotlib.rcParams['axes.prop_cycle'])[x]['color'] for x in range(cwheelsize)]
-
-        fig = plt.figure(figsize=(8,2))
+        if cumulativeSFH:
+            fig = plt.figure(figsize=(8,6))
+        else:
+            fig = plt.figure(figsize=(8,2))
         ax = plt.subplot()
         plt.title(title, fontsize=16)
         plt.xlabel('Time (Gyr)')
         plt.setp([a.minorticks_on() for a in fig.axes[:]])
-        plt.ylabel('SFR ($10^{-4}$ M$_\odot$ yr$^{-1})$')
-        plt.ylim([0,30])
-        plt.yticks([0, 10, 20, 30])
+        if cumulativeSFH:
+            plt.ylabel('Cumulative SFH')
+            plt.ylim([0,1.])
+        else:
+            plt.ylabel('SFR ($10^{-4}$ M$_\odot$ yr$^{-1})$')
+            plt.ylim([0,30])
+            plt.yticks([0, 10, 20, 30])
         #plt.xlim([0,1.7])
         #plt.xticks([0.0,0.5,1.0,1.5])
         #plt.suptitle("Final mass: %.1f x $10^6$ M$_\odot$"%(model['mgal'][-1]/1e6), y=0.97)
@@ -415,20 +422,54 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         ax2.set_xlim(zmin, zmax)
         
         # Plot SFH from this model
-        plt.plot(model['t'],model['mdot']/1e5, ls='-', lw=2, color=plt.cm.Set2(0), label='This work')
+        handles, labels = [], []
+        if cumulativeSFH:
+            # Compute cumulative SFH
+            sfr = model['mdot']/1e5 # 1e-4 Mdot/yr
+            cumsfr = np.cumsum(sfr)/np.nansum(sfr) # Compute normalized SFH
+            p1, = plt.plot(model['t'],cumsfr, ls='-', lw=2, color='k')
+        else:
+            p1, = plt.plot(model['t'],model['mdot']/1e5, ls='-', lw=2, color='k')
+        handles.append(p1)
+        labels.append('This work')
 
         # Also from other models
         bettinelli = ascii.read('data/sfhtest/bettinelli19.dat')
-        bettinelli = [13.792 - bettinelli['Lookback time (Gyr)'], bettinelli['SFR (1e-4 Msun/y)']]
+        bettinelli = [bettinelli['Lookback time (Gyr)'][0] - bettinelli['Lookback time (Gyr)'], bettinelli['SFR (1e-4 Msun/y)']]
         deboer = ascii.read('data/sfhtest/deboer12.dat')
-        deboer = [13.792 - deboer['Age (Gyr)'], deboer['SFR (1e-4 Msun/y)']]
+        deboer = [deboer['Age (Gyr)'][0] - deboer['Age (Gyr)'], deboer['SFR (1e-4 Msun/y)']]
         titles = ['Bettinelli et al. (2019)', 'de Boer et al. (2012)']
         linestyles = ['--', ':']
+        if cumulativeSFH:
+            bettinelli[1] = np.cumsum(bettinelli[1])/np.nansum(bettinelli[1])
+            deboer[1] = np.cumsum(deboer[1])/np.nansum(deboer[1])
         for idx, data in enumerate([bettinelli, deboer]):
-            plt.plot(data[0], data[1], ls=linestyles[idx], lw=2, label=titles[idx], color=plt.cm.Set2(idx+1))
+            p2, = plt.plot(data[0], data[1], ls=linestyles[idx], lw=2, color=plt.cm.Set2(idx))
+            handles.append(p2)
+            labels.append(titles[idx])
 
-        plt.legend(loc='best')
-        plt.savefig((plot_path+title+'_sfh.png').replace(' ',''), bbox_inches='tight')
+        # Add Weisz+14 SFH
+        weisz = ascii.read('data/sfhtest/weisz14.dat')
+        scl_idx = np.where(weisz['ID']=='Sculptor')
+        colnames = [name for name in weisz.colnames if name.startswith('f')]
+        t = [10.**float(name[1:])/1e9 for name in colnames] # Lookback in Gyr
+        t = t[0] - np.asarray(t)
+        cumsfh = np.asarray([float(weisz[name][scl_idx]) for name in colnames])
+        cumsfh_uplim = np.asarray([float(weisz['Ut'+name][scl_idx]) for name in colnames])
+        cumsfh_lolim = np.asarray([float(weisz['Lt'+name][scl_idx]) for name in colnames])
+        if cumulativeSFH:
+            print(t)
+            print(cumsfh)
+            p3, = plt.plot(t, cumsfh, ls='dashdot', lw=2, color=plt.cm.Set2(2))
+            p4 = plt.fill_between(t, cumsfh-cumsfh_lolim, cumsfh+cumsfh_uplim, color=plt.cm.Set2(2), alpha=0.3)
+            handles.append((p3,p4))
+            labels.append('Weisz et al. (2014)')
+
+        plt.legend(handles=handles, labels=labels, loc='best')
+        if cumulativeSFH:
+            plt.savefig((plot_path+title+'_cumsfh.png').replace(' ',''), bbox_inches='tight')
+        else:
+            plt.savefig((plot_path+title+'_sfh.png').replace(' ',''), bbox_inches='tight')
         if plot==True: 
             plt.show()
         else:
