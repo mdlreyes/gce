@@ -261,31 +261,39 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
 
         # Plot [Ba/Eu] vs [Fe/H] separately
         if 63 in atomic:
+            elem_data, delem_data, _ = getdata(galaxy='Scl', source='deimos', c=True, ba=True, mn=True, eu=True, ni=True, removerprocess='none', feh_denom=feh)
+            elem_data_dart, delem_data_dart, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, mn=True, eu=True, ni=True, removerprocess='none', feh_denom=feh)
+
             fig = plt.figure(figsize=(5,3))
             ax = plt.subplot()
 
             # Plot observed data from DART
+            if datasource=='deimos' or datasource=='both':
+                obs_data = elem_data[obs_idx['Ba'],obsmask]
+                obs_errs = delem_data[obs_idx['Ba'],obsmask]
+                x_errs = delem_data[obs_idx['Fe'],obsmask]
+                goodidx = np.where((x_obs > -990) & (obs_data > -990) & #(eu_data > -990) & 
+                                (np.abs(obs_errs) < 0.4) & (np.abs(x_errs) < 0.4))[0]
+                ax.errorbar(x_obs[goodidx], obs_data[goodidx], xerr=x_errs[goodidx], yerr=obs_errs[goodidx], 
+                            color=plt.cm.Set3(0), linestyle='None', marker='o', markersize=3, alpha=0.7, linewidth=0.5)
+
+            # Plot observed data from DART
             if datasource=='dart' or datasource=='both':
-                ba_data = elem_data_dart[obs_idx['Ba'],obsmask_dart]
-                eu_data = elem_data_dart[obs_idx['Eu'],obsmask_dart]
-                obs_data = ba_data - eu_data
-                obs_errs = np.sqrt(delem_data_dart[obs_idx['Ba'],obsmask_dart]**2. + delem_data_dart[obs_idx['Eu'],obsmask_dart]**2.)
-                if feh:
-                    x_errs = delem_data_dart[obs_idx['Fe'],obsmask_dart]
-                else:
-                    x_errs = delem_data_dart[obs_idx['Mg'],obsmask_dart]
-                goodidx = np.where((x_obs_dart > -990) & (ba_data > -990) & (eu_data > -990) & 
+                obs_data = elem_data_dart[obs_idx['Ba'],obsmask_dart]
+                obs_errs = delem_data_dart[obs_idx['Ba'],obsmask_dart]
+                x_errs = delem_data_dart[obs_idx['Fe'],obsmask_dart]
+                goodidx = np.where((x_obs_dart > -990) & (obs_data > -990) & #(eu_data > -990) & 
                                 (np.abs(obs_errs) < 0.4) & (np.abs(x_errs) < 0.4))[0]
                 ax.errorbar(x_obs_dart[goodidx], obs_data[goodidx], xerr=x_errs[goodidx], yerr=obs_errs[goodidx], 
                             mfc='white', mec=plt.cm.Set3(3), ecolor=plt.cm.Set3(3), linestyle='None', marker='o', markersize=3, linewidth=0.5)
 
             # Plot model [Ba/Eu] vs [Fe/H]
-            modeldata = model['eps'][:,snindex['Ba']] - model['eps'][:,snindex['Eu']]
+            modeldata = model['eps'][:,snindex['Ba']] - model['eps'][:,snindex['Fe']]
             plt.plot(x,modeldata,'k.-', zorder=100)
             
             # Add title and labels
-            plt.title(title)
-            plt.ylabel('[Ba/Eu]')
+            #plt.title(title)
+            plt.ylabel('[Ba/Fe]')
             if feh:
                 plt.xlabel('[Fe/H]')
                 plt.xlim([-3.5,0])
@@ -296,7 +304,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
             #agbtitle = {'kar':'Karakas+18', 'cri15':'FRUITY'}
             #ax.text(0.05, 0.9, agbtitle[paramfile.AGB_source], transform=ax.transAxes, fontsize=12)
 
-            plt.savefig((plot_path+title+'_baeu.png').replace(' ',''), bbox_inches='tight')
+            plt.savefig((plot_path+title+'_bafe.png').replace(' ',''), bbox_inches='tight')
             if plot==True: 
                 plt.show()
             else:

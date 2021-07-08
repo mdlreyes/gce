@@ -378,13 +378,33 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
         modeldata = np.vstack((model['mdot'][:timestep-1], model['t'][:timestep-1]))
         np.save(sfh, modeldata)
 
+    # Once model is done, define the model outputs that are useful for MCMC
+    model = model[:timestep-1]
+
+    elem_model = [model['eps'][:,snindex['fe']], #- model['eps'][:,snindex['h']], # [Fe/H]
+        model['eps'][:,snindex['mg']] - model['eps'][:,snindex['fe']] + 0.2,	# [Mg/Fe]
+        model['eps'][:,snindex['si']] - model['eps'][:,snindex['fe']],	# [Si/Fe]
+        model['eps'][:,snindex['ca']] - model['eps'][:,snindex['fe']],	# [Ca/Fe]            
+        model['eps'][:,snindex['c']] - model['eps'][:,snindex['fe']],     # [C/Fe] or [C/Mg]
+        model['eps'][:,snindex['ba']] - model['eps'][:,snindex['fe']]]    # [Ba/Fe]
+    elem_model = np.array(elem_model)[:,:,0]
+
+    sfr = model['mdot']
+    mstar_model = model['mstar'][-1]
+    time = model['t']
+
+    # Compute amount of leftover gas
+    leftovergas = model['mgas'][-1]
+    if (abs(model['mgas'][-2] - leftovergas) > 0.5*leftovergas) or (leftovergas < 0.): 
+        leftovergas = 0.0
+
     # Compute AIC/BIC
     k = 13  # Number of free parameters
     if rampressure:
         k += 1
     n = 474  # Number of stars
-    aic = 2*k - 2*neglnlike(pars)
-    bic = np.log(n)*k - 2*neglnlike(pars)
+    aic = 2*k - 2*neglnlike(pars, model=[elem_model, sfr, mstar_model, time, leftovergas])
+    bic = np.log(n)*k - 2*neglnlike(pars, model=[elem_model, sfr, mstar_model, time, leftovergas])
 
     return model[:timestep-1], atomic, aic
 

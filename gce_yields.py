@@ -771,10 +771,10 @@ def initialize_empirical(yield_path='yields/', r_process_keyword='none', imfweig
             if r_process_keyword in ['typical_SN_only','both']:
 
                 # Ba from Li+14
-                yields[10,:] = 1e-12 * (1560 * II_mass**(-1.80) + 0.14 - 480*np.exp(-((II_mass-5)/5.5)**2/2)/(5.5*normpdfc))
+                yields[10,:] = 20 * 1e-12 * (1560 * II_mass**(-1.80) + 0.14 - 480*np.exp(-((II_mass-5)/5.5)**2/2)/(5.5*normpdfc))
 
-                # Eu from Matteucci+14
-                yields[11,:] = 1e-11 * (77600 * II_mass**(-4.31))  # Eu
+                # Eu from Cescutti+06
+                yields[11,:] = 5 * 1e-11 * (77600 * II_mass**(-4.31))  # Eu
 
             # Yields with parameters to vary
             yields[2,:] = 1e-5 * (100 * II_mass**(-cexp_ii))  # C

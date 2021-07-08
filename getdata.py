@@ -275,6 +275,9 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, ni=False, eu=F
                             bafe_s = bafe + np.log10(rfrac)
                         bafe_s[~np.isfinite(bafe_s)] = -999.
 
+                    else:
+                        bafe_s = bafe
+
                     # Add to tables
                     data = np.hstack([data,bafe_s])
                     errs = np.hstack([errs,ba_errs])

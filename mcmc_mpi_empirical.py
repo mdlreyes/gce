@@ -401,7 +401,7 @@ mgas_obs = 3.2e3
 dmgas_obs = 1.e3
 
 # Eq. 18: *Negative* log likelihood function
-def neglnlike(parameters):
+def neglnlike(parameters, model=None):
 
     # Don't even bother to compute likelihood if any of the parameters are negative
     #if np.any(np.asarray(parameters) < 0.):
@@ -414,7 +414,10 @@ def neglnlike(parameters):
         parameters = np.append(parameters, 0.6)
 
     # Get data from model
-    elem_model, sfr, mstar_model, time, leftovergas = gce_model(parameters)
+    if model==None:
+        elem_model, sfr, mstar_model, time, leftovergas = gce_model(parameters)
+    else:
+        elem_model, sfr, mstar_model, time, leftovergas = model
 
     # Check if model runs all the way
     goodidx = np.where((time > 0.007) & (np.all(np.isfinite(elem_model),axis=0)))

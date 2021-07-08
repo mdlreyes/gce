@@ -45,7 +45,7 @@ scl_iadtd_medhimin = [0.2581362038956129,0.3671543880935386,4.884509919096489,0.
 scl_iadtd_loindex = [0.31309403734878677,0.32698844029546187,5.119860962340789,0.5074794913085319,0.7677725611456582,0.27817942445348165,0.7747072609145225,1.3579266977743019,0.6409945773107304,0.24639512831333843,0.8835860105097602,0.5557520537168783,0.023556275510243575, 0.]
 scl_iadtd_hiindex = [0.5446693466306317,0.3092340505074539,4.662881112688744,0.6610461169621856,0.6648004259776421,0.22834192428764163,0.434048932393723,1.2372641358088885,1.21868854143266,0.30455907377622926,2.5503064633438433,0.9921019155833941,0.00552116094663595, 0.]
 scl_iadtd_cutoff = [0.3907399651848807,0.31789100855381613,4.976079316209285,0.4695236246906028,0.846066267741512,0.3848772970464857,0.5875359459715601,1.301460415128067,0.8259997983101177,0.28742136661443407,1.3484797631127226,0.7983782066064008,0.017047139327600602]
-scl_imf_chabrier03 = [1.2814959848003562,0.2879210967973736,5.925478381477342,0.32036367127340776,0.689240241851681,0.45907699607906804,0.8712216816504397,1.3340204961525968,0.5715974324047987,0.2772115025981421,0.8461788861477718,0.7493879610663056,0.020900346817763905]
+scl_imf_chabrier03 = [1.0680354182219103,0.29087824048307825,5.785175190841888,0.32614582504078626,0.6880109337422085,0.47419668814764776,0.8347392374670606,1.3517172298659013,0.5890139428180761,0.2739631120786506,1.7994398252473034,0.9807143044292836,0.011967114634611836]
 
 def compare_sfh(models, title):
     """Compare SFH outputs from multiple GCE models."""
@@ -62,16 +62,19 @@ def compare_sfh(models, title):
     model_loindex, _, ll_loindex = gce.runmodel(scl_iadtd_loindex, plot=False, title="Sculptor dSph (Ia DTD index = -0.5)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='index05')
     model_hiindex, _, ll_hiindex = gce.runmodel(scl_iadtd_hiindex, plot=False, title="Sculptor dSph (Ia DTD index = -1.5)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='index15')
     model_cutoff, _, ll_cutoff = gce.runmodel(scl_iadtd_cutoff, plot=False, title="Sculptor dSph (Ia DTD with cutoff)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='cutoff')
-    model_chabrier, _, ll_chabrier = gce.runmodel(scl_imf_chabrier03, plot=False, title="Sculptor dSph (Chabrier+03 IMF)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='cutoff')
+    model_chabrier, _, ll_chabrier = gce.runmodel(scl_imf_chabrier03, plot=False, title="Sculptor dSph (Chabrier+03 IMF)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, imf='chabrier03')
 
     # Get model names
     modelnames = {'fiducial':model, 'reioniz':model_reioniz, 'delaysf':model_delaysf, 'rampressure':model_rampressure,
-                'iadtd_maoz17':model_maoz17, 'iadtd_lomin':model_lomin, 'iadtd_himin':model_himin, 'iadtd_medhimin':model_medhimin, 'iadtd_index05':model_loindex, 'iadtd_index15':model_hiindex, 'iadtd_cutoff':model_cutoff}
+                'iadtd_maoz17':model_maoz17, 'iadtd_lomin':model_lomin, 'iadtd_himin':model_himin, 'iadtd_medhimin':model_medhimin, 'iadtd_index05':model_loindex, 'iadtd_index15':model_hiindex, 'iadtd_cutoff':model_cutoff,
+                'imf_chabrier':model_chabrier}
     llnames = {'fiducial':ll, 'reioniz':ll_reioniz, 'delaysf':ll_delaysf, 'rampressure':ll_rampressure,
-                'iadtd_maoz17':ll_maoz17,'iadtd_lomin':ll_lomin,'iadtd_himin':ll_himin, 'iadtd_medhimin':ll_medhimin, 'iadtd_index05':ll_loindex, 'iadtd_index15':ll_hiindex, 'iadtd_cutoff':ll_cutoff}
+                'iadtd_maoz17':ll_maoz17,'iadtd_lomin':ll_lomin,'iadtd_himin':ll_himin, 'iadtd_medhimin':ll_medhimin, 'iadtd_index05':ll_loindex, 'iadtd_index15':ll_hiindex, 'iadtd_cutoff':ll_cutoff,
+                'imf_chabrier':ll_chabrier}
     titles = {'fiducial':'Fiducial', 'reioniz':'With reionization', 'delaysf':'Delayed SF', 'rampressure':'Ram pressure',
                 'iadtd_maoz17':'Maoz+17 Ia DTD', 'iadtd_lomin':'Ia DTD: '+r'$t_{\mathrm{min}}=50$Myr', 'iadtd_himin':'Ia DTD: '+r'$t_{\mathrm{min}}=500$Myr', 'iadtd_medhimin':'Ia DTD: '+r'$t_{\mathrm{min}}=200$Myr', 
-                'iadtd_index05':'Ia DTD: '+r'$t^{-0.5}$', 'iadtd_index15':'Ia DTD: '+r'$t^{-1.5}$', 'iadtd_cutoff':'Ia DTD with cutoff'}
+                'iadtd_index05':'Ia DTD: '+r'$t^{-0.5}$', 'iadtd_index15':'Ia DTD: '+r'$t^{-1.5}$', 'iadtd_cutoff':'Ia DTD with cutoff',
+                'imf_chabrier':'Chabrier (2003) IMF'}
 
     # Create figure
     fig = plt.figure(figsize=(6,4))
@@ -92,12 +95,12 @@ def compare_sfh(models, title):
     ax2.set_xlim(zmin, zmax)
     plt.ylim(0,40)
 
-    #colors = ['k', plt.cm.Set2(0), plt.cm.Set2(1), plt.cm.Set2(2)]
-    #linestyles = ['-','--',':','dashdot']
+    colors = ['k', plt.cm.Set2(0), plt.cm.Set2(1), plt.cm.Set2(2)]
+    linestyles = ['-','--',':','dashdot']
 
     # For Ia DTD plot
-    colors = ['k', plt.cm.tab10(0), plt.cm.tab20(2), plt.cm.tab20(3), plt.cm.tab20(4), plt.cm.tab20(5), plt.cm.tab20(6)]
-    linestyles = ['-','--',':',':','dashdot','dashdot',(0,(5,10))]
+    #colors = ['k', plt.cm.tab10(0), plt.cm.tab20(2), plt.cm.tab20(3), plt.cm.tab20(4), plt.cm.tab20(5), plt.cm.tab20(6)]
+    #linestyles = ['-','--',':',':','dashdot','dashdot',(0,(5,10))]
     
     # Plot SFH from different models
     for i, modelname in enumerate(models):
@@ -209,7 +212,7 @@ def compare_yields(plottype):
         plt.xlim([-3.5,0])
 
         # Titles
-        titles = ['No r-process','Prompt r-process','Delayed r-process','Prompt+delayed']
+        titles = ['No r-process','Prompt r-process (typical CCSNe only)','Delayed r-process ('+r'$t^{-1.5}$ DTD, '+r'$t_{\mathrm{min}}=10$ Myr)','Prompt+delayed']
         rprocesskeywords = ['none','typical_SN_only','rare_event_only','both']
 
         labels = ['Ba','Eu']
@@ -255,7 +258,7 @@ def compare_yields(plottype):
 
             # Create legend
             if idx==0:
-                axs[idx].legend(fontsize=10, bbox_to_anchor=(0,1.02,1,0.2), loc="lower left")
+                axs[idx].legend(fontsize=10, bbox_to_anchor=(-0.03,1.02,1,0.2), loc="lower left")
 
         #plt.legend(fontsize=10) #, bbox_to_anchor=(0,1.02,1,0.2), loc="lower left")
         plt.savefig('plots/'+'rprocess_compare.png', bbox_inches='tight')
@@ -266,5 +269,6 @@ def compare_yields(plottype):
 if __name__=="__main__":
     #compare_sfh(['fiducial','delaysf','reioniz','rampressure'], 'modelconstruction')
     #compare_sfh(['fiducial','iadtd_maoz17','iadtd_lomin','iadtd_medhimin','iadtd_index05','iadtd_index15','iadtd_cutoff'], 'iadtd')
+    compare_sfh(['fiducial','imf_chabrier'], 'imf')
     #compare_yields('IaSN')
-    compare_yields('rprocess')
+    #compare_yields('rprocess')
