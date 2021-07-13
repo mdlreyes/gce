@@ -85,10 +85,10 @@ def plot_imf():
     # Stellar masses
     m = np.arange(0.08,100,0.001)
 
-    plt.loglog(m[:-1], imf(m,'kroupa93')[:-1]*np.diff(m), 'k-', label='Kroupa et al. (1993)')
-    plt.plot(m[:-1], imf(m, 'kroupa01')[:-1]*np.diff(m), 'k--', label='Kroupa et al. (2001)')
-    plt.plot(m[:-1], imf(m, 'chabrier03')[:-1]*np.diff(m), 'k:', label='Chabrier et al. (2003)')
-    plt.plot(m[:-1], imf(m, 'salpeter55')[:-1]*np.diff(m), 'b-', label='Salpeter (1955)')
+    plt.loglog(m[:-1], imf(m,'kroupa93')[:-1]*np.diff(m), 'b-', label='Kroupa et al. (1993)')
+    plt.plot(m[:-1], imf(m, 'kroupa01')[:-1]*np.diff(m), 'k-', label='Kroupa et al. (2001)')
+    plt.plot(m[:-1], imf(m, 'chabrier03')[:-1]*np.diff(m), 'k--', label='Chabrier et al. (2003)')
+    plt.plot(m[:-1], imf(m, 'salpeter55')[:-1]*np.diff(m), 'k:', label='Salpeter (1955)')
     plt.axvspan(0.861, 47, color='r', alpha=0.5)
     plt.legend()
     plt.xlabel(r'M $(M_{\odot})$')

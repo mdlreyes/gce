@@ -191,7 +191,8 @@ def plotbpass():
         goodidx = np.where(feharray < -0.5)[0]
 
         # Define colormaps
-        metalcolor = cmr.gem(np.linspace(0,1,len(feharray[goodidx]),endpoint=True))
+        metalcolor = cmr.gem_r(np.linspace(0,1,len(feharray[goodidx]),endpoint=True))
+        metalcolor = plt.cm.coolwarm(np.linspace(0,1,len(feharray[goodidx])))
 
         # Plot stellar lifetimes at various metallicities
         plt.figure()
@@ -202,7 +203,7 @@ def plotbpass():
             # Get relevant masses
             massidx = np.where((mass > 0.865) & (mass < 100))[0]
 
-            plt.plot(np.log10(mass[massidx]), age[massidx], color=metalcolor[feh_idx], lw=1, label=r"[Fe/H] = {:.2f}".format(feh))
+            plt.loglog(mass[massidx], age[massidx], color=metalcolor[feh_idx], lw=1, label=r"[Fe/H] = {:.2f}".format(feh))
 
         # Plot empirical equations
         masses = np.linspace(0.865,100,1000)
@@ -210,14 +211,14 @@ def plotbpass():
         t = 10.** ((0.334 - np.sqrt(1.790-0.2232*(7.764-np.log10(masses))))/0.1116) 
         t[masses > 6.6] = 1.2*masses[masses > 6.6]**(-1.85) + 0.003
         #t *= 1e9  # Convert from Gyr to yr
-        plt.plot(np.log10(masses), t, color='r', ls='--', lw=2, label='From equations')
+        plt.loglog(masses, t, color='k', ls='--', lw=2, label='From equations')
 
         # Format plot
         legend = plt.legend()
-        plt.xlabel(r'Log(Mass) [$M_{\odot}$]', fontsize=14)
+        plt.xlabel(r'Mass ($M_{\odot}$)', fontsize=14)
         plt.ylabel(r'Lifetime (Gyr)', fontsize=14)
-        plt.ylim(-0.05,1.5)
-        plt.xlim(0,2)
+        plt.axvline(6.6, color='k', linestyle=':', lw=1)
+        print(t[np.argmin(np.abs(masses-6.6))])
         plt.savefig('bpass_lifetimes.png', bbox_inches='tight')
         plt.show()
 

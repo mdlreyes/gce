@@ -25,7 +25,7 @@ from mcmc_mpi_empirical import neglnlike
 
 def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, empiricalfit=False, 
             feh_denom=True, delay=False, reioniz=False, ia_dtd='maoz10', rampressure=False,
-            mn=None, ni=None, rprocess='none', imf='kroupa93'):
+            mn=None, ni=None, rprocess='none', specialrprocess='none', imf='kroupa93'):
     """Galactic chemical evolution model.
 
     Takes in additional parameters from params.py, reads yields using gce_yields.py, 
@@ -70,7 +70,10 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
     n_intmass = n_intmass[goodidx_agb]
 
     if rprocess in ['rare_event_only', 'both']:
-        n_nsm = dtd.dtd_nsm(t) * delta_t      # Fraction of stars that will explode as NSMs
+        if specialrprocess=='enhanceddelay':
+            n_nsm = dtd.dtd_nsm_enhanced(t) * delta_t      # Fraction of stars that will explode as NSMs
+        else:
+            n_nsm = dtd.dtd_nsm(t) * delta_t      # Fraction of stars that will explode as NSMs
 
     if empirical==False:
         # Load all sources of chemical yields
@@ -129,7 +132,7 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
     else:
         nel, eps_sun, atomic, weight, f_ia_metallicity, f_ii_metallicity, f_agb_metallicity, f_nsm_metallicity = gce_yields.initialize_empirical(
             Ia_source=params.Ia_source, II_source=params.II_source, AGB_source=params.AGB_source, 
-            r_process_keyword=rprocess, II_mass=m_himass, AGB_mass=m_intmass, fit=empiricalfit)
+            r_process_keyword=rprocess, specialrprocess=specialrprocess, II_mass=m_himass, AGB_mass=m_intmass, fit=empiricalfit)
         print(nel, atomic)
 
         #print('empirical', f_ii_metallicity(0)[np.where(atomic == 6)[0],:25])

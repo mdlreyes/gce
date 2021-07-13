@@ -7,6 +7,19 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
+# Do some formatting stuff with matplotlib
+from matplotlib import rc
+rc('font', family='serif')
+rc('axes', labelsize=14) 
+rc('xtick', labelsize=12)
+rc('ytick', labelsize=12)
+rc('xtick.major', size=8)
+rc('ytick.major', size=8)
+rc('legend', fontsize=12, frameon=False)
+rc('text',usetex=True)
+rc('xtick',direction='in')
+rc('ytick',direction='in')
+
 def dtd_ia(t,ia_model): #(Gyr)
 
     if ia_model == 'maoz10':
@@ -204,6 +217,16 @@ def dtd_nsm(t):
     print('nsm:', np.trapz(rate, ))
     return rate  # NSM Gyr**-1 (M_sun)**-1
 
+def dtd_nsm_enhanced(t):
+    """DTD for NSMs (higher tmin and higher normalization)"""
+
+    t_nsm = 5e-2  # (Gyr) from Fig 7 of Cote+17
+    rate = (5e-4)*t**(-1.5)  # normalization & slope from Simonetti+19
+    w = np.where(t <= t_nsm)[0]
+    if len(w) > 0: rate[w] = 0.0
+    print('nsm:', np.trapz(rate, ))
+    return rate  # NSM Gyr**-1 (M_sun)**-1
+
 def plot_dtd(model):
     """Plot delay-time distributions."""
 
@@ -214,15 +237,30 @@ def plot_dtd(model):
     dtd_ia_model = dtd_ia(t, ia_model=model)
     dtd_nsm_model = dtd_nsm(t)
 
-    plt.loglog(t*1e9, dtd_ia_maoz10, 'k-', label='Type Ia (Maoz et al. 2010)')
-    plt.plot(t*1e9, dtd_ia_mannucci06, 'k--', label='Type Ia (Mannucci et al. 2006)')
-    plt.plot(t*1e9, dtd_ia_model, 'k:', label='Type Ia ('+model+')')
-    plt.plot(t*1e9, dtd_nsm_model, 'r', label='NSM')
-    #plt.plot(t, dtd_agb(t, imf_model)[0], 'b-', label='AGB')
-    #plt.plot(t, dtd_ii(t, imf_model)[0], 'r-', label='Type Ia')
-    plt.legend()
+    # Stuff for Ia DTD tests
+    #plt.loglog(t*1e9, dtd_ia_maoz10, 'k:', label='IaSNe (Maoz et al. 2010)')
+    #plt.plot(t*1e9, dtd_ia_mannucci06, 'k--', label='Type Ia (Mannucci et al. 2006)')
+    #plt.plot(t*1e9, dtd_ia_model, 'k:', label='Type Ia ('+model+')')
+    #plt.plot(t*1e9, dtd_nsm_model, 'r', label='NSM')
+
+    # Some stuff needed to define where to plot
+    m_himass, n_himass = dtd_ii(t, 'kroupa93')
+    goodidx = np.where((m_himass > 10.))[0]  # Limit to timesteps where stars will explode as CCSN
+    rate_himass = n_himass[goodidx]/0.001 # N per Gyr
+    t_himass = t[goodidx]*1e9
+
+    m_intmass, n_intmass = dtd_agb(t, 'kroupa93')    # Mass and fraction of stars that become AGBs in the future
+    goodidx_agb = np.where((m_intmass > 0.865) & (m_intmass < 10.))[0] # Limit to timesteps where stars between 0.865-10 M_sun will become AGB stars
+    rate_agb = n_intmass[goodidx_agb]/0.001 # N per Gyr
+    t_agb = t[goodidx_agb]*1e9
+
+    # Stuff for DTD comparison plot
+    plt.loglog(np.insert(t_himass,0,t_himass[0]), np.insert(rate_himass,0,0), 'k-', label='CCSN')
+    plt.loglog(np.insert(t_agb,0,t_agb[0]), np.insert(rate_agb,0,0), 'k--', label='AGB')
+    plt.loglog(t*1e9, dtd_ia_maoz10, 'k:', label='IaSN')
+    plt.legend(loc='upper right')
     plt.xlabel('Delay time (yr)')
-    plt.ylabel('DTD')
+    plt.ylabel(r'DTD ($\mathrm{Gyr}^{-1}~M_{\odot}^{-1}$)')
     #plt.xlim(0,1e8)
     plt.savefig('plots/dtd.png', bbox_inches="tight")
     plt.show()
@@ -230,4 +268,4 @@ def plot_dtd(model):
     return
 
 if __name__ == "__main__":
-    plot_dtd('cutoff')
+    plot_dtd('index05')

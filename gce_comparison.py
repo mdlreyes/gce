@@ -46,8 +46,9 @@ scl_iadtd_loindex = [0.31309403734878677,0.32698844029546187,5.119860962340789,0
 scl_iadtd_hiindex = [0.5446693466306317,0.3092340505074539,4.662881112688744,0.6610461169621856,0.6648004259776421,0.22834192428764163,0.434048932393723,1.2372641358088885,1.21868854143266,0.30455907377622926,2.5503064633438433,0.9921019155833941,0.00552116094663595, 0.]
 scl_iadtd_cutoff = [0.3907399651848807,0.31789100855381613,4.976079316209285,0.4695236246906028,0.846066267741512,0.3848772970464857,0.5875359459715601,1.301460415128067,0.8259997983101177,0.28742136661443407,1.3484797631127226,0.7983782066064008,0.017047139327600602]
 scl_imf_chabrier03 = [1.0680354182219103,0.29087824048307825,5.785175190841888,0.32614582504078626,0.6880109337422085,0.47419668814764776,0.8347392374670606,1.3517172298659013,0.5890139428180761,0.2739631120786506,1.7994398252473034,0.9807143044292836,0.011967114634611836]
+scl_imf_salpeter55 = [0.5089476125938007,0.32350548351207437,5.391102320123509,0.4003999995632118,0.7799460946453387,0.5549969145097149,0.6164885754010938,1.3299979696872426,0.7198534106528632,0.25245975628500583,2.182828951358294,0.9847378266515173,0.00954264476609045]
 
-def compare_sfh(models, title):
+def compare_sfh(models, title, fiducialtitle='Fiducial'):
     """Compare SFH outputs from multiple GCE models."""
 
     # Run GCE models
@@ -63,18 +64,20 @@ def compare_sfh(models, title):
     model_hiindex, _, ll_hiindex = gce.runmodel(scl_iadtd_hiindex, plot=False, title="Sculptor dSph (Ia DTD index = -1.5)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='index15')
     model_cutoff, _, ll_cutoff = gce.runmodel(scl_iadtd_cutoff, plot=False, title="Sculptor dSph (Ia DTD with cutoff)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='cutoff')
     model_chabrier, _, ll_chabrier = gce.runmodel(scl_imf_chabrier03, plot=False, title="Sculptor dSph (Chabrier+03 IMF)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, imf='chabrier03')
+    model_salpeter, _, ll_salpeter = gce.runmodel(scl_imf_salpeter55, plot=False, title="Sculptor dSph (Salpeter+55 IMF)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, imf='salpeter55')
+
 
     # Get model names
     modelnames = {'fiducial':model, 'reioniz':model_reioniz, 'delaysf':model_delaysf, 'rampressure':model_rampressure,
                 'iadtd_maoz17':model_maoz17, 'iadtd_lomin':model_lomin, 'iadtd_himin':model_himin, 'iadtd_medhimin':model_medhimin, 'iadtd_index05':model_loindex, 'iadtd_index15':model_hiindex, 'iadtd_cutoff':model_cutoff,
-                'imf_chabrier':model_chabrier}
+                'imf_chabrier':model_chabrier, 'imf_salpeter':model_salpeter}
     llnames = {'fiducial':ll, 'reioniz':ll_reioniz, 'delaysf':ll_delaysf, 'rampressure':ll_rampressure,
                 'iadtd_maoz17':ll_maoz17,'iadtd_lomin':ll_lomin,'iadtd_himin':ll_himin, 'iadtd_medhimin':ll_medhimin, 'iadtd_index05':ll_loindex, 'iadtd_index15':ll_hiindex, 'iadtd_cutoff':ll_cutoff,
-                'imf_chabrier':ll_chabrier}
+                'imf_chabrier':ll_chabrier, 'imf_salpeter':ll_salpeter}
     titles = {'fiducial':'Fiducial', 'reioniz':'With reionization', 'delaysf':'Delayed SF', 'rampressure':'Ram pressure',
                 'iadtd_maoz17':'Maoz+17 Ia DTD', 'iadtd_lomin':'Ia DTD: '+r'$t_{\mathrm{min}}=50$Myr', 'iadtd_himin':'Ia DTD: '+r'$t_{\mathrm{min}}=500$Myr', 'iadtd_medhimin':'Ia DTD: '+r'$t_{\mathrm{min}}=200$Myr', 
                 'iadtd_index05':'Ia DTD: '+r'$t^{-0.5}$', 'iadtd_index15':'Ia DTD: '+r'$t^{-1.5}$', 'iadtd_cutoff':'Ia DTD with cutoff',
-                'imf_chabrier':'Chabrier (2003) IMF'}
+                'imf_chabrier':'Chabrier (2003) IMF', 'imf_salpeter':'Salpeter (1955) IMF'}
 
     # Create figure
     fig = plt.figure(figsize=(6,4))
@@ -106,7 +109,7 @@ def compare_sfh(models, title):
     for i, modelname in enumerate(models):
         model = modelnames[modelname]
         if modelname=='fiducial':
-            plt.plot(model['t'],model['mdot']/1e5, color=colors[i], ls=linestyles[i], lw=2) #, label=titles[modelname]) #+r', $-\log(L)=$'+' '+str(-int(llnames[modelname])))
+            plt.plot(model['t'],model['mdot']/1e5, color=colors[i], ls=linestyles[i], lw=2, label=fiducialtitle) #, label=titles[modelname]) #+r', $-\log(L)=$'+' '+str(-int(llnames[modelname])))
         else:
             plt.plot(model['t'],model['mdot']/1e5, color=colors[i], ls=linestyles[i], lw=2, label=titles[modelname]+r', $\Delta(\mathrm{AIC})=$'+' '+str(int(ll-llnames[modelname])))
 
@@ -120,7 +123,7 @@ def compare_yields(plottype):
     """Compare abundance trends for elem (options: 'mn', 'ni', 'ba')."""
 
     # Set keyword to remove r-process yields
-    if plottype=='rprocess':
+    if plottype in ['rprocess','rprocess_bestfit']:
         removerprocess=None  # If plotting r-process test, keep both r- and s-process Ba
     else: 
         removerprocess='statistical'
@@ -239,7 +242,7 @@ def compare_yields(plottype):
 
             # Set colorwheel
             cwheelsize = len(titles)
-            color = cmr.bubblegum(np.linspace(0,1,cwheelsize,endpoint=False))
+            color = cmr.cosmic_r(np.linspace(0,1,cwheelsize,endpoint=True))
             matplotlib.rcParams['axes.prop_cycle'] = cycler.cycler('color', color)
             cwheel = [np.array(matplotlib.rcParams['axes.prop_cycle'])[x]['color'] for x in range(cwheelsize)]
 
@@ -264,11 +267,72 @@ def compare_yields(plottype):
         plt.savefig('plots/'+'rprocess_compare.png', bbox_inches='tight')
         plt.show()
 
+    if plottype=='rprocess_bestfit':
+        # Make plot
+        fig, axs = plt.subplots(2, figsize=(6,4), sharex=True)
+        fig.subplots_adjust(bottom=0.06,top=0.97, left = 0.2,wspace=0.29,hspace=0)
+        plt.xlabel('[Fe/H]')
+        plt.xlim([-3.5,0])
+
+        # Titles
+        titles = ['Prompt r-process (20x Ba yield, 5x Eu yield)','Prompt (20x Ba yield, 5x Eu yield) + delayed','Delayed r-process ('+r'$t_{\mathrm{min}}=50$ Myr, 5x normalization)','Prompt + delayed ('+r'$t_{\mathrm{min}}=50$ Myr, 5x normalization)']
+        rprocesskeywords = ['typical_SN_only','both','rare_event_only','both']
+        specialkeywords = ['enhancedprompt','enhancedprompt','enhanceddelay','enhanceddelay']
+        ls = [':',':','--','--']
+        # Set colorwheel
+        cwheelsize = len(titles)
+        color = cmr.cosmic_r(np.linspace(0,1,cwheelsize,endpoint=True))
+        cwheel = [color[1],color[3],color[2],color[3]]
+
+        labels = ['Ba','Eu']
+        elem_idx = [5,7]
+
+        for idx, label in enumerate(labels):
+            axs[idx].set_ylabel('['+label+'/Fe]')
+            axs[idx].plot([-3.5,0],[0,0],':k')
+            axs[idx].set_ylim([-2,2])
+
+            # Plot observed DEIMOS data
+            obs_data = elem_data[elem_idx[idx],obsmask]
+            obs_errs = delem_data[elem_idx[idx],obsmask]
+            goodidx = np.where((x_obs > -990) & (obs_data > -990) & (np.abs(obs_errs) < 0.4) & (np.abs(x_errs) < 0.4))[0]
+            axs[idx].errorbar(x_obs[goodidx], obs_data[goodidx], xerr=x_errs[goodidx], yerr=obs_errs[goodidx], 
+                                        color=plt.cm.Set3(0), linestyle='None', marker='o', markersize=3, alpha=0.7, linewidth=0.5)
+
+            # Repeat for DART data
+            obs_data = elem_data_dart[elem_idx[idx],obsmask_dart]
+            obs_errs = delem_data_dart[elem_idx[idx],obsmask_dart]
+            goodidx = np.where((x_obs_dart > -990) & (obs_data > -990) & (np.abs(obs_errs) < 0.4) & (np.abs(x_errs_dart) < 0.4))[0]
+            axs[idx].errorbar(x_obs_dart[goodidx], obs_data[goodidx], xerr=x_errs_dart[goodidx], yerr=obs_errs[goodidx], 
+                            mfc='white', mec=plt.cm.Set3(3), ecolor=plt.cm.Set3(3), linestyle='None', marker='o', markersize=3, linewidth=0.5)
+
+            for line_idx, keyword in enumerate(rprocesskeywords):
+                model, atomic, ll = gce.runmodel(scl_test_bothba_ba, plot=False, title="Sculptor dSph", empirical=True, empiricalfit=True, rprocess=keyword, specialrprocess=specialkeywords[line_idx])
+                
+                # Get indexes to access model
+                elem_names = {1:'H', 2:'He', 6:'C', 8:'O', 12:'Mg', 14:'Si', 20:'Ca', 22:'Ti', 25:'Mn', 26:'Fe', 28:'Ni', 56:'Ba', 63:'Eu'}
+                snindex = {}
+                for snindex_idx, snindex_elem in enumerate(atomic):
+                    snindex[elem_names[snindex_elem]] = snindex_idx
+            
+                x = model['eps'][:,snindex['Fe']]
+                y = model['eps'][:,snindex[label]] - model['eps'][:,snindex['Fe']]
+                axs[idx].plot(x, y, color=cwheel[line_idx], linestyle=ls[line_idx], lw=4, label=titles[line_idx], zorder=100)
+
+            # Create legend
+            if idx==0:
+                axs[idx].legend(fontsize=10, bbox_to_anchor=(-0.03,1.02,1,0.2), loc="lower left")
+
+        #plt.legend(fontsize=10) #, bbox_to_anchor=(0,1.02,1,0.2), loc="lower left")
+        plt.savefig('plots/'+'rprocess_compare_bestfit.png', bbox_inches='tight')
+        plt.show()
+
     return
 
 if __name__=="__main__":
     #compare_sfh(['fiducial','delaysf','reioniz','rampressure'], 'modelconstruction')
-    #compare_sfh(['fiducial','iadtd_maoz17','iadtd_lomin','iadtd_medhimin','iadtd_index05','iadtd_index15','iadtd_cutoff'], 'iadtd')
-    compare_sfh(['fiducial','imf_chabrier'], 'imf')
+    #compare_sfh(['fiducial','iadtd_medhimin','iadtd_index05','iadtd_cutoff'], 'iadtd', fiducialtitle='Fiducial: '+r'$t^{-1.1}$, '+r'$t_{\mathrm{min}}=100$Myr')
+    #compare_sfh(['fiducial','imf_chabrier','imf_salpeter'], 'imf', fiducialtitle='Fiducial: Kroupa et al. (1993) IMF')
     #compare_yields('IaSN')
     #compare_yields('rprocess')
+    compare_yields('rprocess_bestfit')

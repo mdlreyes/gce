@@ -623,14 +623,15 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source
 
     return nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB
 
-def initialize_empirical(yield_path='yields/', r_process_keyword='none', imfweight='kroupa93',
-        AGB_source='cri15', Ia_source='leu20', II_source='nom06', 
+def initialize_empirical(yield_path='yields/', r_process_keyword='none', specialrprocess='none',
+        imfweight='kroupa93', AGB_source='cri15', Ia_source='leu20', II_source='nom06', 
         II_mass=None, AGB_mass=None, fit=False): 
     """Reads in yield tables.
 
     Args:
         yield_path (str): Path to folder with yields.
         r_process_keyword (str): How to handle r-process elements: 'none', 'typical_SN_only', 'rare_event_only', 'both'
+        specialrprocess (str): Additional keywords for r-process elements: 'none' (default), 'enhancedprompt', 'enhanceddelay'
         AGB_source (str): Source of AGB yields: 'cri15', 'kar'
         Ia_source (str): Source of Ia yields: 'leu20', 'leu18_ddt', 'leu18_def', 'shen18'
         II_source (str): Source of II yields: 'nom13', 'lim18'
@@ -771,10 +772,14 @@ def initialize_empirical(yield_path='yields/', r_process_keyword='none', imfweig
             if r_process_keyword in ['typical_SN_only','both']:
 
                 # Ba from Li+14
-                yields[10,:] = 20 * 1e-12 * (1560 * II_mass**(-1.80) + 0.14 - 480*np.exp(-((II_mass-5)/5.5)**2/2)/(5.5*normpdfc))
+                yields[10,:] = 1e-12 * (1560 * II_mass**(-1.80) + 0.14 - 480*np.exp(-((II_mass-5)/5.5)**2/2)/(5.5*normpdfc))
 
                 # Eu from Cescutti+06
-                yields[11,:] = 5 * 1e-11 * (77600 * II_mass**(-4.31))  # Eu
+                yields[11,:] = 1e-11 * (77600 * II_mass**(-4.31))  # Eu
+
+                if specialrprocess=='enhancedprompt':
+                    yields[10,:] *= 20
+                    yields[11,:] *= 5
 
             # Yields with parameters to vary
             yields[2,:] = 1e-5 * (100 * II_mass**(-cexp_ii))  # C

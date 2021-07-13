@@ -343,7 +343,7 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
 
     if fe:
         elem_model = [model['eps'][:,snindex['fe']], #- model['eps'][:,snindex['h']], # [Fe/H]
-            model['eps'][:,snindex['mg']] - model['eps'][:,snindex['fe']] + 0.2,	# [Mg/Fe]
+            model['eps'][:,snindex['mg']] - model['eps'][:,snindex['fe']],	# [Mg/Fe]
             model['eps'][:,snindex['si']] - model['eps'][:,snindex['fe']],	# [Si/Fe]
             model['eps'][:,snindex['ca']] - model['eps'][:,snindex['fe']]]	# [Ca/Fe]
             #model['eps'][:,snindex['c']] - model['eps'][:,snindex['fe']]] 	# [C/Fe]
