@@ -119,7 +119,7 @@ def compare_sfh(models, title, fiducialtitle='Fiducial'):
 
     return
 
-def compare_yields(plottype):
+def compare_yields(plottype, feh_denom=True):
     """Compare abundance trends for elem (options: 'mn', 'ni', 'ba')."""
 
     # Set keyword to remove r-process yields
@@ -129,8 +129,8 @@ def compare_yields(plottype):
         removerprocess='statistical'
 
     # Open observed data
-    elem_data, delem_data, _ = getdata(galaxy='Scl', source='deimos', c=True, ba=True, mn=True, eu=True, ni=True, removerprocess=removerprocess, feh_denom=True)
-    elem_data_dart, delem_data_dart, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, mn=True, eu=True, ni=True, removerprocess=removerprocess, feh_denom=True)
+    elem_data, delem_data, elems = getdata(galaxy='Scl', source='deimos', c=True, ba=True, mn=True, eu=True, ni=True, removerprocess=removerprocess, feh_denom=feh_denom)
+    elem_data_dart, delem_data_dart, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, mn=True, eu=True, ni=True, removerprocess=removerprocess, feh_denom=feh_denom)
 
     # Get [Fe/H] DEIMOS data
     x_obs = elem_data[0,:]
@@ -211,20 +211,32 @@ def compare_yields(plottype):
         # Make plot
         fig, axs = plt.subplots(2, figsize=(6,4), sharex=True)
         fig.subplots_adjust(bottom=0.06,top=0.97, left = 0.2,wspace=0.29,hspace=0)
-        plt.xlabel('[Fe/H]')
-        plt.xlim([-3.5,0])
+        if feh_denom:
+            plt.xlabel('[Fe/H]')
+            plt.xlim([-3.5,0])
+        else:
+            plt.xlabel('[Mg/H]')
+            plt.xlim([-3,0])
 
         # Titles
         titles = ['No r-process','Prompt r-process (typical CCSNe only)','Delayed r-process ('+r'$t^{-1.5}$ DTD, '+r'$t_{\mathrm{min}}=10$ Myr)','Prompt+delayed']
         rprocesskeywords = ['none','typical_SN_only','rare_event_only','both']
 
         labels = ['Ba','Eu']
-        elem_idx = [5,7]
+        if feh_denom:
+            elem_idx = [5,7]
+        else:
+            elem_idx = [4,6]
 
         for idx, label in enumerate(labels):
-            axs[idx].set_ylabel('['+label+'/Fe]')
-            axs[idx].plot([-3.5,0],[0,0],':k')
-            axs[idx].set_ylim([-2,2])
+            if feh_denom:
+                axs[idx].set_ylabel('['+label+'/Fe]')
+                axs[idx].plot([-3.5,0],[0,0],':k')
+                axs[idx].set_ylim([-2,2])
+            else:
+                axs[idx].set_ylabel('['+label+'/Mg]')
+                axs[idx].plot([-3.5,0],[0,0],':k')
+                axs[idx].set_ylim([-3,2])
 
             # Plot observed DEIMOS data
             obs_data = elem_data[elem_idx[idx],obsmask]
@@ -255,8 +267,12 @@ def compare_yields(plottype):
                 for snindex_idx, snindex_elem in enumerate(atomic):
                     snindex[elem_names[snindex_elem]] = snindex_idx
             
-                x = model['eps'][:,snindex['Fe']]
-                y = model['eps'][:,snindex[label]] - model['eps'][:,snindex['Fe']]
+                if feh_denom:
+                    x = model['eps'][:,snindex['Fe']]
+                    y = model['eps'][:,snindex[label]] - model['eps'][:,snindex['Fe']]
+                else:
+                    x = model['eps'][:,snindex['Mg']] + 0.2
+                    y = model['eps'][:,snindex[label]] - (model['eps'][:,snindex['Mg']] + 0.2)
                 axs[idx].plot(x, y, color=cwheel[line_idx], linestyle='-', lw=4, label=titles[line_idx], zorder=100)
 
             # Create legend
@@ -271,8 +287,12 @@ def compare_yields(plottype):
         # Make plot
         fig, axs = plt.subplots(2, figsize=(6,4), sharex=True)
         fig.subplots_adjust(bottom=0.06,top=0.97, left = 0.2,wspace=0.29,hspace=0)
-        plt.xlabel('[Fe/H]')
-        plt.xlim([-3.5,0])
+        if feh_denom:
+            plt.xlabel('[Fe/H]')
+            plt.xlim([-3.5,0])
+        else:
+            plt.xlabel('[Mg/H]')
+            plt.xlim([-3,0])
 
         # Titles
         titles = ['Prompt r-process (20x Ba yield, 5x Eu yield)','Prompt (20x Ba yield, 5x Eu yield) + delayed','Delayed r-process ('+r'$t_{\mathrm{min}}=50$ Myr, 5x normalization)','Prompt + delayed ('+r'$t_{\mathrm{min}}=50$ Myr, 5x normalization)']
@@ -285,12 +305,20 @@ def compare_yields(plottype):
         cwheel = [color[1],color[3],color[2],color[3]]
 
         labels = ['Ba','Eu']
-        elem_idx = [5,7]
+        if feh_denom:
+            elem_idx = [5,7]
+        else:
+            elem_idx = [4,6]
 
         for idx, label in enumerate(labels):
-            axs[idx].set_ylabel('['+label+'/Fe]')
-            axs[idx].plot([-3.5,0],[0,0],':k')
-            axs[idx].set_ylim([-2,2])
+            if feh_denom:
+                axs[idx].set_ylabel('['+label+'/Fe]')
+                axs[idx].plot([-3.5,0],[0,0],':k')
+                axs[idx].set_ylim([-2,2])
+            else:
+                axs[idx].set_ylabel('['+label+'/Mg]')
+                axs[idx].plot([-3.5,0],[0,0],':k')
+                axs[idx].set_ylim([-3,2])
 
             # Plot observed DEIMOS data
             obs_data = elem_data[elem_idx[idx],obsmask]
@@ -315,8 +343,12 @@ def compare_yields(plottype):
                 for snindex_idx, snindex_elem in enumerate(atomic):
                     snindex[elem_names[snindex_elem]] = snindex_idx
             
-                x = model['eps'][:,snindex['Fe']]
-                y = model['eps'][:,snindex[label]] - model['eps'][:,snindex['Fe']]
+                if feh_denom:
+                    x = model['eps'][:,snindex['Fe']]
+                    y = model['eps'][:,snindex[label]] - model['eps'][:,snindex['Fe']]
+                else:
+                    x = model['eps'][:,snindex['Mg']] + 0.2
+                    y = model['eps'][:,snindex[label]] - (model['eps'][:,snindex['Mg']] + 0.2)
                 axs[idx].plot(x, y, color=cwheel[line_idx], linestyle=ls[line_idx], lw=4, label=titles[line_idx], zorder=100)
 
             # Create legend
@@ -334,5 +366,5 @@ if __name__=="__main__":
     #compare_sfh(['fiducial','iadtd_medhimin','iadtd_index05','iadtd_cutoff'], 'iadtd', fiducialtitle='Fiducial: '+r'$t^{-1.1}$, '+r'$t_{\mathrm{min}}=100$Myr')
     #compare_sfh(['fiducial','imf_chabrier','imf_salpeter'], 'imf', fiducialtitle='Fiducial: Kroupa et al. (1993) IMF')
     #compare_yields('IaSN')
-    #compare_yields('rprocess')
-    compare_yields('rprocess_bestfit')
+    compare_yields('rprocess') #, feh_denom=False)
+    compare_yields('rprocess_bestfit') #, feh_denom=False)

@@ -25,7 +25,8 @@ from mcmc_mpi_empirical import neglnlike
 
 def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, empiricalfit=False, 
             feh_denom=True, delay=False, reioniz=False, ia_dtd='maoz10', rampressure=False,
-            mn=None, ni=None, rprocess='none', specialrprocess='none', imf='kroupa93'):
+            mn=None, ni=None, rprocess='none', specialrprocess='none', imf='kroupa93',
+            inflow='none', outflow='none', mgenhance=True):
     """Galactic chemical evolution model.
 
     Takes in additional parameters from params.py, reads yields using gce_yields.py, 
@@ -45,6 +46,9 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
         feh_denom (bool): If True, use [Fe/H] as x-axis of plots; otherwise use [Mg/H]
         delay (bool): If True, delay SF by 50 Myr
         reioniz (bool): If True, simulate reionization by stopping gas infall at z~8.8 (0.6 Gyr)
+        inflow (str): If not 'none', use different default inflow parameterizations ('const', 'gausslike')
+        outflow (str): If not 'none', use different default outflow parameterizations ('inflow')
+        mgenhance (bool): If True (default), add 0.2 dex to Mg/Fe
 
     Returns:
         model (array): All outputs of model.
@@ -194,6 +198,12 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
 
     # Initialize gas inflow
     model['f_in'] = f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)   
+    if inflow=='const':
+        model['f_in'] = np.ones_like(model['t']) * 0.03275 * 1e9
+    elif inflow=='gausslike':
+        model['f_in'] = 0.074 * 1e9 * model['t'] * np.exp(-(model['t']-0.5)**2/(2*0.25**2))
+
+    # Option to turn off inflow for reionization
     if reioniz:
         reioniz_idx = np.where(model['t'] > 0.6)
         model['f_in'][reioniz_idx] = 0.  # Reionization heating effectively stops gas inflow after z ~ 8.8
@@ -310,7 +320,11 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
             # Otherwise, if there is no gas, then the gas mass fraction is zero
             x_el = np.zeros(nel)
 
-        model['mout'][timestep,:] = f_out * x_el * (model['II_rate'][timestep] + model['Ia_rate'][timestep])
+        if outflow=='none':
+            outflowcoeff = f_out
+        elif outflow=='inflow':
+            outflowcoeff = f_out * model['f_in'][timestep]
+        model['mout'][timestep,:] = outflowcoeff * x_el * (model['II_rate'][timestep] + model['Ia_rate'][timestep])
         if rampressure and model['eps'][timestep-1,snindex['fe']] > -1.5:
                 model['mout'][timestep,:] += x_el * pars[13] * 1e6 #0.43 * (1+f_out) * sfr_norm
 
@@ -371,7 +385,7 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
 
     if plot:
         gce_plot.makeplots(model[:timestep-1], atomic, title=title, plot=True, skip_end_dots=-10, 
-        abunds=True, time=False, params=True, datasource='both', feh=feh_denom)
+        abunds=True, time=False, params=True, datasource='both', feh=feh_denom, mgenhance=mgenhance)
 
     if amr is not None:
         modeldata = np.hstack((model['eps'][:timestep-1,snindex['fe']], model['t'][:timestep-1, None]))
@@ -384,8 +398,13 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
     # Once model is done, define the model outputs that are useful for MCMC
     model = model[:timestep-1]
 
+    if mgenhance:
+        mg = model['eps'][:,snindex['mg']] - model['eps'][:,snindex['fe']] + 0.2
+    else:
+        mg = model['eps'][:,snindex['mg']] - model['eps'][:,snindex['fe']]
+
     elem_model = [model['eps'][:,snindex['fe']], #- model['eps'][:,snindex['h']], # [Fe/H]
-        model['eps'][:,snindex['mg']] - model['eps'][:,snindex['fe']] + 0.2,	# [Mg/Fe]
+        mg,	# [Mg/Fe]
         model['eps'][:,snindex['si']] - model['eps'][:,snindex['fe']],	# [Si/Fe]
         model['eps'][:,snindex['ca']] - model['eps'][:,snindex['fe']],	# [Ca/Fe]            
         model['eps'][:,snindex['c']] - model['eps'][:,snindex['fe']],     # [C/Fe] or [C/Mg]

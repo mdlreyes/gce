@@ -806,7 +806,7 @@ def initialize_empirical(yield_path='yields/', r_process_keyword='none', special
 
             # Yields with parameters to vary
             yields[2,:] = cnorm_agb * 1e-3 * (1.68-220*metallicity)*np.exp(-((AGB_mass-2)/0.6)**2/2)/(0.6*normpdfc)  # C
-            yields[10,:] = banorm_agb * 1e-8 * (1000*metallicity + 0.2)*np.exp(-((AGB_mass-(3.0-bamean_agb))/(0.75-100*metallicity))**2/2)/((0.75-100*metallicity)*normpdfc)  # Ba
+            yields[10,:] = banorm_agb * 1e-8 * (1000*metallicity + 0.2)*np.exp(-((AGB_mass-bamean_agb)/(0.75-100*metallicity))**2/2)/((0.75-100*metallicity)*normpdfc)  # Ba
             yields[11,:] = eunorm_agb * 1e-11 * (3400*metallicity + 0.4)*np.exp(-((AGB_mass-(2.2-eumean_agb))/0.65)**2/2)/(0.65*normpdfc)  # Eu
 
             yields /= dN_dM

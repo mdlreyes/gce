@@ -36,7 +36,7 @@ fe = True
 c = True
 
 # Put in initial guesses for parameters 
-params_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6, 0.33, 1.0, 0.] # initial values
+params_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6, 0.33, 2.0, 0.] # initial values
 if rampressure==False:
     del params_init[13]
 if baeu==False:
@@ -493,7 +493,7 @@ def lnprior(parameters):
     # Define uniform priors, based on values in Table 2 of Kirby+11
     if (0. < f_in_norm0 < 5.) and (0. < f_in_t0 < 1.) and (0. < f_out < 20.) and (0. < sfr_norm < 10.) and (0. < sfr_exp < 2.) and (0. < mgas0 < 1.) and \
         (0. < fe_ia < 0.9) and (0. < cexp_ii < 2.) and (0. < mgnorm_ii < 2.) and (0. < canorm_ii < 0.5) and (0.4 < cnorm_agb < 5.) and \
-        (0. < banorm_agb < 1.) and (0. < bamean_agb < 2.) and (0. <= ramconst < 5.):
+        (0. < banorm_agb < 1.) and (0. < bamean_agb < 10.) and (0. <= ramconst < 5.):
         return 0.0
     return -np.inf
 

@@ -50,7 +50,7 @@ import cycler
 import cmasher as cmr
 
 def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl', skip_end_dots=-1, NSM=False, 
-            plot_path='plots/', abunds=True, time=True, params=True, feh=True, cumulativeSFH=True): 
+            plot_path='plots/', abunds=True, time=True, params=True, feh=True, cumulativeSFH=True, mgenhance=True): 
     """Generates plots: [X/Fe] vs [Fe/H], [X/Fe] vs [time], model parameters vs time
 
     Args:
@@ -65,6 +65,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         abunds, time, params (bool): Types of plots
         feh (bool): If 'True', plot abundances as a function of [Fe/H]; else, as a function of [Mg/H]
         cumulativeSFH (bool): If 'True', plot cumulative SFH when plotting params
+        mgenhance (bool): If 'False' (default), add 0.2 dex to models
     """
 
     single_plot = False
@@ -96,10 +97,12 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         labels.append('Fe')
 
     # Open observed data
-    elem_data, delem_data, _ = getdata(galaxy='Scl', source='deimos', c=True, ba=True, mn=True, eu=True, ni=True, removerprocess='statistical', feh_denom=feh)
+    elem_data, delem_data, elems = getdata(galaxy='Scl', source='deimos', c=True, ba=True, mn=True, eu=True, ni=True, removerprocess='statistical', feh_denom=feh)
     if datasource=='dart' or datasource=='both':
         elem_data_dart, delem_data_dart, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, mn=True, eu=True, ni=True, removerprocess='statistical', feh_denom=feh)
     
+    print('test', elems)
+
     # Map content of observed elem_data to index
     if feh:
         obs_idx = {'Fe':0, 'Mg':1, 'Si':2, 'Ca':3, 'C':4, 'Ba':5, 'Mn':6, 'Eu':7, 'Ni':8}
@@ -123,7 +126,10 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
             x_step = 0.1
             x_plot = np.arange(-3.5,x_step,x_step)
         else:
-            x = model['eps'][:,snindex['Mg']] + 0.2
+            if mgenhance:
+                x = model['eps'][:,snindex['Mg']] + 0.2
+            else:
+                x = model['eps'][:,snindex['Mg']]
             x_step = 0.1
             x_plot = np.arange(-2.5,1.5,x_step)
             
@@ -208,17 +214,20 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
             # Plot model [X/Fe] (or [X/Mg])
             if feh:
                 modeldata = model['eps'][:,snindex[label]] - model['eps'][:,snindex['Fe']]
-                if label == 'Mg':
+                if label == 'Mg' and mgenhance:
                     # Add 0.2 to [Mg/Fe]
                     modeldata += 0.2
             else:
-                modeldata = model['eps'][:,snindex[label]] - (model['eps'][:,snindex['Mg']] + 0.2)
+                if mgenhance:
+                    modeldata = model['eps'][:,snindex[label]] - (model['eps'][:,snindex['Mg']] + 0.2)
+                else:
+                    modeldata = model['eps'][:,snindex[label]] - model['eps'][:,snindex['Mg']]
                 
             axs[i+1].plot(x,modeldata,'k.-', zorder=100)
             
             # Add title and labels
-            if i == 0:
-                axs[0].set_title(title)
+            #if i == 0:
+            #    axs[0].set_title(title)
             if feh:
                 denom_label = '/Fe]'
             else:
@@ -347,49 +356,49 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
 
     # Plot model parameters
     if params:
-        nplots = 6
-        fig, axs = plt.subplots(nplots, figsize=(5,11),sharex=True)#, sharey=True)
+        nplots = 4
+        fig, axs = plt.subplots(nplots, figsize=(5,7),sharex=True)#, sharey=True)
         fig.subplots_adjust(bottom=0.06,top=0.95, left = 0.2,wspace=0.29,hspace=0)
         plt.setp([a.yaxis.set_major_locator(MaxNLocator(nbins=5,prune=None)) for a in [fig.axes[0]]])
         plt.setp([a.yaxis.set_major_locator(MaxNLocator(nbins=5,prune='upper')) for a in fig.axes[1:]])
         plt.setp([a.get_xticklabels() for a in fig.axes[:-1]], visible=False)
         plt.setp([a.minorticks_on() for a in fig.axes[:]])
-        plt.suptitle("Final mass: %.2f x $10^6$ M$_\odot$"%(model['mgal'][-1]/1e6), y=0.97)
         print('test', model['mgal'][-1]/1e6, model['mstar'][-1]/1e6)
         print('final time:', model['t'][-1])
-        axs[0].set_title(title, y = 1.15)
+        #axs[0].set_title(title, y = 1.15)
         axs = axs.ravel()    
         
-        axs[0].plot(model['t'],model['f_in']/1e6,'k-')
-        axs[0].set_ylabel('$f_{in}$ $(10^6$ M$_\odot$ Gyr$^{-1})$')
-        axs[1].plot(model['t'],model['mgas']/1e6,'b-',label='gas')
-        axs[1].plot(model['t'],model['mstar']/1e6,'r-',label='stars')
-        axs[1].plot(model['t'],model['mgal']/1e6,'k-',label='total')
-        axs[1].set_ylabel('M $(10^6$ M$_\odot)$')
-        axs[2].plot(model['t'],model['mdot']/1e6,'k-')
-        axs[2].set_ylabel('SFR $(10^6$ M$_\odot$Gyr$^{-1})$')
-        axs[3].plot(model['t'],-1*np.sum(model['de_dt']/1e6,1),'b-',label='gas')
-        axs[3].plot(model['t'],-1*np.sum(model['dstar_dt']/1e6,1),'r-',label='stars')
-        axs[3].plot(model['t'],-1*np.sum(model['mout']/1e6,1),'k-',label='out')
-        axs[3].plot(model['t'],model['f_in']/1e6,'g-',label='in')
-        axs[3].set_ylabel('$\dot{M} (10^6$ M$_\odot$Gyr$^{-1})$')
-        axs[4].plot(model['t'],model['eps'][:,snindex['Fe']],'k-')
-        axs[4].set_ylabel('[Fe/H]')
-        #axs[4].set_ylabel('Z $(10^{-3})$')
-        axs[5].plot(model['t'],model['Ia_rate']*1e-3,'k-',label="SN Ia $(10^3)$")
-        axs[5].plot(model['t'],model['II_rate']*1e-3,'r-',label="SN II $(10^3)$")
-        axs[5].plot(model['t'],model['AGB_rate']*1e-4,'b-',label="AGB $(10^4)$")
-        axs[5].set_ylabel('Rate $($Gyr$^{-1})$')
+        #axs[0].plot(model['t'],model['f_in']/1e6,'k-')
+        #axs[0].set_ylabel('$f_{in}$ $(10^6$ M$_\odot$ Gyr$^{-1})$')
+        axs[0].plot(model['t'],model['mgas']/1e6,ls='--',color=plt.cm.Set2(0),label='gas')
+        axs[0].plot(model['t'],model['mstar']/1e6,ls=':',color=plt.cm.Set2(1),label='stars')
+        axs[0].plot(model['t'],model['mgal']/1e6,ls='-',color='k',label='total')
+        axs[0].set_ylabel('M $(10^6$ M$_\odot)$')
+        axs[0].set_title("Final mass: %.2f x $10^6$ M$_\odot$"%(model['mgal'][-1]/1e6), y=0.97)
+        #axs[2].plot(model['t'],model['mdot']/1e6,'k-')
+        #axs[2].set_ylabel('SFR $(10^6$ M$_\odot$Gyr$^{-1})$')
+        axs[1].plot(model['t'],-1*np.sum(model['de_dt']/1e6,1),ls='--',color=plt.cm.Set2(0),label='gas')
+        axs[1].plot(model['t'],-1*np.sum(model['dstar_dt']/1e6,1),ls=':',color=plt.cm.Set2(1),label='stars')
+        axs[1].plot(model['t'],-1*np.sum(model['mout']/1e6,1),ls='dashdot',color=plt.cm.Set2(2),label='out')
+        axs[1].plot(model['t'],model['f_in']/1e6,ls=(0,(3,5,1,5,1,5)),color=plt.cm.Set2(3),label='in')
+        axs[1].set_ylabel('$\dot{M} (10^6$ M$_\odot$Gyr$^{-1})$')
+        axs[2].plot(model['t'],model['eps'][:,snindex['Mg']],'k-')
+        axs[2].set_ylabel('[Mg/H]')
+        axs[3].plot(model['t'],model['II_rate']*1e-3,ls='-',color='k',label="CCSN $(10^3)$")
+        axs[3].plot(model['t'],model['AGB_rate']*1e-4,ls='--',color='k',label="AGB $(10^4)$")
+        axs[3].plot(model['t'],model['Ia_rate']*1e-3,ls=':',color='k',label="IaSN $(10^3)$")
+        axs[3].set_ylabel('Rate $($Gyr$^{-1})$')
+        axs[3].set_ylim((0,12.5))
         
         # Add legends                                          
-        axs[1].legend()
-        axs[3].legend()
-        axs[5].legend()    
+        axs[0].legend(fontsize=11)
+        axs[1].legend(fontsize=11)
+        axs[3].legend(fontsize=10)    
 
-        plt.xlabel('time (Gyr)')
+        plt.xlabel('Time (Gyr)')
         plt.xlim([0,1.7])
         plt.xticks([0.0,0.5,1.0,1.5])
-        plt.savefig((plot_path+title+'_time_param.png').replace(' ',''))
+        plt.savefig((plot_path+title+'_time_param.png').replace(' ',''), bbox_inches='tight')
         if plot==True: 
             plt.show()
         else:
@@ -405,7 +414,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         else:
             fig = plt.figure(figsize=(8,2))
         ax = plt.subplot()
-        plt.title(title, fontsize=16)
+        #plt.title(title, fontsize=16)
         plt.xlabel('Lookback time (Gyr)')
         plt.setp([a.minorticks_on() for a in fig.axes[:]])
         if cumulativeSFH:

@@ -364,8 +364,8 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, ni=False, eu=F
     if feh_denom==False:
 
         # Temporary (needed for plotting): add another row to data table, including [Fe/Mg]
-        #data = np.vstack((data, data[0,:]))
-        #errs = np.vstack((errs, errs[0,:]))
+        data = np.vstack((data, data[0,:]))
+        errs = np.vstack((errs, errs[0,:]))
 
         for i in range(len(data[1,:])):
 
@@ -376,8 +376,8 @@ def getdata(galaxy, source='deimos', c=False, ba=False, mn=False, ni=False, eu=F
                     errs[elem,i] = np.sqrt(errs[elem,i]**2. + errs[1,i]**2.)
 
                 # Temporary: convert [Fe/H] -> [Fe/Mg]
-                #data[-1,i] = -data[1,i]
-                #errs[-1,i] = errs[1,i]
+                data[-1,i] = -data[1,i]
+                errs[-1,i] = errs[1,i]
 
                 # Convert [Mg/Fe] -> [Mg/H]
                 data[1,i] = data[1,i] + data[0,i]
@@ -426,14 +426,13 @@ def maketable(source):
     
     # DART table
     if source=='dart':
-        elem_dart, delem_dart, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, removerprocess='statistical', mn=True, ni=True, feh_denom=True, outlier_reject=False)
+        elem_dart, delem_dart, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, removerprocess='statistical', mn=True, ni=True, eu=True, feh_denom=True, outlier_reject=False)
         table = ascii.read("data/hill19.dat")
         names = np.array(table['Star'])
         coordtable = ascii.read("data/dartcoords.dat")
         coordnames = np.array(coordtable['Star'])
 
-        elem_dart_nos, delem_dart_nos, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, removerprocess=None, mn=True, ni=True, feh_denom=True, outlier_reject=False)
-        
+        elem_dart_nos, delem_dart_nos, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, removerprocess=None, mn=True, ni=True, eu=True, feh_denom=True, outlier_reject=False)
         # Open text file
         workfile = 'output/dart.txt'
         with open(workfile, 'w', newline='') as f:
@@ -449,10 +448,11 @@ def maketable(source):
                     cafe = '$'+str(elem_dart[3,i])+'\pm'+"{:.2f}".format(delem_dart[3,i])+'$'
                     cfe = '$'+str(elem_dart[4,i])+'\pm'+"{:.2f}".format(delem_dart[4,i])+'$'
                     mnfe = '$'+"{:.2f}".format(elem_dart[6,i])+'\pm'+"{:.2f}".format(delem_dart[6,i])+'$'
-                    nife = '$'+"{:.2f}".format(elem_dart[7,i])+'\pm'+"{:.2f}".format(delem_dart[7,i])+'$'
+                    nife = '$'+"{:.2f}".format(elem_dart[8,i])+'\pm'+"{:.2f}".format(delem_dart[8,i])+'$'
                     bafe_s = '$'+"{:.2f}".format(elem_dart[5,i])+'\pm'+"{:.2f}".format(delem_dart[5,i])+'$'
                     bafe = '$'+str(elem_dart_nos[5,i])+'\pm'+"{:.2f}".format(delem_dart_nos[5,i])+'$'
-                    line = ['Scl', name, ra, dec, feh, mgfe, sife, cafe, cfe, mnfe, nife, bafe, bafe_s, '\\\\']
+                    eufe = '$'+str(elem_dart_nos[7,i])+'\pm'+"{:.2f}".format(delem_dart_nos[7,i])+'$'
+                    line = ['Scl', name, ra, dec, feh, mgfe, sife, cafe, cfe, mnfe, nife, bafe, bafe_s, eufe, '\\\\']
                     writer = csv.writer(f, delimiter='&')
                     writer.writerow(line)
 
@@ -520,5 +520,6 @@ if __name__ == "__main__":
     #elem_dart, delem_dart, elems = getdata(galaxy='Scl', source='dart', c=True, ba=True, removerprocess='statistical', feh_denom=True) #, eu=baeu)   
     #print(elems)
     #print(elem_dart[-1,:])
-    #maketable('dart')
-    plotdata(elem='Ba', rprocess='statistical')
+    #maketable('deimos')
+    maketable('dart')
+    #plotdata(elem='Ba', rprocess='statistical')
