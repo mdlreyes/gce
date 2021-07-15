@@ -129,8 +129,9 @@ def compare_yields(plottype, feh_denom=True):
         removerprocess='statistical'
 
     # Open observed data
-    elem_data, delem_data, elems = getdata(galaxy='Scl', source='deimos', c=True, ba=True, mn=True, eu=True, ni=True, removerprocess=removerprocess, feh_denom=feh_denom)
-    elem_data_dart, delem_data_dart, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, mn=True, eu=True, ni=True, removerprocess=removerprocess, feh_denom=feh_denom)
+    elem_data, delem_data, elems = getdata(galaxy='Scl', source='deimos', c=True, ba=True, mn=True, eu=True, ni=True, removerprocess=removerprocess) #, feh_denom=feh_denom)
+    elem_data_dart, delem_data_dart, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, mn=True, eu=True, ni=True, removerprocess=removerprocess) #, feh_denom=feh_denom)
+    print('test', elems)
 
     # Get [Fe/H] DEIMOS data
     x_obs = elem_data[0,:]
@@ -211,22 +212,15 @@ def compare_yields(plottype, feh_denom=True):
         # Make plot
         fig, axs = plt.subplots(2, figsize=(6,4), sharex=True)
         fig.subplots_adjust(bottom=0.06,top=0.97, left = 0.2,wspace=0.29,hspace=0)
-        if feh_denom:
-            plt.xlabel('[Fe/H]')
-            plt.xlim([-3.5,0])
-        else:
-            plt.xlabel('[Mg/H]')
-            plt.xlim([-3,0])
+        plt.xlabel('[Fe/H]')
+        plt.xlim([-3.5,0])
 
         # Titles
         titles = ['No r-process','Prompt r-process (typical CCSNe only)','Delayed r-process ('+r'$t^{-1.5}$ DTD, '+r'$t_{\mathrm{min}}=10$ Myr)','Prompt+delayed']
         rprocesskeywords = ['none','typical_SN_only','rare_event_only','both']
 
         labels = ['Ba','Eu']
-        if feh_denom:
-            elem_idx = [5,7]
-        else:
-            elem_idx = [4,6]
+        elem_idx = [5,7]
 
         for idx, label in enumerate(labels):
             if feh_denom:
@@ -239,15 +233,23 @@ def compare_yields(plottype, feh_denom=True):
                 axs[idx].set_ylim([-3,2])
 
             # Plot observed DEIMOS data
-            obs_data = elem_data[elem_idx[idx],obsmask]
-            obs_errs = delem_data[elem_idx[idx],obsmask]
+            if feh_denom:
+                obs_data = elem_data[elem_idx[idx],obsmask]
+                obs_errs = delem_data[elem_idx[idx],obsmask]
+            else:
+                obs_data = elem_data[elem_idx[idx],obsmask] - elem_data[1,obsmask]
+                obs_errs = np.sqrt(delem_data[elem_idx[idx],obsmask]**2. + delem_data[1,obsmask]**2.)
             goodidx = np.where((x_obs > -990) & (obs_data > -990) & (np.abs(obs_errs) < 0.4) & (np.abs(x_errs) < 0.4))[0]
             axs[idx].errorbar(x_obs[goodidx], obs_data[goodidx], xerr=x_errs[goodidx], yerr=obs_errs[goodidx], 
                                         color=plt.cm.Set3(0), linestyle='None', marker='o', markersize=3, alpha=0.7, linewidth=0.5)
 
             # Repeat for DART data
-            obs_data = elem_data_dart[elem_idx[idx],obsmask_dart]
-            obs_errs = delem_data_dart[elem_idx[idx],obsmask_dart]
+            if feh_denom:
+                obs_data = elem_data_dart[elem_idx[idx],obsmask_dart]
+                obs_errs = delem_data_dart[elem_idx[idx],obsmask_dart]
+            else:
+                obs_data = elem_data_dart[elem_idx[idx],obsmask_dart] - elem_data_dart[1,obsmask_dart]
+                obs_errs = np.sqrt(delem_data_dart[elem_idx[idx],obsmask_dart]**2. + delem_data_dart[1,obsmask_dart]**2.)
             goodidx = np.where((x_obs_dart > -990) & (obs_data > -990) & (np.abs(obs_errs) < 0.4) & (np.abs(x_errs_dart) < 0.4))[0]
             axs[idx].errorbar(x_obs_dart[goodidx], obs_data[goodidx], xerr=x_errs_dart[goodidx], yerr=obs_errs[goodidx], 
                             mfc='white', mec=plt.cm.Set3(3), ecolor=plt.cm.Set3(3), linestyle='None', marker='o', markersize=3, linewidth=0.5)
@@ -271,7 +273,7 @@ def compare_yields(plottype, feh_denom=True):
                     x = model['eps'][:,snindex['Fe']]
                     y = model['eps'][:,snindex[label]] - model['eps'][:,snindex['Fe']]
                 else:
-                    x = model['eps'][:,snindex['Mg']] + 0.2
+                    x = model['eps'][:,snindex['Fe']]
                     y = model['eps'][:,snindex[label]] - (model['eps'][:,snindex['Mg']] + 0.2)
                 axs[idx].plot(x, y, color=cwheel[line_idx], linestyle='-', lw=4, label=titles[line_idx], zorder=100)
 
@@ -287,12 +289,8 @@ def compare_yields(plottype, feh_denom=True):
         # Make plot
         fig, axs = plt.subplots(2, figsize=(6,4), sharex=True)
         fig.subplots_adjust(bottom=0.06,top=0.97, left = 0.2,wspace=0.29,hspace=0)
-        if feh_denom:
-            plt.xlabel('[Fe/H]')
-            plt.xlim([-3.5,0])
-        else:
-            plt.xlabel('[Mg/H]')
-            plt.xlim([-3,0])
+        plt.xlabel('[Fe/H]')
+        plt.xlim([-3.5,0])
 
         # Titles
         titles = ['Prompt r-process (20x Ba yield, 5x Eu yield)','Prompt (20x Ba yield, 5x Eu yield) + delayed','Delayed r-process ('+r'$t_{\mathrm{min}}=50$ Myr, 5x normalization)','Prompt + delayed ('+r'$t_{\mathrm{min}}=50$ Myr, 5x normalization)']
@@ -305,10 +303,7 @@ def compare_yields(plottype, feh_denom=True):
         cwheel = [color[1],color[3],color[2],color[3]]
 
         labels = ['Ba','Eu']
-        if feh_denom:
-            elem_idx = [5,7]
-        else:
-            elem_idx = [4,6]
+        elem_idx = [5,7]
 
         for idx, label in enumerate(labels):
             if feh_denom:
@@ -321,15 +316,23 @@ def compare_yields(plottype, feh_denom=True):
                 axs[idx].set_ylim([-3,2])
 
             # Plot observed DEIMOS data
-            obs_data = elem_data[elem_idx[idx],obsmask]
-            obs_errs = delem_data[elem_idx[idx],obsmask]
+            if feh_denom:
+                obs_data = elem_data[elem_idx[idx],obsmask]
+                obs_errs = delem_data[elem_idx[idx],obsmask]
+            else:
+                obs_data = elem_data[elem_idx[idx],obsmask] - elem_data[1,obsmask]
+                obs_errs = np.sqrt(delem_data[elem_idx[idx],obsmask]**2. + delem_data[1,obsmask]**2.)
             goodidx = np.where((x_obs > -990) & (obs_data > -990) & (np.abs(obs_errs) < 0.4) & (np.abs(x_errs) < 0.4))[0]
             axs[idx].errorbar(x_obs[goodidx], obs_data[goodidx], xerr=x_errs[goodidx], yerr=obs_errs[goodidx], 
                                         color=plt.cm.Set3(0), linestyle='None', marker='o', markersize=3, alpha=0.7, linewidth=0.5)
 
             # Repeat for DART data
-            obs_data = elem_data_dart[elem_idx[idx],obsmask_dart]
-            obs_errs = delem_data_dart[elem_idx[idx],obsmask_dart]
+            if feh_denom:
+                obs_data = elem_data_dart[elem_idx[idx],obsmask_dart]
+                obs_errs = delem_data_dart[elem_idx[idx],obsmask_dart]
+            else:
+                obs_data = elem_data_dart[elem_idx[idx],obsmask_dart] - elem_data_dart[1,obsmask_dart]
+                obs_errs = np.sqrt(delem_data_dart[elem_idx[idx],obsmask_dart]**2. + delem_data_dart[1,obsmask_dart]**2.)
             goodidx = np.where((x_obs_dart > -990) & (obs_data > -990) & (np.abs(obs_errs) < 0.4) & (np.abs(x_errs_dart) < 0.4))[0]
             axs[idx].errorbar(x_obs_dart[goodidx], obs_data[goodidx], xerr=x_errs_dart[goodidx], yerr=obs_errs[goodidx], 
                             mfc='white', mec=plt.cm.Set3(3), ecolor=plt.cm.Set3(3), linestyle='None', marker='o', markersize=3, linewidth=0.5)
@@ -347,7 +350,7 @@ def compare_yields(plottype, feh_denom=True):
                     x = model['eps'][:,snindex['Fe']]
                     y = model['eps'][:,snindex[label]] - model['eps'][:,snindex['Fe']]
                 else:
-                    x = model['eps'][:,snindex['Mg']] + 0.2
+                    x = model['eps'][:,snindex['Fe']]
                     y = model['eps'][:,snindex[label]] - (model['eps'][:,snindex['Mg']] + 0.2)
                 axs[idx].plot(x, y, color=cwheel[line_idx], linestyle=ls[line_idx], lw=4, label=titles[line_idx], zorder=100)
 
@@ -366,5 +369,5 @@ if __name__=="__main__":
     #compare_sfh(['fiducial','iadtd_medhimin','iadtd_index05','iadtd_cutoff'], 'iadtd', fiducialtitle='Fiducial: '+r'$t^{-1.1}$, '+r'$t_{\mathrm{min}}=100$Myr')
     #compare_sfh(['fiducial','imf_chabrier','imf_salpeter'], 'imf', fiducialtitle='Fiducial: Kroupa et al. (1993) IMF')
     #compare_yields('IaSN')
-    compare_yields('rprocess') #, feh_denom=False)
-    compare_yields('rprocess_bestfit') #, feh_denom=False)
+    compare_yields('rprocess', feh_denom=False)
+    compare_yields('rprocess_bestfit', feh_denom=False)

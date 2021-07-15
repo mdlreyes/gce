@@ -101,14 +101,12 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
     if datasource=='dart' or datasource=='both':
         elem_data_dart, delem_data_dart, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, mn=True, eu=True, ni=True, removerprocess='statistical', feh_denom=feh)
     
-    print('test', elems)
-
     # Map content of observed elem_data to index
     if feh:
         obs_idx = {'Fe':0, 'Mg':1, 'Si':2, 'Ca':3, 'C':4, 'Ba':5, 'Mn':6, 'Eu':7, 'Ni':8}
     else:
         obs_idx = {'Mg':0, 'Si':1, 'Ca':2, 'C':3, 'Ba':4, 'Mn':5, 'Eu':6, 'Ni':7, 'Fe':8}
-    print(elem_names, snindex, labels, obs_idx)
+    #print(elem_names, snindex, labels, obs_idx)
 
     if abunds:
         # Plot abundances vs Fe
@@ -192,7 +190,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
                     totalerrs = np.sqrt(delem_data[obs_idx[label],obsmask]**2. + x_errs**2.)
                     goodidx = np.where((x_obs > -990) & (obs_data > -990) & 
                                     (np.abs(obs_errs) < 0.4) & (np.abs(x_errs) < 0.4))[0]
-                    print(label, i, obs_idx[label], snindex[label], len(obs_data), len(obs_data[goodidx]))
+                    #print(label, i, obs_idx[label], snindex[label], len(obs_data), len(obs_data[goodidx]))
                     #axs[i+1].scatter(feh_obs[goodidx], obs_data[goodidx], c='r', s=0.8/(totalerrs[goodidx])**2., alpha=0.5)
                     axs[i+1].errorbar(x_obs[goodidx], obs_data[goodidx], xerr=x_errs[goodidx], yerr=obs_errs[goodidx], 
                                     color=plt.cm.Set3(0), linestyle='None', marker='o', markersize=3, alpha=0.7, linewidth=0.5)
@@ -363,8 +361,8 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         plt.setp([a.yaxis.set_major_locator(MaxNLocator(nbins=5,prune='upper')) for a in fig.axes[1:]])
         plt.setp([a.get_xticklabels() for a in fig.axes[:-1]], visible=False)
         plt.setp([a.minorticks_on() for a in fig.axes[:]])
-        print('test', model['mgal'][-1]/1e6, model['mstar'][-1]/1e6)
-        print('final time:', model['t'][-1])
+        #print('test', model['mgal'][-1]/1e6, model['mstar'][-1]/1e6)
+        #print('final time:', model['t'][-1])
         #axs[0].set_title(title, y = 1.15)
         axs = axs.ravel()    
         
@@ -382,11 +380,12 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         axs[1].plot(model['t'],-1*np.sum(model['mout']/1e6,1),ls='dashdot',color=plt.cm.Set2(2),label='out')
         axs[1].plot(model['t'],model['f_in']/1e6,ls=(0,(3,5,1,5,1,5)),color=plt.cm.Set2(3),label='in')
         axs[1].set_ylabel('$\dot{M} (10^6$ M$_\odot$Gyr$^{-1})$')
-        axs[2].plot(model['t'],model['eps'][:,snindex['Mg']],'k-')
-        axs[2].set_ylabel('[Mg/H]')
+        axs[2].plot(model['t'],model['eps'][:,snindex['Fe']],'k-')
+        axs[2].set_ylabel('[Fe/H]')
         axs[3].plot(model['t'],model['II_rate']*1e-3,ls='-',color='k',label="CCSN $(10^3)$")
         axs[3].plot(model['t'],model['AGB_rate']*1e-4,ls='--',color='k',label="AGB $(10^4)$")
         axs[3].plot(model['t'],model['Ia_rate']*1e-3,ls=':',color='k',label="IaSN $(10^3)$")
+        #axs[3].plot(model['t'],model['NSM_rate']*1e-3,ls='-',color='r',label="NSM $(10^3)$")
         axs[3].set_ylabel('Rate $($Gyr$^{-1})$')
         axs[3].set_ylim((0,12.5))
         
@@ -444,9 +443,9 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
             # Compute cumulative SFH
             sfr = model['mdot']/1e5 # 1e-4 Mdot/yr
             cumsfr = np.cumsum(sfr)/np.nansum(sfr) # Compute normalized SFH
-            p1, = plt.plot(13.791 - model['t'],cumsfr, ls='-', lw=2, color='k')
+            p1, = plt.plot(13.791 - 0.5 - model['t'],cumsfr, ls='-', lw=2, color='k')
         else:
-            p1, = plt.plot(13.791 - model['t'],model['mdot']/1e5, ls='-', lw=2, color='k')
+            p1, = plt.plot(13.791 - 0.5 - model['t'],model['mdot']/1e5, ls='-', lw=2, color='k')
         handles.append(p1)
         labels.append('This work')
 
@@ -475,8 +474,6 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         cumsfh_uplim = np.asarray([0]+[float(weisz['Ut'+name][scl_idx]) for name in colnames])
         cumsfh_lolim = np.asarray([0]+[float(weisz['Lt'+name][scl_idx]) for name in colnames])
         if cumulativeSFH:
-            print(t)
-            print(cumsfh)
             p3, = plt.plot(t, cumsfh, ls='dashdot', lw=2, color=plt.cm.Set2(2))
             p4 = plt.fill_between(t, cumsfh-cumsfh_lolim, cumsfh+cumsfh_uplim, color=plt.cm.Set2(2), alpha=0.3)
             handles.append((p3,p4))

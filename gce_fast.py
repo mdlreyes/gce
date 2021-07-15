@@ -137,7 +137,7 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
         nel, eps_sun, atomic, weight, f_ia_metallicity, f_ii_metallicity, f_agb_metallicity, f_nsm_metallicity = gce_yields.initialize_empirical(
             Ia_source=params.Ia_source, II_source=params.II_source, AGB_source=params.AGB_source, 
             r_process_keyword=rprocess, specialrprocess=specialrprocess, II_mass=m_himass, AGB_mass=m_intmass, fit=empiricalfit)
-        print(nel, atomic)
+        #print(nel, atomic)
 
         #print('empirical', f_ii_metallicity(0)[np.where(atomic == 6)[0],:25])
         #return
@@ -157,7 +157,7 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
 
     # Create array to hold model outputs
     model = np.zeros(n, dtype=[('t','float64'),('f_in','float64'),('mgas','float64'),\
-        ('Ia_rate','float64'),('II_rate','float64'),('AGB_rate','float64'),\
+        ('Ia_rate','float64'),('II_rate','float64'),('AGB_rate','float64'),('NSM_rate','float64'),\
         ('de_dt','float64',(nel)),('dstar_dt','float64',(nel)),\
         ('abund','float64',(nel)),('eps','float64',(nel)),('mout','float64',(nel)),\
         ('z','float64'),('mdot','float64'),('mgal','float64'),('mstar','float64')])
@@ -229,6 +229,7 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
     else:
         maxtime = 0.01
 
+    #nsmcheck = False
     while ((timestep < (n-1)) and ((timestep*delta_t <= maxtime) or 
     ( (model['mgas'][timestep] > 0.0) and (model['eps'][timestep-1,snindex['fe']] < 0.0) ) )):
 
@@ -279,6 +280,7 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
         if rprocess in ['rare_event_only', 'both']:
             n_nsmexplosion = model['mdot'][timestep] * n_nsm       # Number of NSMs that will explode in the future
             M_Ia_arr[:,timestep:] += n_nsmexplosion[:(n-timestep)][None,:] * f_nsm_metallicity()[:,None]
+            model['NSM_rate'][timestep:] += n_nsmexplosion[:(n-timestep)]
 
         # Eq. 8: rate of Type II SNe that will explode IN THE FUTURE
         goodidxnew = goodidx
@@ -358,6 +360,10 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
         model['eps'][timestep] = 12.0 + model['eps'][timestep] - model['eps'][timestep,0] - eps_sun # Logarithmic number density relative to hydrogen, relative to sun
         #print('test', model['eps'][timestep,snindex['fe']])
 
+        #if model['NSM_rate'][timestep] > 1 and nsmcheck==False:
+        #    print('first NSM:', model['NSM_rate'][timestep], model['eps'][timestep, snindex['fe']], model['t'][timestep])
+        #    nsmcheck=True
+
         # Calculate the stellar mass of the galaxy at a given timestep,
         # using trapezoidal rule to integrate from previous timestep
         if timestep > 0:
@@ -379,7 +385,7 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
         # Increment timestep
         timestep += 1
 
-    print('why stop?', timestep, model['mgas'][timestep], model['eps'][timestep-1,snindex['fe']])
+    #print('why stop?', timestep, model['mgas'][timestep], model['eps'][timestep-1,snindex['fe']])
     #print('test Ba', model['abund'][:timestep-1, snindex['ba']])
     #print('test Ba', model['eps'][:timestep-1, snindex['ba']])
 
