@@ -82,4 +82,4 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, 
 
 if __name__ == "__main__":
 
-    plotmcmc(file='output/mgcheck.npy', burnin=8000, empiricalfit=True, c=True, fe=True, rampressure=True)
+    plotmcmc(file='output/bapriorcheck.npy', burnin=5000, empiricalfit=True, c=True, fe=True, rampressure=True)

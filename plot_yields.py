@@ -245,7 +245,7 @@ def getyields(yieldsource, yield_path='yields/', imfweight=None, empirical=False
                 c4 = 0.5
                 c5 = 0.2
                 yields[2,:,:] = fit[4]*np.array([[1e-3 * normal(mass, (1.68-220*metal), 2, 0.6) for metal in Z] for mass in M]).T # C
-                yields[10,:,:] = c2*np.array([[1e-8 * normal(mass, (1000*metal + 0.2), 3.0-c3, (0.75-100*metal)) for metal in Z] for mass in M]).T # Ba
+                yields[10,:,:] = c2*np.array([[1e-8 * normal(mass, (1000*metal + 0.2), c3, (0.75-100*metal)) for metal in Z] for mass in M]).T # Ba
                 yields[11,:,:] = c4*np.array([[1e-11 * normal(mass, (3400*metal + 0.4), 2.2-c5, 0.65) for metal in Z] for mass in M]).T # Eu
 
         else:
@@ -591,5 +591,5 @@ if __name__ == "__main__":
     #plotyields('CCSN', empirical=False, empiricalfit=[0.8, 1., 1., 0., 0.6], weakrprocess=True)
     #[1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6, 0.33, 1.0] 
     #plotyields('CCSN', empirical=False, empiricalfit=[0.54901945, 1.31771318, 0.81434372, 0.22611351, 1.64741211, 0.93501212, 0.034125], weakrprocess=True)
-    plotyields('CCSN', empirical=False, empiricalfit=[0.563019743600889,1.2909839533334972,0.8604762167017103,0.2864776957718226,1.5645763678916176,0.8939183631841486,0.014997329848299233])
+    plotyields('AGB', empirical=False, empiricalfit=[0.5394764248347781,1.3204750735928574,1.359457919837111,0.13139217074287995,1.612782258893653,0.36473661768759114,4.402225273291386])
     #plotyields('IaSN', empirical=False) #fit='powerlaw', func=[840*Z, (0.9), -(80*Z + 0.04)])
