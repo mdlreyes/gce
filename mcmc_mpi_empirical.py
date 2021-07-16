@@ -470,7 +470,7 @@ def lnprior(parameters):
     cnorm_agb = 0.6
     fe_ia = 0.8
     banorm_agb=0.33
-    bamean_agb=1.0
+    bamean_agb=2.0
     ramconst = 0.
 
     if fe:
