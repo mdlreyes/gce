@@ -210,7 +210,7 @@ def dtd_agb(t,imf_model):
 def dtd_nsm(t):
     """DTD for NSMs"""
 
-    t_nsm = 5e-2  # (Gyr) from Fig 7 of Cote+17
+    t_nsm = 1e-2  # (Gyr) from Fig 7 of Cote+17
     rate = (1e-4)*t**(-1.5)  # normalization & slope from Simonetti+19
     w = np.where(t <= t_nsm)[0]
     if len(w) > 0: rate[w] = 0.0

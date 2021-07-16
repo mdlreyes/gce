@@ -493,12 +493,12 @@ def lnprior(parameters):
     # Define uniform priors, based on values in Table 2 of Kirby+11
     if not ((0. < f_in_norm0 < 5.) and (0. < f_in_t0 < 1.) and (0. < f_out < 20.) and (0. < sfr_norm < 10.) and (0. < sfr_exp < 2.) and (0. < mgas0 < 1.) and \
         (0. < fe_ia < 0.9) and (0. < cexp_ii < 2.) and (0. < mgnorm_ii < 2.) and (0. < canorm_ii < 0.5) and (0.4 < cnorm_agb < 5.) and \
-        (0. < bamean_agb < 10.) and (0. <= ramconst < 5.)):
+        (0. < banorm_agb < 2.) and (0. <= ramconst < 5.)):
         return -np.inf
     # Add Gaussian prior on Ba norm
     mu = 2
     sigma = 0.5
-    return np.log(1.0/(np.sqrt(2*np.pi)*sigma))-0.5*(banorm_agb-mu)**2/sigma**2
+    return np.log(1.0/(np.sqrt(2*np.pi)*sigma))-0.5*(bamean_agb-mu)**2/sigma**2
 
 
 # Define the full log-probability function

@@ -96,13 +96,14 @@ if __name__ == "__main__":
     scl_imf_salpeter55 = [0.5089476125938007,0.32350548351207437,5.391102320123509,0.4003999995632118,0.7799460946453387,0.5549969145097149,0.6164885754010938,1.3299979696872426,0.7198534106528632,0.25245975628500583,2.182828951358294,0.9847378266515173,3-0.00954264476609045]
     scl_mgcheck = [0.4685350807295695,0.2930810581739879,4.947387216260614,0.5464805995104087,0.7747652694289181,0.4078297444014555,0.5739239133417713,1.2917207950984766,1.5329631705384767,0.31293591755074057,1.682734668459577,0.7616876354982305,3-0.017395358440185527]
     scl_widebapriors = [0.4521099853438738,0.2952864706519592,4.678167117614617,0.49429150574753844,1.0791120084785661,0.39783737519782053,0.5394764248347781,1.3204750735928574,1.359457919837111,0.13139217074287995,1.612782258893653,0.36473661768759114,4.402225273291386]
+    scl_gaussbapriors = [0.44672466816566503,0.2975930337137582,4.694298932335821,0.5000743077904182,1.1068892113036302,0.6638179607871335,0.5340812636523801,1.3227024928944402,1.366138716382358,0.12336510999811984,1.5878278633786311,0.3389306202784404,4.588309932485521]
 
     #model, atomic, _ = gce.runmodel(scl_init, plot=True, title="Sculptor dSph (Initial conditions)", empirical=True, empiricalfit=True, feh_denom=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, _ = gce.runmodel(scl_mcmc_widerpriors, plot=True, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, _ = gce.runmodel(scl_test_nofe_baeu, plot=True, title="Sculptor dSph (no Fe, with Ba)", empirical=True, empiricalfit=True, feh_denom=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, _ = gce.runmodel(scl_test_nofe_ba, plot=True, title="Sculptor dSph (no Fe, with DART Ba)", empirical=True, empiricalfit=True, feh_denom=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     
-    model, atomic, _ = gce.runmodel(scl_test_bothba_ba, plot=True, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
+    #model, atomic, _ = gce.runmodel(scl_test_bothba_ba, plot=True, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, _ = gce.runmodel(scl_mgcheck, plot=True, title="Sculptor dSph (Mg check)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False)
     #model, atomic, _ = gce.runmodel(scl_delaySFtest, plot=True, title="Sculptor dSph (delayed SF)", empirical=True, empiricalfit=True, feh_denom=True, delay=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, _ = gce.runmodel(scl_iadtd_maoz17, plot=True, title="Sculptor dSph (Maoz+17 field Ia DTD)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='maoz17') #, amr="plots/amr_test", sfh="plots/sfh_test")
@@ -120,3 +121,4 @@ if __name__ == "__main__":
     #model, atomic, _ = gce.runmodel(scl_test_bothba_ba, plot=True, title="Sculptor dSph (outflow prop to inflow)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, outflow='inflow') #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, _ = gce.runmodel(scl_test_bothba_ba, plot=True, title="Sculptor dSph (NSM check)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, rprocess='rare_event_only') #, amr="plots/amr_test", sfh="plots/sfh_test")
     model, atomic, _ = gce.runmodel(scl_widebapriors, plot=True, title="Sculptor dSph (wider Ba priors)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
+    model, atomic, _ = gce.runmodel(scl_gaussbapriors, plot=True, title="Sculptor dSph (Gaussian Ba priors)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False) #, amr="plots/amr_test", sfh="plots/sfh_test")    

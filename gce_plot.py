@@ -385,9 +385,10 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         axs[3].plot(model['t'],model['II_rate']*1e-3,ls='-',color='k',label="CCSN $(10^3)$")
         axs[3].plot(model['t'],model['AGB_rate']*1e-4,ls='--',color='k',label="AGB $(10^4)$")
         axs[3].plot(model['t'],model['Ia_rate']*1e-3,ls=':',color='k',label="IaSN $(10^3)$")
-        #axs[3].plot(model['t'],model['NSM_rate']*1e-3,ls='-',color='r',label="NSM $(10^3)$")
+        axs[3].plot(model['t'],model['NSM_rate']*1e-3,ls='-',color='r',label="NSM $(10^3)$")
         axs[3].set_ylabel('Rate $($Gyr$^{-1})$')
         axs[3].set_ylim((0,12.5))
+        print('test NSM', np.trapz(model['NSM_rate'],x=model['t']))
         
         # Add legends                                          
         axs[0].legend(fontsize=11)
