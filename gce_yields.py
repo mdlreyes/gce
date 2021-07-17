@@ -767,6 +767,7 @@ def initialize_empirical(yield_path='yields/', r_process_keyword='none', special
             yields[6,:] = 1e-8 * (1000 * II_mass**(-2.3))  # Ti
             yields[7,:] = 1e-7 * (30 * II_mass**(-1.32) - 0.25)  # Mn
             yields[8,:] = 1e-5 * (2722 * II_mass**(-2.77))  # Fe
+            #yields[9,:] = 1e-6 * (8000 * II_mass**(-3.6))  # Ni (Nomoto+13 values)
             yields[9,:] = 1e-6 * (8000 * II_mass**(-3.2))  # Ni (use Limongi 18 values for now)
 
             if r_process_keyword in ['typical_SN_only','both']:

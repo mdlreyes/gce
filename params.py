@@ -21,7 +21,7 @@ AGB_source = 'cri15'
 Ia_source = 'leu20'
 
 # SNII yield source: 'nom06', 'nom13', 'lim18'
-II_source = 'nom13'
+II_source = 'lim18'
 
 # r-process options: 'none', 'typical_SN_only', 'rare_event_only', 'both'
 r_process_keyword='none' #'rare_event_only'

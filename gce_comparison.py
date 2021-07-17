@@ -66,7 +66,6 @@ def compare_sfh(models, title, fiducialtitle='Fiducial'):
     model_chabrier, _, ll_chabrier = gce.runmodel(scl_imf_chabrier03, plot=False, title="Sculptor dSph (Chabrier+03 IMF)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, imf='chabrier03')
     model_salpeter, _, ll_salpeter = gce.runmodel(scl_imf_salpeter55, plot=False, title="Sculptor dSph (Salpeter+55 IMF)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, imf='salpeter55')
 
-
     # Get model names
     modelnames = {'fiducial':model, 'reioniz':model_reioniz, 'delaysf':model_delaysf, 'rampressure':model_rampressure,
                 'iadtd_maoz17':model_maoz17, 'iadtd_lomin':model_lomin, 'iadtd_himin':model_himin, 'iadtd_medhimin':model_medhimin, 'iadtd_index05':model_loindex, 'iadtd_index15':model_hiindex, 'iadtd_cutoff':model_cutoff,
@@ -368,6 +367,6 @@ if __name__=="__main__":
     #compare_sfh(['fiducial','delaysf','reioniz','rampressure'], 'modelconstruction')
     #compare_sfh(['fiducial','iadtd_medhimin','iadtd_index05','iadtd_cutoff'], 'iadtd', fiducialtitle='Fiducial: '+r'$t^{-1.1}$, '+r'$t_{\mathrm{min}}=100$Myr')
     #compare_sfh(['fiducial','imf_chabrier','imf_salpeter'], 'imf', fiducialtitle='Fiducial: Kroupa et al. (1993) IMF')
-    #compare_yields('IaSN')
-    compare_yields('rprocess', feh_denom=False)
-    compare_yields('rprocess_bestfit', feh_denom=False)
+    compare_yields('IaSN')
+    #compare_yields('rprocess', feh_denom=False)
+    #compare_yields('rprocess_bestfit', feh_denom=False)
