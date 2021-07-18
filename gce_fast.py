@@ -62,7 +62,7 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
 
     # Prepare arrays for SNe and AGB calculations
     n_wd = dtd.dtd_ia(t, ia_dtd) * delta_t      # Fraction of stars that will explode as Type Ia SNe in future
-    print('test', n_wd)
+    #print('test', n_wd)
 
     m_himass, n_himass = dtd.dtd_ii(t, imf)       # Mass and fraction of stars that will explode in the future
     goodidx = np.where((m_himass > params.M_SN_min) & (m_himass < params.M_SN_max))[0]  # Limit to timesteps where stars will explode as CCSN
@@ -79,7 +79,7 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
             n_nsm = dtd.dtd_nsm_enhanced(t) * delta_t      # Fraction of stars that will explode as NSMs
         else:
             n_nsm = dtd.dtd_nsm(t) * delta_t      # Fraction of stars that will explode as NSMs
-        print('test', n_nsm)
+        #print('test', n_nsm)
 
     if empirical==False:
         # Load all sources of chemical yields
@@ -436,6 +436,8 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
     negll = neglnlike(pars, model=[elem_model, sfr, mstar_model, time, leftovergas])
     aic = 2*k + 2*negll
     bic = np.log(n)*k + 2*negll
+
+    print('test', negll, aic)
 
     return model[:timestep-1], atomic, aic
 

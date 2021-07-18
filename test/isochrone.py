@@ -224,7 +224,98 @@ def plotbpass():
 
     return
 
+def plotisochrones():
+    '''Test function to plot isochrones of 2 different ages from one Dartmouth file.'''
+
+    # Dartmouth isochrones
+    files = ['fehm10afep2.ugriz','fehm15afep2.ugriz']
+    linestyles = ['-','--']
+    titles=['[Fe/H]=-1', '[Fe/H]=-1.5']
+    for i in range(len(files)):
+        with open(files[i],'r') as file:  
+            lines = file.readlines()
+
+            read1 = False
+            read2 = False
+            g1, g2, r1, r2 = [], [], [], []
+            for idx, line in enumerate(lines):
+                if line.startswith('#AGE'):
+                    ln_list = line.split()
+                    if ln_list[0].startswith('#AGE=11.0'):
+                        read1 = True
+                    elif ln_list[0].startswith('#AGE=13.0'):
+                        read2 = True
+                    else:
+                        read1, read2 = False, False
+
+                elif line.startswith('#EEP') or line=='\n':
+                    pass
+
+                else:
+                    ln_list = line.split()
+                    if read1:
+                        g1.append(float(ln_list[6]))
+                        r1.append(float(ln_list[7]))
+                    if read2:
+                        g2.append(float(ln_list[6]))
+                        r2.append(float(ln_list[7]))
+            print(g1)
+
+        plt.plot(np.array(g1)-np.array(r1), np.array(g1), color='k', ls=linestyles[i], label='Dartmouth: 11Gyr, '+titles[i])
+        plt.plot(np.array(g2)-np.array(r2), np.array(g2), color='r', ls=linestyles[i], label='Dartmouth: 13Gyr, '+titles[i])
+
+    # Padova isochrones
+    files = ['isoc_z030_sdss.dat']
+    linestyles = ['--']
+    titles=['[Fe/H]=-1.5']
+    for i in range(len(files)):
+        with open(files[i],'r') as file:  
+            lines = file.readlines()
+
+            read1 = False
+            read2 = False
+            g1, g2, r1, r2 = [], [], [], []
+            for idx, line in enumerate(lines):
+                if line.startswith('#	Isochrone'):
+                    ln_list = line.split()
+                    if ln_list[-2]=='1.122e+10':
+                        read1 = True
+                    elif ln_list[-2]=='1.259e+10':
+                        read2 = True
+                    else:
+                        read1, read2 = False, False
+
+                elif line.startswith('#') or line=='\n':
+                    pass
+
+                else:
+                    ln_list = line.split()
+                    if read1:
+                        g1.append(float(ln_list[8]))
+                        r1.append(float(ln_list[9]))
+                    if read2:
+                        g2.append(float(ln_list[8]))
+                        r2.append(float(ln_list[9]))
+
+            print(g1)
+
+        #plt.plot(np.array(g1)-np.array(r1), np.array(g1), color='gray', ls=linestyles[i], label='Padova: 11Gyr, '+titles[i])
+        plt.plot(np.array(g2)-np.array(r2), np.array(g2), color='pink', ls=linestyles[i], label='Padova: 13Gyr, '+titles[i])
+
+    plt.gca().invert_yaxis()
+    plt.legend()
+    plt.xlabel(r'$g-r$')
+    plt.ylabel(r'$g$')
+    plt.show()
+
+    #print(np.max(np.abs((np.array(g1)-np.array(r1)) - (np.array(g2)-np.array(r2)))))
+    #print(np.max(np.abs(np.array(g1)-np.array(g2))))
+    #print(np.max(np.abs(np.array(r1)-np.array(r2))))
+        
+    return
+
 if __name__ == "__main__":
     #readlifetimes()
     #plotlifetimes()
-    plotbpass()
+    #plotbpass()
+    plotisochrones()

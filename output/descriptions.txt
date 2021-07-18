@@ -167,7 +167,22 @@ mgcheck.npy
     > 5e5 steps over 32 walkers
 
 bapriorcheck.npy
-    > same params as empiricaltest_bothba_ba, but with really wide prior for Ba (and removing 0.2 dex for Mg)
+    > same params as empiricaltest_bothba_ba, but with really wide prior for Ba
+    > (and removing the +0.2 dex for Mg)
+    > also fitting Ba from both DART & DEIMOS (removing r-process contribution using statistical correction)
+    > datasource = 'both'
+    > 5e5 steps over 32 walkers
+
+bapriorcheck_gaussian.npy
+    > same params as empiricaltest_bothba_ba, but with Gaussian prior for Ba mean (mean=2, sigma=0.5)
+    > (and removing the +0.2 dex for Mg)
+    > also fitting Ba from both DART & DEIMOS (removing r-process contribution using statistical correction)
+    > datasource = 'both'
+    > 5e5 steps over 32 walkers
+
+bapriorcheck_gaussian_sigma25.npy
+    > same params as empiricaltest_bothba_ba, but with Gaussian prior for Ba mean (mean=2, sigma=0.25)
+    > (and removing the +0.2 dex for Mg)
     > also fitting Ba from both DART & DEIMOS (removing r-process contribution using statistical correction)
     > datasource = 'both'
     > 5e5 steps over 32 walkers
