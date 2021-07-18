@@ -433,8 +433,9 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
     if rampressure:
         k += 1
     n = 474  # Number of stars
-    aic = 2*k - 2*neglnlike(pars, model=[elem_model, sfr, mstar_model, time, leftovergas])
-    bic = np.log(n)*k - 2*neglnlike(pars, model=[elem_model, sfr, mstar_model, time, leftovergas])
+    negll = neglnlike(pars, model=[elem_model, sfr, mstar_model, time, leftovergas])
+    aic = 2*k + 2*negll
+    bic = np.log(n)*k + 2*negll
 
     return model[:timestep-1], atomic, aic
 

@@ -497,7 +497,7 @@ def lnprior(parameters):
         return -np.inf
     # Add Gaussian prior on Ba norm
     mu = 2
-    sigma = 0.5
+    sigma = 0.25
     return np.log(1.0/(np.sqrt(2*np.pi)*sigma))-0.5*(bamean_agb-mu)**2/sigma**2
 
 
