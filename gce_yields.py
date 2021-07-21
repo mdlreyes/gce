@@ -45,6 +45,8 @@ atomic_num = elem_atomic
 atomic_weight = atomic_weight[elem_idx]
 atomic_names = atomic_names[elem_idx]
 
+print(atomic_num, eps_sun)
+
 # Read in the data from Lugaro+12
 def readkaryields():
     path = '/Users/miadelosreyes/Documents/Research/MnDwarfs_DTD/code/gce/yields/AGBdata/z0001models/elemental_yields/'
@@ -746,7 +748,7 @@ def initialize_empirical(yield_path='yields/', r_process_keyword='none', special
             f_nsm_metallicity = None
 
         # Ia yield function
-        def f_ia_metallicity(metallicity, fe_ia, mn_ia=2e-3, ni_ia=1.5e-2):
+        def f_ia_metallicity(metallicity, fe_ia, mn_ia=1.79e-3, ni_ia=1.53e-2):
             yields = np.array([0., 0., 1.e-3, 1.e-2, 0.15, 2.e-2, 1.e-3, 2.e-3, 0.8, 1.5e-2, 0., 0.])
             yields[7] = mn_ia  # Mn
             yields[8] = fe_ia  # Fe
@@ -779,7 +781,7 @@ def initialize_empirical(yield_path='yields/', r_process_keyword='none', special
                 yields[11,:] = 1e-11 * (77600 * II_mass**(-4.31))  # Eu
 
                 if specialrprocess=='enhancedprompt':
-                    yields[10,:] *= 20
+                    yields[10,:] *= 10
                     yields[11,:] *= 5
 
             # Yields with parameters to vary

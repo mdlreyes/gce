@@ -64,6 +64,12 @@ def getyields(yieldsource, m_himass, m_intmass, fit=None, weakrprocess=False, im
         yield_ii = np.concatenate((sn_min[...,None], SN_yield['II'], sn_max[...,None]), axis=2)   # Concatenate yield tables
         M_SN = np.concatenate(([params.M_SN_min], M_SN, [params.M_SN_max]))     # Concatenate mass list
 
+        # Chop off extraneous elements
+        yield_ia = SN_yield['Ia'][2:-2,:]
+
+        # Drop H, He, Ti
+        #yield_ii=np.delete(yield_ii,[0,1,6],axis=0)
+
         # Weight yields by IMF
         #if imfweight is not None:
         #    dN_dM = imf.imf(M_SN, imfweight)
@@ -101,6 +107,9 @@ def getyields(yieldsource, m_himass, m_intmass, fit=None, weakrprocess=False, im
         yield_agb = np.concatenate((agb_min[...,None], AGB_yield['AGB'], agb_max[...,None]), axis=2)   # Concatenate yield tables
         M_AGB = np.concatenate(([params.M_AGB_min], M_AGB, [params.M_AGB_max])) # Concatenate mass list 
 
+        # Drop H, He, Ti
+        #yield_agb=np.delete(yield_agb,[0,1,6],axis=0)
+
         # Weight yields by IMF
         #if imfweight is not None:
         #    dN_dM = imf.imf(M_AGB, imfweight)
@@ -124,6 +133,9 @@ def getyields(yieldsource, m_himass, m_intmass, fit=None, weakrprocess=False, im
 
         # Chop off extraneous elements
         yield_ia = SN_yield['Ia'][2:-2,:]
+
+        # Drop Ti
+        #yield_ia=np.delete(yield_ia,4,axis=0)
 
         # If needed, linearly extrapolate SN yields to Z=0
         if ~np.isclose(z_II[0],0.):
@@ -408,7 +420,147 @@ def plotyieldimpulse(yieldtype, empiricalfit=None, weakrprocess=False, ia_dtd='m
 
     return
 
+def plotyieldimpulse_full(empiricalfit, ia_dtd='maoz10', imfweight='kroupa93'):
+    """ Plot yields as a function of time after a single burst of SF.
+
+    Args: 
+        empiricalfit (float list): plot empirical fit parameters as well as literature values
+        weakrprocess (bool): if True, plot Ba and Eu from CCSNe
+    """
+
+    # Get numbers of events
+    delta_t = 0.001     # time step (Gyr)
+    n = int(1.36/delta_t)     # number of timesteps in the model 
+    t = np.arange(n)*delta_t    # time passed in model array -- age universe (Gyr)
+    sfburst = 100   # assume stellar mass of 100 Msun formed in instantaneous burst
+
+    n_wd = dtd.dtd_ia(t, ia_dtd) * delta_t  # Number of SNe/Gyr/Msun * Gyr = SNe/Msun
+    n_ia = sfburst * n_wd  # SNe that formed after SF burst
+
+    m_himass, n_himass = dtd.dtd_ii(t, imfweight)       # Mass and fraction of stars that will explode in the future
+    goodidx_ccsn = np.where((m_himass > params.M_SN_min) & (m_himass < params.M_SN_max))[0]  # Limit to timesteps where stars will explode as CCSN
+    m_himass = m_himass[goodidx_ccsn]    
+    n_himass = n_himass[goodidx_ccsn]
+    n_ii = sfburst * n_himass
+
+    m_intmass, n_intmass = dtd.dtd_agb(t, imfweight)    # Mass and fraction of stars that become AGBs in the future
+    goodidx_agb = np.where((m_intmass > params.M_AGB_min) & (m_intmass < params.M_AGB_max))[0] # Limit to timesteps where stars between 0.865-10 M_sun will become AGB stars
+    m_intmass = m_intmass[goodidx_agb]
+    n_intmass = n_intmass[goodidx_agb]
+    n_agb = sfburst * n_intmass
+
+    # Get yields
+    fityieldsIaSN, fityieldsCCSN, fityieldsAGB = getyields('fit', m_himass, m_intmass, fit=empiricalfit)
+
+    fe_ia = empiricalfit[6]         # Fe yield from IaSNe
+    cexp_ii = empiricalfit[7]       # C exponent for CCSN yields
+    cnorm_agb = empiricalfit[10]    # C normalization for AGB yields
+    banorm_agb = empiricalfit[11]   # Ba normalization for AGB yields
+    bamean_agb = empiricalfit[12]   # Ba mean for AGB yields
+    mgnorm_ii = empiricalfit[8]     # Mg normalization for CCSN yields
+    canorm_ii = empiricalfit[9]     # Ca normalization for CCSN yields
+
+    #print(fityieldsCCSN(0, cexp_ii=cexp_ii, mgnorm_ii=mgnorm_ii, canorm_ii=canorm_ii).shape)
+    #return
+
+    # Create labels
+    elem_atomic = [6, 12, 14, 20, 25, 26, 28, 56]
+    elem_names = {1:'H', 2:'He', 6:'C', 8:'O', 12:'Mg', 14:'Si', 20:'Ca', 22:'Ti', 25:'Mn', 26:'Fe', 28:'Ni', 56:'Ba', 63:'Eu'}
+    yield_elems = [2, 3, 4, 5, 7, 8, 9, 10]
+    # Add other yields if needed
+    '''
+    if yieldtype=='CCSN':
+        elem_atomic = [1,2] + elem_atomic
+    if yieldtype=='AGB':
+        elem_atomic = [1,2] + elem_atomic + [56] #, 63]
+
+    if yieldtype in ['CCSN'] and weakrprocess:
+        elem_atomic = [56, 63]
+    '''
+    
+    # Create and format plot
+    fig, axs = plt.subplots(len(elem_atomic), figsize=(5,10),sharex=True)
+    fig.subplots_adjust(bottom=0.06,top=0.96,left=0.2,wspace=0.29,hspace=0)
+    plt.setp([a.yaxis.set_major_locator(MaxNLocator(nbins=5,prune='upper')) for a in [fig.axes[-1]]])
+    plt.setp([a.yaxis.set_major_locator(MaxNLocator(nbins=5,prune='both')) for a in fig.axes[1:-1]])
+    plt.setp([a.yaxis.set_major_locator(MaxNLocator(nbins=5,prune='lower')) for a in [fig.axes[0]]])
+    plt.setp([a.get_xticklabels() for a in fig.axes[:-1]], visible=False)
+    plt.setp([a.minorticks_on() for a in fig.axes[:]])
+    axs = axs.ravel()
+
+    # Create each subplot
+    for idx_elem, elem in enumerate(elem_atomic):
+        yield_idx = yield_elems[idx_elem]
+        print(idx_elem, elem, yield_idx)
+        handles = []
+
+        #print(n_agb * fityieldsAGB(0.002, cnorm_agb=cnorm_agb, banorm_agb=banorm_agb, bamean_agb=bamean_agb)[yield_idx,:])
+        #return
+
+        # Metallicity to plot
+        Z = 0.001
+
+        # Total yields
+        total = np.zeros_like(t)
+
+        # Plot CCSN yields
+        line, = axs[idx_elem].semilogx(t[goodidx_ccsn]*1e9, np.log10(n_ii * fityieldsCCSN(Z, cexp_ii=cexp_ii, mgnorm_ii=mgnorm_ii, canorm_ii=canorm_ii)[yield_idx,:]), #/(10**base10), 
+                            linestyle='-', marker='None', color='k', label='CCSN')
+        total[goodidx_ccsn] += n_ii * fityieldsCCSN(Z, cexp_ii=cexp_ii, mgnorm_ii=mgnorm_ii, canorm_ii=canorm_ii)[yield_idx,:]
+        handles.append(line)
+
+        # Plot CCSN yields
+        line, = axs[idx_elem].semilogx(t[goodidx_agb]*1e9, np.log10(n_agb * fityieldsAGB(Z, cnorm_agb=cnorm_agb, banorm_agb=banorm_agb, bamean_agb=bamean_agb)[yield_idx,:]), #/(10**base10), 
+                            linestyle='--', marker='None', color='k', label='AGB')
+        total[goodidx_agb] += n_agb * fityieldsAGB(Z, cnorm_agb=cnorm_agb, banorm_agb=banorm_agb, bamean_agb=bamean_agb)[yield_idx,:]
+        handles.append(line)
+
+        # Plot Ia yields
+        line, = axs[idx_elem].semilogx(t*1e9, np.log10(n_ia * fityieldsIaSN(Z, fe_ia=fe_ia)[yield_idx]), #/(10**base10), 
+                linestyle=':', marker='None', color='k', label='IaSN')
+        total += n_ia * fityieldsIaSN(Z, fe_ia=fe_ia)[yield_idx]
+        handles.append(line)
+
+        # Plot total
+        #line, = axs[idx_elem].plot(np.log10(t*1e9), np.log10(total), #/(10**base10), 
+        #        linestyle='-', marker='None', color='k', label='Total')
+        #handles.append(line)
+
+        # Save totals
+        if elem==12:
+            totalmg = total
+        if elem==26:
+            totalfe = total
+
+        # Create legends
+        axs[0].legend(handles=handles, fontsize=10)
+  
+        # Do other formatting
+        axs[idx_elem].text(0.95, 0.75, elem_names[elem], transform=axs[idx_elem].transAxes, fontsize=12, horizontalalignment='right') #, bbox=dict(fc='None', ec='k', linewidth=0.5))
+
+        if axs[idx_elem].get_ylim()[0] < -10:
+            axs[idx_elem].set_ylim([-10,axs[idx_elem].get_ylim()[1]])
+
+    # Final plot formatting
+    plt.xlabel(r'Delay time (yr)', fontsize=14)
+    axs[3].set_ylabel(r'$\log(M_{X})~[M_{\odot}]$', fontsize=14)
+
+    # Output figure
+    outputname = 'plots/yieldimpulse_empiricalfit.pdf'
+    plt.savefig(outputname, bbox_inches='tight')
+    plt.show()
+
+    # Make another plot, this time showing [Mg/Fe] as a function of time
+    plt.plot(np.log10(t*1e9), np.log10(totalmg/24.305) - np.log10(totalfe/55.845) - (7.58 - 7.52))
+    plt.xlabel(r'$\log(t)$ [yr]', fontsize=14)
+    plt.ylabel(r'[Mg/Fe]', fontsize=14)
+    plt.savefig('plots/mgfetest.png', bbox_inches='tight')
+    plt.show()
+
+    return
+
 if __name__ == "__main__":
 
     # Plot yields
-    plotyieldimpulse('IaSN', empiricalfit=[0.4389863146518289,0.305259626216913,4.942444967900384,0.4925229043278246,0.8329968649356562,0.40094641862489994,0.563019743600889,1.2909839533334972,0.8604762167017103,0.2864776957718226,1.5645763678916176,0.8939183631841486,3-0.014997329848299233])
+    #plotyieldimpulse('AGB', empiricalfit=[0.5345416815125118,0.26873964968241854,4.792520166984605,0.669974341000559,0.8076961016570472,0.00046851,0.5788555396852141,1.3172211548419224,1.425232310196399,0.248402552325658,1.9258476702795306,1.0768034902504153,2.7983433770451396])
+    plotyieldimpulse_full( empiricalfit=[0.5345416815125118,0.26873964968241854,4.792520166984605,0.669974341000559,0.8076961016570472,0.00046851,0.5788555396852141,1.3172211548419224,1.425232310196399,0.248402552325658,1.9258476702795306,1.0768034902504153,2.7983433770451396])

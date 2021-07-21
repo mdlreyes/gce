@@ -186,3 +186,17 @@ bapriorcheck_gaussian_sigma25.npy
     > also fitting Ba from both DART & DEIMOS (removing r-process contribution using statistical correction)
     > datasource = 'both'
     > 5e5 steps over 32 walkers
+
+bapriorcheck_gaussian_dartonly.npy
+    > same params as empiricaltest_bothba_ba, but with Gaussian prior for Ba mean (mean=2, sigma=0.25)
+    > (and removing the +0.2 dex for Mg)
+    > fitting Ba from just DART! (removing r-process contribution using statistical correction)
+    > datasource = 'both'
+    > 5e5 steps over 32 walkers
+
+final_withmgas.npy
+    > same params as empiricaltest_bothba_ba, but with Gaussian prior for Ba mean (mean=2, sigma=0.25)
+    > (and removing the +0.2 dex for Mg)
+    > fitting Ba from just DART! (removing r-process contribution using statistical correction)
+    > datasource = 'both'
+    > 1e6 steps over 32 walkers

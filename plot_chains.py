@@ -16,9 +16,10 @@ rc('text',usetex=True)
 
 # Import other packages
 import numpy as np
+import scipy.stats as stats
 import corner
 
-def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, c=True, fe=True, rampressure=True):
+def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, c=True, fe=True, rampressure=True, nomgas0=True):
 
     # Load file
     chainfile = np.load(file)
@@ -38,6 +39,8 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, 
             del names[7]
         if fe==False:
             del names[6]
+    if nomgas0:
+        del names[5]
 
     for i in range(ndim):
         for j in range(nwalkers):
@@ -69,6 +72,8 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, 
 
     # Print the output parameters
     outputparams = np.percentile(samples,50, axis=0)
+    if nomgas0:
+        outputparams = np.insert(outputparams, 5, 0.)
     if fe==False:
         outputparams = np.insert(outputparams, 6, 0.8)
     if c==False:
@@ -78,8 +83,12 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, 
         outputparams = np.append(outputparams, 0.)
     print(*outputparams, sep=',')
 
+    # Check MAP of Mgas0 parameter
+    if not nomgas0:
+        print('Mgas0:', stats.mode(samples[:,5]))
+
     return
 
 if __name__ == "__main__":
 
-    plotmcmc(file='output/empiricaltest_dartba_ba.npy', burnin=10000, empiricalfit=True, c=True, fe=True, rampressure=True)
+    plotmcmc(file='chain.npy', burnin=0, empiricalfit=True, c=True, fe=True, rampressure=False)

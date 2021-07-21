@@ -21,7 +21,7 @@ import emcee
 from multiprocessing import Pool
 
 # Variables for MCMC run
-nsteps = 15625
+nsteps = 3125 #15625
 nwalkers = 32
 parallel = True
 datasource = 'both'
@@ -29,6 +29,7 @@ empirical = True
 delay = False
 reioniz = False
 rampressure = False
+nomgas0 = True
 
 # Which elements to fit?
 baeu = True
@@ -47,6 +48,8 @@ if c==False:
     del params_init[7]
 if fe==False:
     del params_init[6]
+if nomgas0:
+    del params_init[5]
 
 # Model prep!
 
@@ -167,27 +170,32 @@ def gce_model(pars): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, 
     f_out = pars[2]*1.e3    # Strength of gas outflow due to supernovae (M_sun SN**-1) 
     sfr_norm = pars[3]      # Normalization of SF law (10**-6 M_sun Gyr**-1)
     sfr_exp = pars[4]       # Exponent of SF law
-    model['mgas'][0] = pars[5]*1.e6  # Initial gas mass (M_sun)
+    if nomgas0:
+        model['mgas'][0] = 0.  # No initial gas mass
+        paramidx = -1
+    else:
+        model['mgas'][0] = pars[5]*1.e6  # Initial gas mass (M_sun)
+        paramidx = 0
 
     # Additional free parameters from yields
     if fe:
-        fe_ia = pars[6]         # Fe yield from IaSNe
+        fe_ia = pars[paramidx+6]         # Fe yield from IaSNe
     else:
         fe_ia = 0.8
     if c:
-        cexp_ii = pars[7]       # C exponent for CCSN yields
-        cnorm_agb = pars[10]    # C normalization for AGB yields
+        cexp_ii = pars[paramidx+7]       # C exponent for CCSN yields
+        cnorm_agb = pars[paramidx+10]    # C normalization for AGB yields
     else:
         cexp_ii = 1.
         cnorm_agb = 0.6
     if baeu:
-        banorm_agb = pars[11]   # Ba normalization for AGB yields
-        bamean_agb = pars[12]   # Ba mean for AGB yields
+        banorm_agb = pars[paramidx+11]   # Ba normalization for AGB yields
+        bamean_agb = pars[paramidx+12]   # Ba mean for AGB yields
     else:
         banorm_agb=0.33
         bamean_agb=1.0
-    mgnorm_ii = pars[8]     # Mg normalization for CCSN yields
-    canorm_ii = pars[9]     # Ca normalization for CCSN yields
+    mgnorm_ii = pars[paramidx+8]     # Mg normalization for CCSN yields
+    canorm_ii = pars[paramidx+9]     # Ca normalization for CCSN yields
 
     # Initialize gas inflow
     model['f_in'] = f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)
@@ -473,27 +481,33 @@ def lnprior(parameters):
     bamean_agb=2.0
     ramconst = 0.
 
+    if nomgas0:
+        mgas0 = 0.
+        paramidx = -1
+    else:
+        paramidx = 0
+
     if fe:
-        fe_ia = parameters[6]
+        fe_ia = parameters[paramidx+6]
         if c:
-            cexp_ii, mgnorm_ii, canorm_ii, cnorm_agb = parameters[7:11]
+            cexp_ii, mgnorm_ii, canorm_ii, cnorm_agb = parameters[paramidx+7:paramidx+11]
         else:
-            mgnorm_ii, canorm_ii = parameters[7:9]
+            mgnorm_ii, canorm_ii = parameters[paramidx+7:paramidx+9]
     else:
         if c:
-            cexp_ii, mgnorm_ii, canorm_ii, cnorm_agb = parameters[6:10]
+            cexp_ii, mgnorm_ii, canorm_ii, cnorm_agb = parameters[paramidx+6:paramidx+10]
         else:
-            mgnorm_ii, canorm_ii = parameters[6:8]
+            mgnorm_ii, canorm_ii = parameters[paramidx+6:paramidx+8]
     if baeu:
-        banorm_agb, bamean_agb = parameters[11:13]
+        banorm_agb, bamean_agb = parameters[paramidx+11:paramidx+13]
     if rampressure:
         ramconst = parameters[-1]
 
 
     # Define uniform priors, based on values in Table 2 of Kirby+11
-    if not ((0. < f_in_norm0 < 5.) and (0. < f_in_t0 < 1.) and (0. < f_out < 20.) and (0. < sfr_norm < 10.) and (0. < sfr_exp < 2.) and (0. < mgas0 < 1.) and \
+    if not ((0. < f_in_norm0 < 5.) and (0. < f_in_t0 < 1.) and (0. < f_out < 20.) and (0. < sfr_norm < 10.) and (0. < sfr_exp < 2.) and \
         (0. < fe_ia < 0.9) and (0. < cexp_ii < 2.) and (0. < mgnorm_ii < 2.) and (0. < canorm_ii < 0.5) and (0.4 < cnorm_agb < 5.) and \
-        (0. < banorm_agb < 2.) and (0. <= ramconst < 5.)):
+        (0. < banorm_agb < 2.) and (0. <= ramconst < 5.) and (0. <= mgas0 < 1.)):
         return -np.inf
     # Add Gaussian prior on Ba norm
     mu = 2
@@ -536,6 +550,8 @@ if __name__=="__main__":
         dpar = np.delete(dpar,7)
     if fe==False:
         dpar = np.delete(dpar,6)
+    if nomgas0:
+        dpar = np.delete(dpar,5)
 
     pos = []
     for i in range(nwalkers):

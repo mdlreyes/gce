@@ -103,13 +103,16 @@ if __name__ == "__main__":
     scl_gaussbapriors = [0.43945705979139077,0.3020413952212676,4.727408176763617,0.46052848791458656,1.0808900211986314,0.,0.5375203396441758,1.315857359698602,1.401725996280066,0.15193987503658002,1.5818363678506433,0.4069203412745628,4.095657927853391]
     scl_gaussbapriors25 = [0.42109737939397723,0.31308739823024134,4.837527469749196,0.4541058774499559,1.048019347062647,0.4110245957686604,0.537273133332133,1.3067431173812538,1.4775138184072172,0.19412055006004464,1.51505018695232,0.4627538532197125,3.6952004135922487]
 
+    scl_final = [0.5345416815125118,0.26873964968241854,4.792520166984605,0.669974341000559,0.8076961016570472,0.00046851,0.5788555396852141,1.3172211548419224,1.425232310196399,0.248402552325658,1.9258476702795306,1.0768034902504153,2.7983433770451396]
+    
     #model, atomic, _ = gce.runmodel(scl_init, plot=True, title="Sculptor dSph (Initial conditions)", empirical=True, empiricalfit=True, feh_denom=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, _ = gce.runmodel(scl_mcmc_widerpriors, plot=True, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, _ = gce.runmodel(scl_test_nofe_baeu, plot=True, title="Sculptor dSph (no Fe, with Ba)", empirical=True, empiricalfit=True, feh_denom=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, _ = gce.runmodel(scl_test_nofe_ba, plot=True, title="Sculptor dSph (no Fe, with DART Ba)", empirical=True, empiricalfit=True, feh_denom=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     
+    model, atomic, aic_orig = gce.runmodel(scl_final, plot=True, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, aic_orig = gce.runmodel(scl_test_bothba_ba, plot=True, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
-    model, atomic, aic_dart = gce.runmodel(scl_test_dartba_ba, plot=True, title="Sculptor dSph (DART Ba)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
+    #model, atomic, aic_dart = gce.runmodel(scl_test_dartba_ba, plot=True, title="Sculptor dSph (DART Ba)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, _ = gce.runmodel(scl_mgcheck, plot=True, title="Sculptor dSph (Mg check)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False)
     #model, atomic, _ = gce.runmodel(scl_delaySFtest, plot=True, title="Sculptor dSph (delayed SF)", empirical=True, empiricalfit=True, feh_denom=True, delay=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, _ = gce.runmodel(scl_iadtd_maoz17, plot=True, title="Sculptor dSph (Maoz+17 field Ia DTD)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='maoz17') #, amr="plots/amr_test", sfh="plots/sfh_test")
@@ -129,4 +132,3 @@ if __name__ == "__main__":
     #model, atomic, aic_wider = gce.runmodel(scl_widebapriors, plot=True, title="Sculptor dSph (wider Ba priors)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, aic_gauss = gce.runmodel(scl_gaussbapriors, plot=True, title="Sculptor dSph (Gaussian Ba priors)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False) #, amr="plots/amr_test", sfh="plots/sfh_test")    
     #model, atomic, aic_gauss25 = gce.runmodel(scl_gaussbapriors25, plot=True, title="Sculptor dSph (Gaussian Ba priors)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False) #, amr="plots/amr_test", sfh="plots/sfh_test")    
-    print(aic_dart)

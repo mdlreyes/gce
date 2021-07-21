@@ -274,7 +274,7 @@ def compare_yields(plottype, feh_denom=True):
                 else:
                     x = model['eps'][:,snindex['Fe']]
                     y = model['eps'][:,snindex[label]] - (model['eps'][:,snindex['Mg']] + 0.2)
-                axs[idx].plot(x, y, color=cwheel[line_idx], linestyle='-', lw=4, label=titles[line_idx], zorder=100)
+                axs[idx].plot(x, y, color=cwheel[line_idx], linestyle='-', lw=2.5, label=titles[line_idx], zorder=100)
 
             # Create legend
             if idx==0:
@@ -292,10 +292,10 @@ def compare_yields(plottype, feh_denom=True):
         plt.xlim([-3.5,0])
 
         # Titles
-        titles = ['Prompt r-process (20x Ba yield, 5x Eu yield)','Prompt (20x Ba yield, 5x Eu yield) + delayed','Delayed r-process ('+r'$t_{\mathrm{min}}=50$ Myr, 5x normalization)','Prompt + delayed ('+r'$t_{\mathrm{min}}=50$ Myr, 5x normalization)']
+        titles = ['Prompt r-process (20x Ba yield, 5x Eu yield)','Prompt (10x Ba yield, 5x Eu yield) + delayed','Delayed r-process ('+r'$t_{\mathrm{min}}=50$ Myr, 5x normalization)','Prompt + delayed ('+r'$t_{\mathrm{min}}=50$ Myr, 5x normalization)']
         rprocesskeywords = ['typical_SN_only','both','rare_event_only','both']
         specialkeywords = ['enhancedprompt','enhancedprompt','enhanceddelay','enhanceddelay']
-        ls = [':',':','--','--']
+        ls = [(0,(1,1)),(0,(1,1)),'--','--']
         # Set colorwheel
         cwheelsize = len(titles)
         color = cmr.cosmic_r(np.linspace(0,1,cwheelsize,endpoint=True))
@@ -365,10 +365,10 @@ def compare_yields(plottype, feh_denom=True):
 
 if __name__=="__main__":
     #compare_sfh(['fiducial','delaysf','reioniz','rampressure'], 'modelconstruction')
-    compare_sfh(['fiducial','iadtd_medhimin','iadtd_index05','iadtd_cutoff'], 'iadtd', fiducialtitle='Fiducial: '+r'$t^{-1.1}$, '+r'$t_{\mathrm{min}}=100$Myr')
+    #compare_sfh(['fiducial','iadtd_medhimin','iadtd_index05','iadtd_cutoff'], 'iadtd', fiducialtitle='Fiducial: '+r'$t^{-1.1}$, '+r'$t_{\mathrm{min}}=100$Myr')
     #compare_sfh(['fiducial','iadtd_maoz17','iadtd_lomin','iadtd_medhimin','iadtd_index05','iadtd_index15','iadtd_cutoff'], 'iadtd', fiducialtitle='Fiducial: '+r'$t^{-1.1}$, '+r'$t_{\mathrm{min}}=100$Myr')
     #compare_sfh(['fiducial','imf_chabrier','imf_salpeter'], 'imf', fiducialtitle='Fiducial: Kroupa et al. (1993) IMF')
     
     #compare_yields('IaSN')
     #compare_yields('rprocess', feh_denom=False)
-    #compare_yields('rprocess_bestfit', feh_denom=False)
+    compare_yields('rprocess_bestfit', feh_denom=False)

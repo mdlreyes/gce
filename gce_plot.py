@@ -85,7 +85,7 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         if elem == 63:
             snindex['Eu'] = idx
             continue
-        if elem not in [26, 1, 2, 22]:
+        if elem not in [26, 1, 2, 22, 25, 28]:
             labels.append(elem_names[elem])
         if elem != 1:
             labels_h.append(elem_names[elem])
@@ -380,8 +380,10 @@ def makeplots(model, atomic, title, plot=False, datasource='deimos', dsph='Scl',
         axs[1].plot(model['t'],-1*np.sum(model['mout']/1e6,1),ls='dashdot',color=plt.cm.Set2(2),label='out')
         axs[1].plot(model['t'],model['f_in']/1e6,ls=(0,(3,5,1,5,1,5)),color=plt.cm.Set2(3),label='in')
         axs[1].set_ylabel('$\dot{M} (10^6$ M$_\odot$Gyr$^{-1})$')
-        axs[2].plot(model['t'],model['eps'][:,snindex['Fe']],'k-')
-        axs[2].set_ylabel('[Fe/H]')
+        #axs[2].plot(model['t'],model['eps'][:,snindex['Fe']],'k-')
+        #axs[2].set_ylabel('[Fe/H]')
+        axs[2].plot(model['t'],model['eps'][:,snindex['Mg']]-model['eps'][:,snindex['Fe']],'k-')
+        axs[2].set_ylabel('[Mg/Fe]')
         axs[3].plot(model['t'],model['II_rate']*1e-3,ls='-',color='k',label="CCSN $(10^3)$")
         axs[3].plot(model['t'],model['AGB_rate']*1e-4,ls='--',color='k',label="AGB $(10^4)$")
         axs[3].plot(model['t'],model['Ia_rate']*1e-3,ls=':',color='k',label="IaSN $(10^3)$")
