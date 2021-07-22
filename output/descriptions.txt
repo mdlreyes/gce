@@ -200,3 +200,13 @@ final_withmgas.npy
     > fitting Ba from just DART! (removing r-process contribution using statistical correction)
     > datasource = 'both'
     > 1e6 steps over 32 walkers
+
+final_withoutmgas_short.npy
+    > same params as final_withmgas, but without Mgas0 as a fitting parameter
+    > datasource = 'both'
+    > 1e5 steps over 32 walkers
+
+final_withoutmgas_med.npy
+    > same params as final_withmgas, but without Mgas0 as a fitting parameter
+    > datasource = 'both'
+    > 5e5 steps over 32 walkers

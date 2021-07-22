@@ -144,6 +144,10 @@ def dtd_agb(t,imf_model):
         n_intmass = 0.31 * (m_lomass)**(-2.7) * -np.concatenate((np.diff(m_lomass),[0]))
         idx_intmass = np.where((m_lomass >= 1) & (m_lomass < 6.61))
 
+        #print(idx_himass, idx_intmass)
+        #print(n_himass[idx_himass], n_intmass[idx_intmass])
+        #return
+
         # Integral of Kroupa IMF of M(t) for 0.5 < M < 1 M_sun (imf_lomass, m_lomass)
         n_lomass = 0.31 * (m_lomass)**(-2.2) * -np.concatenate((np.diff(m_lomass),[0]))
         idx_lomass = np.where((m_lomass >= 0.865) & (m_lomass < 1))
@@ -227,15 +231,15 @@ def dtd_nsm_enhanced(t):
     print('nsm:', np.trapz(rate, ))
     return rate  # NSM Gyr**-1 (M_sun)**-1
 
-def plot_dtd(model):
+def plot_dtd(model='maoz10'):
     """Plot delay-time distributions."""
 
     t = np.arange(0.001,13.6,0.001)
 
     dtd_ia_maoz10 = dtd_ia(t, ia_model='maoz10')
-    dtd_ia_mannucci06 = dtd_ia(t, ia_model='mannucci06')
-    dtd_ia_model = dtd_ia(t, ia_model=model)
-    dtd_nsm_model = dtd_nsm(t)
+    #dtd_ia_mannucci06 = dtd_ia(t, ia_model='mannucci06')
+    #dtd_ia_model = dtd_ia(t, ia_model=model)
+    #dtd_nsm_model = dtd_nsm(t)
 
     # Stuff for Ia DTD tests
     #plt.loglog(t*1e9, dtd_ia_maoz10, 'k:', label='IaSNe (Maoz et al. 2010)')
@@ -251,8 +255,22 @@ def plot_dtd(model):
 
     m_intmass, n_intmass = dtd_agb(t, 'kroupa93')    # Mass and fraction of stars that become AGBs in the future
     goodidx_agb = np.where((m_intmass > 0.865) & (m_intmass < 10.))[0] # Limit to timesteps where stars between 0.865-10 M_sun will become AGB stars
+    # Make AGB DTD continuous?
+    #print(n_intmass[38:41])
+    #n_intmass[39] = (n_intmass[38]+n_intmass[40])/2.
+    #print(n_intmass[38:41])
+    #print(np.where(goodidx_agb==39)[0])
     rate_agb = n_intmass[goodidx_agb]/0.001 # N per Gyr
+    #print(t[19:22], rate_agb[18:23])
     t_agb = t[goodidx_agb]*1e9
+
+    # Make AGB DTD continuous
+    m_himass = ((t - 0.003)/1.2)**(-1/1.85)
+    m_lomass = 10. ** (7.764 - ((1.790 - (0.334 - 0.1116 * np.log10(t)) ** 2.) / 0.2232) )
+    idx_himass = np.where((m_himass >= 6.6) & (m_himass < 10))
+    idx_intmass = np.where((m_lomass >= 1) & (m_lomass < 6.61))
+    print(t_agb[idx_himass], t_agb[idx_intmass])
+    print(rate_agb[idx_himass], rate_agb[idx_intmass])
 
     # Stuff for DTD comparison plot
     plt.loglog(np.insert(t_himass,0,t_himass[0]), np.insert(rate_himass,0,0), 'k-', label='CCSN')
@@ -268,4 +286,4 @@ def plot_dtd(model):
     return
 
 if __name__ == "__main__":
-    plot_dtd('index05')
+    plot_dtd()

@@ -26,7 +26,7 @@ from mcmc_mpi_empirical import neglnlike
 def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, empiricalfit=False, 
             feh_denom=True, delay=False, reioniz=False, ia_dtd='maoz10', rampressure=False,
             mn=None, ni=None, rprocess='none', specialrprocess='none', imf='kroupa93',
-            inflow='none', outflow='none', mgenhance=True):
+            inflow='none', outflow='none', mgenhance=True, nomgas0=False):
     """Galactic chemical evolution model.
 
     Takes in additional parameters from params.py, reads yields using gce_yields.py, 
@@ -432,6 +432,8 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
     k = 13  # Number of free parameters
     if rampressure:
         k += 1
+    if nomgas0:
+        k += -1
     n = 474  # Number of stars
     negll = neglnlike(pars, model=[elem_model, sfr, mstar_model, time, leftovergas])
     aic = 2*k + 2*negll

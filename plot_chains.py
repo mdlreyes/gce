@@ -19,7 +19,7 @@ import numpy as np
 import scipy.stats as stats
 import corner
 
-def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, c=True, fe=True, rampressure=True, nomgas0=True):
+def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, c=True, fe=True, rampressure=True, nomgas0=True, inflow=None):
 
     # Load file
     chainfile = np.load(file)
@@ -91,4 +91,4 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, 
 
 if __name__ == "__main__":
 
-    plotmcmc(file='chain.npy', burnin=0, empiricalfit=True, c=True, fe=True, rampressure=False)
+    plotmcmc(file='chain.npy', burnin=0, empiricalfit=True, c=True, fe=True, rampressure=False, inflow='const')

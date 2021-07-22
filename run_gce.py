@@ -104,13 +104,15 @@ if __name__ == "__main__":
     scl_gaussbapriors25 = [0.42109737939397723,0.31308739823024134,4.837527469749196,0.4541058774499559,1.048019347062647,0.4110245957686604,0.537273133332133,1.3067431173812538,1.4775138184072172,0.19412055006004464,1.51505018695232,0.4627538532197125,3.6952004135922487]
 
     scl_final = [0.5345416815125118,0.26873964968241854,4.792520166984605,0.669974341000559,0.8076961016570472,0.00046851,0.5788555396852141,1.3172211548419224,1.425232310196399,0.248402552325658,1.9258476702795306,1.0768034902504153,2.7983433770451396]
-    
+    scl_final_fromopt = [5.30962132e-01, 1.80873093e-01, 2.53380292e+00, 7.06195277e-01, 6.87949674e-01, 7.36326470e-01, 5.88978770e-01, 1.21940721e+00, 8.45519061e-01, -4.01956849e-04, 5.49975237e-01, 4.93961969e-01, 3.66758033e+00]
+
+    scl_final_nomgas0 = [0.5333098580417819,0.27035592680356874,4.791798750906626,0.7920933977149635,0.7174775000955853,0.0,0.5815471889029409,1.3224016243752017,1.4084949000231697,0.24452169896847742,1.9833680832802159,1.082081027705684,2.800904351062165]
+
     #model, atomic, _ = gce.runmodel(scl_init, plot=True, title="Sculptor dSph (Initial conditions)", empirical=True, empiricalfit=True, feh_denom=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, _ = gce.runmodel(scl_mcmc_widerpriors, plot=True, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, _ = gce.runmodel(scl_test_nofe_baeu, plot=True, title="Sculptor dSph (no Fe, with Ba)", empirical=True, empiricalfit=True, feh_denom=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, _ = gce.runmodel(scl_test_nofe_ba, plot=True, title="Sculptor dSph (no Fe, with DART Ba)", empirical=True, empiricalfit=True, feh_denom=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     
-    model, atomic, aic_orig = gce.runmodel(scl_final, plot=True, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, aic_orig = gce.runmodel(scl_test_bothba_ba, plot=True, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, aic_dart = gce.runmodel(scl_test_dartba_ba, plot=True, title="Sculptor dSph (DART Ba)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, _ = gce.runmodel(scl_mgcheck, plot=True, title="Sculptor dSph (Mg check)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False)
@@ -132,3 +134,9 @@ if __name__ == "__main__":
     #model, atomic, aic_wider = gce.runmodel(scl_widebapriors, plot=True, title="Sculptor dSph (wider Ba priors)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, aic_gauss = gce.runmodel(scl_gaussbapriors, plot=True, title="Sculptor dSph (Gaussian Ba priors)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False) #, amr="plots/amr_test", sfh="plots/sfh_test")    
     #model, atomic, aic_gauss25 = gce.runmodel(scl_gaussbapriors25, plot=True, title="Sculptor dSph (Gaussian Ba priors)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False) #, amr="plots/amr_test", sfh="plots/sfh_test")    
+
+    model, atomic, aic_orig = gce.runmodel(scl_final, plot=False, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
+    model, atomic, aic_nomgas = gce.runmodel(scl_final_nomgas0, plot=False, title="Sculptor dSph (no initial gas)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False, nomgas0=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
+    #model, atomic, aic_opt = gce.runmodel(scl_final_fromopt, plot=True, title="Sculptor dSph (from optimization)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
+    
+    print(aic_orig, aic_nomgas)
