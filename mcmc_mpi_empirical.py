@@ -551,46 +551,48 @@ print('initial values:', neglnlike([1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1.,
 print('values after powell:', neglnlike([0.94060355, 0.28939645, 6.59792896, 0.91587929, 0.84587929, 0.61587929, 0.82587929, -0.97412071, 1.02587929, 0.02587929, 0.62587929]))
 '''
 
-# Sample the log-probability function using emcee - first, initialize the walkers
-ndim = len(params_init)
-dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01] / np.sqrt(14.)
-if rampressure==False:
-    dpar = np.delete(dpar,13)
-if baeu==False:
-    dpar = np.delete(dpar,12)
-    dpar = np.delete(dpar,11)
-if c==False:
-    dpar = np.delete(dpar,10)
-    dpar = np.delete(dpar,7)
-if fe==False:
-    dpar = np.delete(dpar,6)
-if nomgas0:
-    dpar = np.delete(dpar,5)
-if inflow=='const':
-    dpar = np.delete(dpar,1)
+if __name__=="__main__":
 
-pos = []
-for i in range(nwalkers):
-    a = params_init + dpar*np.random.randn(ndim)
-    #a[a < 0.] = 0.
-    pos.append(a)
+    # Sample the log-probability function using emcee - first, initialize the walkers
+    ndim = len(params_init)
+    dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01] / np.sqrt(14.)
+    if rampressure==False:
+        dpar = np.delete(dpar,13)
+    if baeu==False:
+        dpar = np.delete(dpar,12)
+        dpar = np.delete(dpar,11)
+    if c==False:
+        dpar = np.delete(dpar,10)
+        dpar = np.delete(dpar,7)
+    if fe==False:
+        dpar = np.delete(dpar,6)
+    if nomgas0:
+        dpar = np.delete(dpar,5)
+    if inflow=='const':
+        dpar = np.delete(dpar,1)
 
-print('Starting sampler')
+    pos = []
+    for i in range(nwalkers):
+        a = params_init + dpar*np.random.randn(ndim)
+        #a[a < 0.] = 0.
+        pos.append(a)
 
-if mcmc:
-    # Run parallel MCMC
-    with Pool() as pool:
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, pool=pool)
-        sampler.run_mcmc(pos, nsteps, progress=True)
+    print('Starting sampler')
 
-        # Save the chain so we don't have to run this again
-        np.save('chain', sampler.chain, allow_pickle=True, fix_imports=True)
+    if mcmc:
+        # Run parallel MCMC
+        with Pool() as pool:
+            sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, pool=pool)
+            sampler.run_mcmc(pos, nsteps, progress=True)
 
-else:
-    # Basic optimization code (max-likelihood fit)
-    #def print_fun(x, f, accepted):
-    #    print("at minimum %.4f accepted %d" % (f, int(accepted)))
-    #result = op.basinhopping(neglnlike, params_init, niter=10, callback=print_fun, minimizer_kwargs={"method":"Nelder-Mead"})
-    result = op.minimize(neglnlike, params_init, method='Nelder-Mead', tol=1e-6) #, method='powell', options={'ftol':1e-6, 'maxiter':100000, 'direc':np.diag([-0.05,0.05,1.0,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01])}) 
-    print(result)
-    os.system('say "done, motherfucker"')
+            # Save the chain so we don't have to run this again
+            np.save('chain', sampler.chain, allow_pickle=True, fix_imports=True)
+
+    else:
+        # Basic optimization code (max-likelihood fit)
+        #def print_fun(x, f, accepted):
+        #    print("at minimum %.4f accepted %d" % (f, int(accepted)))
+        #result = op.basinhopping(neglnlike, params_init, niter=10, callback=print_fun, minimizer_kwargs={"method":"Nelder-Mead"})
+        result = op.minimize(neglnlike, params_init, method='Nelder-Mead', tol=1e-6) #, method='powell', options={'ftol':1e-6, 'maxiter':100000, 'direc':np.diag([-0.05,0.05,1.0,0.01,0.01,0.01,0.01,0.01,0.01,0.01,0.01])}) 
+        print(result)
+        os.system('say "done, motherfucker"')

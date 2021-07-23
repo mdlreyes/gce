@@ -210,3 +210,6 @@ final_withoutmgas_med.npy
     > same params as final_withmgas, but without Mgas0 as a fitting parameter
     > datasource = 'both'
     > 5e5 steps over 32 walkers
+
+test.npy
+    > same as final_without_mgas_med, using restructured code

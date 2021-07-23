@@ -21,11 +21,14 @@ import os
 # Packages for parallelization
 from multiprocessing import Pool
 
-# Global variables
-global f_ia_metallicity
+# Test
+from astropy.cosmology import FlatLambdaCDM  # needed to compute redshifts
+cosmo = FlatLambdaCDM(H0=67.4, Om0=0.315)  # using Planck (2018) params
+import astropy.units as u
+from astropy.cosmology import z_at_value
 
 # Run model
-def gce_model(pars, n, t, inflow, nomgas0, reioniz, pristine, delay, delta_t, snindex, n_wd, goodidx, m_himass, n_himass, goodidx_agb, m_intmass, n_intmass, rampressure): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB, snindex, pristine, n_wd, n_himass, f_ii_metallicity, n_intmass, f_agb_metallicity, agb_yield_mass):
+def gce_model(pars, n, t, inflow, nomgas0, reioniz, pristine, delay, delta_t, snindex, n_wd, goodidx, m_himass, n_himass, goodidx_agb, m_intmass, n_intmass, rampressure, outflow_z): #, n, delta_t, t, nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB, snindex, pristine, n_wd, n_himass, f_ii_metallicity, n_intmass, f_agb_metallicity, agb_yield_mass):
     """Galactic chemical evolution model."""  
 
     # Get empirical yields
@@ -66,6 +69,10 @@ def gce_model(pars, n, t, inflow, nomgas0, reioniz, pristine, delay, delta_t, sn
     bamean_agb = pars[paramidx+12]   # Ba mean for AGB yields
     mgnorm_ii = pars[paramidx+8]     # Mg normalization for CCSN yields
     canorm_ii = pars[paramidx+9]     # Ca normalization for CCSN yields
+    if rampressure==False:
+        paramidx += -1
+    else:
+        rampressureconst = pars[paramidx+13]
 
     # Initialize gas inflow
     if inflow is None:
@@ -169,9 +176,12 @@ def gce_model(pars, n, t, inflow, nomgas0, reioniz, pristine, delay, delta_t, sn
             # Otherwise, if there is no gas, then the gas mass fraction is zero
             x_el = np.zeros(nel)
 
-        model['mout'][timestep,:] = f_out * x_el * (model['II_rate'][timestep] + model['Ia_rate'][timestep]) 
+        if outflow_z is None:
+            model['mout'][timestep,:] = f_out * x_el * (model['II_rate'][timestep] + model['Ia_rate'][timestep]) 
+        else:
+            model['mout'][timestep,:] = f_out * outflow_z[timestep]**pars[paramidx+14] * x_el * (model['II_rate'][timestep] + model['Ia_rate'][timestep]) 
         if rampressure and model['eps'][timestep-1,snindex['fe']] > -1.5:
-            model['mout'][timestep,:] += x_el * pars[13] * 1e6 
+            model['mout'][timestep,:] += x_el * rampressureconst * 1e6 
 
         # Now put all the parts of the model together!
 
@@ -242,10 +252,10 @@ def gce_model(pars, n, t, inflow, nomgas0, reioniz, pristine, delay, delta_t, sn
     return np.array(elem_model)[:,:,0], sfr, mstar_model, time, leftovergas
 
 # Eq. 18: *Negative* log likelihood function
-def neglnlike(parameters, elem_data, delem_data, n, t, inflow, nomgas0, reioniz, pristine, delay, delta_t, snindex, n_wd, goodidx, m_himass, n_himass, goodidx_agb, m_intmass, n_intmass, rampressure):
+def neglnlike(parameters, elem_data, delem_data, n, t, inflow, nomgas0, reioniz, pristine, delay, delta_t, snindex, n_wd, goodidx, m_himass, n_himass, goodidx_agb, m_intmass, n_intmass, rampressure, outflow_z):
 
     # Get data from model
-    elem_model, sfr, mstar_model, time, leftovergas = gce_model(parameters, n, t, inflow, nomgas0, reioniz, pristine, delay, delta_t, snindex, n_wd, goodidx, m_himass, n_himass, goodidx_agb, m_intmass, n_intmass, rampressure)
+    elem_model, sfr, mstar_model, time, leftovergas = gce_model(parameters, n, t, inflow, nomgas0, reioniz, pristine, delay, delta_t, snindex, n_wd, goodidx, m_himass, n_himass, goodidx_agb, m_intmass, n_intmass, rampressure, outflow_z)
 
     # Get observed data
     nelems, nstars = elem_data.shape
@@ -297,14 +307,14 @@ def neglnlike(parameters, elem_data, delem_data, n, t, inflow, nomgas0, reioniz,
     return L
 
 # Define the priors
-def lnprior(parameters, inflow, nomgas0, rampressure):
+def lnprior(parameters, inflow, nomgas0, rampressure, outflow_z):
 
     # Default parameters
     paramidx = 0
     f_in_norm0 = parameters[0]
     if inflow=='const':
         f_in_t0 = 0.
-        paramidx = -1
+        paramidx += -1
     else:
         f_in_t0 = parameters[1]
     f_out, sfr_norm, sfr_exp, mgas0 = parameters[paramidx+2:paramidx+6]
@@ -314,6 +324,7 @@ def lnprior(parameters, inflow, nomgas0, rampressure):
     banorm_agb=0.33
     bamean_agb=2.0
     ramconst = 0.
+    outflowexp = 0.
 
     if nomgas0:
         mgas0 = 0.
@@ -323,13 +334,16 @@ def lnprior(parameters, inflow, nomgas0, rampressure):
     cexp_ii, mgnorm_ii, canorm_ii, cnorm_agb = parameters[paramidx+7:paramidx+11]
     banorm_agb, bamean_agb = parameters[paramidx+11:paramidx+13]
     if rampressure:
-        ramconst = parameters[-1]
-
+        ramconst = parameters[paramidx+13]
+    else:
+        paramidx += -1
+    if outflow_z is not None:
+        outflowexp = parameters[paramidx+14]
 
     # Define uniform priors, based on values in Table 2 of Kirby+11
     if not ((0. < f_in_norm0 < 5.) and (0. <= f_in_t0 < 1.) and (0. < f_out < 20.) and (0. < sfr_norm < 10.) and (0. < sfr_exp < 2.) and \
         (0. < fe_ia < 0.9) and (0. < cexp_ii < 2.) and (0. < mgnorm_ii < 2.) and (0. < canorm_ii < 0.5) and (0.4 < cnorm_agb < 5.) and \
-        (0. < banorm_agb < 2.) and (0. <= ramconst < 5.) and (0. <= mgas0 < 1.)):
+        (0. < banorm_agb < 2.) and (0. <= ramconst < 5.) and (0. <= mgas0 < 1.) and (0. <= outflowexp <= 5.)):
         return -np.inf
     # Add Gaussian prior on Ba norm
     mu = 2
@@ -337,126 +351,138 @@ def lnprior(parameters, inflow, nomgas0, rampressure):
     return np.log(1.0/(np.sqrt(2*np.pi)*sigma))-0.5*(bamean_agb-mu)**2/sigma**2
 
 # Define the full log-probability function
-def lnprob(parameters, inflow, nomgas0, rampressure, elem_data, delem_data, n, t, reioniz, pristine, delay, delta_t, snindex, n_wd, goodidx, m_himass, n_himass, goodidx_agb, m_intmass, n_intmass):
-    lp = lnprior(parameters, inflow, nomgas0, rampressure)
-    ll = neglnlike(parameters, elem_data, delem_data, n, t, inflow, nomgas0, reioniz, pristine, delay, delta_t, snindex, n_wd, goodidx, m_himass, n_himass, goodidx_agb, m_intmass, n_intmass, rampressure)
+def lnprob(parameters, inflow, nomgas0, rampressure, outflow_z, elem_data, delem_data, n, t, reioniz, pristine, delay, delta_t, snindex, n_wd, goodidx, m_himass, n_himass, goodidx_agb, m_intmass, n_intmass):
+    lp = lnprior(parameters, inflow, nomgas0, rampressure, outflow_z)
+    ll = neglnlike(parameters, elem_data, delem_data, n, t, inflow, nomgas0, reioniz, pristine, delay, delta_t, snindex, n_wd, goodidx, m_himass, n_himass, goodidx_agb, m_intmass, n_intmass, rampressure, outflow_z)
     if np.isfinite(lp) and np.isfinite(ll):
         return lp - ll
     else:
         return -np.inf
 
-def runmcmc(outputname, nsteps=50, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=False, inflow=None):
+def runmcmc(outputname, nsteps=50, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=False, inflow=None, outflow=None, imf='kroupa93', ia_dtd='maoz10'):
 
-    '''
-    # Variables for MCMC run
-    nsteps = 50 #15625
-    nwalkers = 32
-    mcmc = True
-    datasource = 'both'
-    empirical = True
+    try:
 
-    # Tweak the model
-    delay = False
-    reioniz = False
-    rampressure = False
-    nomgas0 = False
-    inflow = 'expdec'
-    '''
+        # Put in initial guesses for parameters 
+        params_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6, 0.33, 2.0, 0., 0.] # initial values
+        if outflow is None:
+            del params_init[14]
+        if rampressure==False:
+            del params_init[13]
+        if nomgas0:
+            del params_init[5]
+        if inflow=='const':
+            del params_init[1]
 
-    # Put in initial guesses for parameters 
-    params_init = [1.07, 0.16, 4.01, 0.89, 0.82, 0.59, 0.8, 1., 1., 0., 0.6, 0.33, 2.0, 0.] # initial values
-    if rampressure==False:
-        del params_init[13]
-    if nomgas0:
-        del params_init[5]
-    if inflow=='const':
-        del params_init[1]
+        # Model prep!
 
-    # Model prep!
+        # Integration parameters
+        delta_t = 0.001     # time step (Gyr)
+        n = int(1.36/delta_t)     # number of timesteps in the model 
+        t = np.arange(n)*delta_t    # time passed in model array -- age universe (Gyr)
 
-    # Integration parameters
-    delta_t = 0.001     # time step (Gyr)
-    n = int(1.36/delta_t)     # number of timesteps in the model 
-    t = np.arange(n)*delta_t    # time passed in model array -- age universe (Gyr)
+        # Convert times to a redshift array
+        if outflow is not None:
+            ages = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1, 1.2, 1.5, 1.8, 2, 3])*u.Gyr
+            redshifts = [z_at_value(cosmo.age, age) for age in ages]
+            outflow_z = np.interp((t + 0.5), ages.value, redshifts)
+        else:
+            outflow_z = None
 
-    # Prepare arrays for SNe and AGB calculations
-    n_wd = dtd.dtd_ia(t, params.ia_model) * delta_t      # Fraction of stars that will explode as Type Ia SNe in future
+        # Prepare arrays for SNe and AGB calculations
+        n_wd = dtd.dtd_ia(t, ia_dtd) * delta_t      # Fraction of stars that will explode as Type Ia SNe in future
 
-    m_himass, n_himass = dtd.dtd_ii(t, params.imf_model)       # Mass and fraction of stars that will explode in the future
-    goodidx = np.where((m_himass > params.M_SN_min) & (m_himass < params.M_SN_max))[0]  # Limit to timesteps where stars will explode as CCSN
-    m_himass = m_himass[goodidx]    
-    n_himass = n_himass[goodidx]
+        m_himass, n_himass = dtd.dtd_ii(t, imf)       # Mass and fraction of stars that will explode in the future
+        goodidx = np.where((m_himass > params.M_SN_min) & (m_himass < params.M_SN_max))[0]  # Limit to timesteps where stars will explode as CCSN
+        m_himass = m_himass[goodidx]    
+        n_himass = n_himass[goodidx]
 
-    m_intmass, n_intmass = dtd.dtd_agb(t, params.imf_model)    # Mass and fraction of stars that become AGBs in the future
-    goodidx_agb = np.where((m_intmass > params.M_AGB_min) & (m_intmass < params.M_AGB_max))[0] # Limit to timesteps where stars between 0.865-10 M_sun will become AGB stars
-    m_intmass = m_intmass[goodidx_agb]
-    n_intmass = n_intmass[goodidx_agb]
+        m_intmass, n_intmass = dtd.dtd_agb(t, imf)    # Mass and fraction of stars that become AGBs in the future
+        goodidx_agb = np.where((m_intmass > params.M_AGB_min) & (m_intmass < params.M_AGB_max))[0] # Limit to timesteps where stars between 0.865-10 M_sun will become AGB stars
+        m_intmass = m_intmass[goodidx_agb]
+        n_intmass = n_intmass[goodidx_agb]
 
-    # Get empirical yields
-    nel, _, atomic, _, _, _, _, _ = gce_yields.initialize_empirical(
-        Ia_source=params.Ia_source, II_source=params.II_source, AGB_source=params.AGB_source, 
-        r_process_keyword=params.r_process_keyword,
-        II_mass=m_himass, AGB_mass=m_intmass, fit=True)
+        # Get empirical yields
+        nel, _, atomic, _, _, _, _, _ = gce_yields.initialize_empirical(
+            Ia_source=params.Ia_source, II_source=params.II_source, AGB_source=params.AGB_source, 
+            r_process_keyword=params.r_process_keyword,
+            II_mass=m_himass, AGB_mass=m_intmass, fit=True)
 
-    # Get indices for each tracked element. Will fail if element is not contained in SN_yield.
-    snindex = {'h':np.where(atomic == 1)[0],
-            'he':np.where(atomic == 2)[0],
-            'c':np.where(atomic == 6)[0],
-            'mg':np.where(atomic == 12)[0],
-            'si':np.where(atomic == 14)[0],
-            'ca':np.where(atomic == 20)[0],
-            'ti':np.where(atomic == 22)[0],
-            'fe':np.where(atomic == 26)[0],
-            'ba':np.where(atomic == 56)[0],
-            'mn':np.where(atomic == 25)[0],
-            'eu':np.where(atomic == 63)[0]}
+        # Get indices for each tracked element. Will fail if element is not contained in SN_yield.
+        snindex = {'h':np.where(atomic == 1)[0],
+                'he':np.where(atomic == 2)[0],
+                'c':np.where(atomic == 6)[0],
+                'mg':np.where(atomic == 12)[0],
+                'si':np.where(atomic == 14)[0],
+                'ca':np.where(atomic == 20)[0],
+                'ti':np.where(atomic == 22)[0],
+                'fe':np.where(atomic == 26)[0],
+                'ba':np.where(atomic == 56)[0],
+                'mn':np.where(atomic == 25)[0],
+                'eu':np.where(atomic == 63)[0]}
 
-    # Define parameters for pristine gas 
-    pristine = np.zeros(nel)    # Pristine element fractions by mass (dimensionless)
-    pristine[0] = 0.7514        # Hydrogen from BBN                                                                                      
-    pristine[1] = 0.2486        # Helium from BBN
-    pristine=pristine
+        # Define parameters for pristine gas 
+        pristine = np.zeros(nel)    # Pristine element fractions by mass (dimensionless)
+        pristine[0] = 0.7514        # Hydrogen from BBN                                                                                      
+        pristine[1] = 0.2486        # Helium from BBN
+        pristine=pristine
 
-    # Define observed data
-    elem_dart, delem_dart, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, removerprocess='statistical', feh_denom=True) #, eu=baeu)
-    elem_deimos, delem_deimos, _ = getdata(galaxy='Scl', source='deimos', c=True, ba=True, removerprocess='statistical', feh_denom=True) #, eu=baeu)
+        # Define observed data
+        elem_dart, delem_dart, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, removerprocess='statistical', feh_denom=True) #, eu=baeu)
+        elem_deimos, delem_deimos, _ = getdata(galaxy='Scl', source='deimos', c=True, ba=True, removerprocess='statistical', feh_denom=True) #, eu=baeu)
 
-    # Don't use [Fe/H] from DART?
-    elem_dart[0,:] = -999.
+        # Don't use [Fe/H] from DART?
+        elem_dart[0,:] = -999.
 
-    # Don't use [Ba/Fe] from DEIMOS?
-    elem_deimos[-1,:] = -999.
+        # Don't use [Ba/Fe] from DEIMOS?
+        elem_deimos[-1,:] = -999.
 
-    # Combine datasets
-    elem_data = np.hstack((elem_dart, elem_deimos))
-    delem_data = np.hstack((delem_dart, delem_deimos))
+        # Combine datasets
+        elem_data = np.hstack((elem_dart, elem_deimos))
+        delem_data = np.hstack((delem_dart, delem_deimos))
 
-    # Sample the log-probability function using emcee - first, initialize the walkers
-    ndim = len(params_init)
-    dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01] / np.sqrt(14.)
-    if rampressure==False:
-        dpar = np.delete(dpar,13)
-    if nomgas0:
-        dpar = np.delete(dpar,5)
-    if inflow=='const':
-        dpar = np.delete(dpar,1)
+        # Sample the log-probability function using emcee - first, initialize the walkers
+        ndim = len(params_init)
+        dpar = [0.052456082, 0.0099561587, 0.15238868, 0.037691148, 0.038053383, 0.26619513, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01] / np.sqrt(14.)
+        if outflow is None:
+            dpar = np.delete(dpar,14)
+        if rampressure==False:
+            dpar = np.delete(dpar,13)
+        if nomgas0:
+            dpar = np.delete(dpar,5)
+        if inflow=='const':
+            dpar = np.delete(dpar,1)
 
-    pos = []
-    for i in range(nwalkers):
-        a = params_init + dpar*np.random.randn(ndim)
-        pos.append(a)
+        pos = []
+        for i in range(nwalkers):
+            a = params_init + dpar*np.random.randn(ndim)
+            pos.append(a)
 
-    print('Starting sampler')
+        print('Starting sampler')
 
-    # Run parallel MCMC
-    with Pool() as pool:
-        sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, pool=pool, args=[inflow, nomgas0, rampressure, elem_data, delem_data, n, t, reioniz, pristine, delay, delta_t, snindex, n_wd, goodidx, m_himass, n_himass, goodidx_agb, m_intmass, n_intmass])
-        sampler.run_mcmc(pos, nsteps, progress=True)
+        # Run parallel MCMC
+        with Pool() as pool:
+            sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, pool=pool, args=[inflow, nomgas0, rampressure, outflow_z, elem_data, delem_data, n, t, reioniz, pristine, delay, delta_t, snindex, n_wd, goodidx, m_himass, n_himass, goodidx_agb, m_intmass, n_intmass])
+            sampler.run_mcmc(pos, nsteps, progress=True)
 
-        # Save the chain so we don't have to run this again
-        np.save(outputname, sampler.chain, allow_pickle=True, fix_imports=True)
+            # Save the chain so we don't have to run this again
+            np.save(outputname, sampler.chain, allow_pickle=True, fix_imports=True)
+    
+    except:
+        print('Oops! Model '+outputname+' failed')
 
     return
 
 if __name__=="__main__":
-    runmcmc('test', nsteps=50, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=False, inflow=None)
+    #runmcmc('test', nsteps=50, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow='expdec', outflow=None)
+    runmcmc('inflowconst', nsteps=15625, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow='const', outflow=None)
+    runmcmc('inflowexp', nsteps=15625, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow='expdec', outflow=None)
+    runmcmc('outflow', nsteps=15625, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow='expdec', outflow='test')
+    runmcmc('sfdelay', nsteps=15625, nwalkers=32, delay=True, reioniz=False, rampressure=False, nomgas0=True, inflow=None, outflow=None)
+    runmcmc('reioniz', nsteps=15625, nwalkers=32, delay=False, reioniz=True, rampressure=False, nomgas0=True, inflow=None, outflow=None)
+    runmcmc('rampressure', nsteps=15625, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow=None, outflow=None)
+    runmcmc('imf_chabrier', nsteps=15625, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow=None, outflow=None, imf='chabrier03')
+    runmcmc('imf_salpeter', nsteps=15625, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow=None, outflow=None, imf='salpeter55')
+    runmcmc('dtd_tmin200', nsteps=15625, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow=None, outflow=None, ia_dtd='medhidelay')
+    runmcmc('dtd_index05', nsteps=15625, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow=None, outflow=None, ia_dtd='index05')
+    runmcmc('dtd_cutoff', nsteps=15625, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow=None, outflow=None, ia_dtd='cutoff')

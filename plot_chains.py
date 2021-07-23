@@ -19,7 +19,7 @@ import numpy as np
 import scipy.stats as stats
 import corner
 
-def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, c=True, fe=True, rampressure=True, nomgas0=True, inflow=None):
+def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, c=True, fe=True, rampressure=True, nomgas0=True, inflow=None, outflow=None):
 
     # Load file
     chainfile = np.load(file)
@@ -31,7 +31,9 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, 
 
     names = [r"$A_{\mathrm{in}}$", r"$\tau_{\mathrm{in}}$", r"$A_{\mathrm{out}}$", r"$A_{\star}$", r"$\alpha$", r"$M_{\mathrm{gas},0}$"]
     if empiricalfit:
-        names += [r"$\mathrm{Fe}_{\mathrm{Ia}}$", r"$\mathrm{expC}_{\mathrm{II}}$", r"$\mathrm{normMg}_{\mathrm{II}}$", r"$\mathrm{normCa}_{\mathrm{II}}$", r"$\mathrm{normC}_{\mathrm{AGB}}$", r"$\mathrm{normBa}_{\mathrm{AGB}}$", r"$\mathrm{meanBa}_{\mathrm{AGB}}$", r"$\eta$"]
+        names += [r"$\mathrm{Fe}_{\mathrm{Ia}}$", r"$\mathrm{expC}_{\mathrm{II}}$", r"$\mathrm{normMg}_{\mathrm{II}}$", r"$\mathrm{normCa}_{\mathrm{II}}$", r"$\mathrm{normC}_{\mathrm{AGB}}$", r"$\mathrm{normBa}_{\mathrm{AGB}}$", r"$\mathrm{meanBa}_{\mathrm{AGB}}$", r"$\eta$", r"$k_{\mathrm{outflow}}$"]
+        if outflow is None:
+            del names[14]
         if rampressure==False:
             del names[13]
         if c==False:
@@ -41,6 +43,8 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, 
             del names[6]
     if nomgas0:
         del names[5]
+    if inflow=='const':
+        del names[1]
 
     for i in range(ndim):
         for j in range(nwalkers):
@@ -72,6 +76,8 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, 
 
     # Print the output parameters
     outputparams = np.percentile(samples,50, axis=0)
+    if inflow=='const':
+        outputparams = np.insert(outputparams, 1, 0.)
     if nomgas0:
         outputparams = np.insert(outputparams, 5, 0.)
     if fe==False:
@@ -80,6 +86,8 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, 
         outputparams = np.insert(outputparams, 7, 1.)
         outputparams = np.append(outputparams, 0.6)
     if rampressure==False:
+        outputparams = np.insert(outputparams, 13, 0.)
+    if outflow is None:
         outputparams = np.append(outputparams, 0.)
     print(*outputparams, sep=',')
 
@@ -91,4 +99,4 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, 
 
 if __name__ == "__main__":
 
-    plotmcmc(file='chain.npy', burnin=0, empiricalfit=True, c=True, fe=True, rampressure=False, inflow='const')
+    plotmcmc(file='test.npy', burnin=0, empiricalfit=True, c=True, fe=True, rampressure=False, inflow=None, nomgas0=True, outflow='test')
