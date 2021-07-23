@@ -137,10 +137,10 @@ if __name__ == "__main__":
     #model, atomic, aic_gauss = gce.runmodel(scl_gaussbapriors, plot=True, title="Sculptor dSph (Gaussian Ba priors)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False) #, amr="plots/amr_test", sfh="plots/sfh_test")    
     #model, atomic, aic_gauss25 = gce.runmodel(scl_gaussbapriors25, plot=True, title="Sculptor dSph (Gaussian Ba priors)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False) #, amr="plots/amr_test", sfh="plots/sfh_test")    
 
-    model, atomic, aic_orig = gce.runmodel(scl_final, plot=True, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
+    model0, atomic, aic_orig = gce.runmodel(scl_final, plot=False, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, aic_nomgas = gce.runmodel(scl_final_nomgas0, plot=True, title="Sculptor dSph (no initial gas)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False, nomgas0=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
-    model, atomic, aic_nomgas_test = gce.runmodel(scl_test_nomgas0, plot=True, title="Sculptor dSph (no initial gas test)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False, nomgas0=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
+    model1, atomic, aic_nomgas_test = gce.runmodel(scl_test_nomgas0, plot=False, title="Sculptor dSph (no initial gas test)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False, nomgas0=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
 
     #model, atomic, aic_opt = gce.runmodel(scl_final_fromopt, plot=True, title="Sculptor dSph (from optimization)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False) #, amr="plots/amr_test", sfh="plots/sfh_test")
     
-    print(aic_orig, aic_nomgas_test)
+    print(model0['t'][-1], model1['t'][-1])
