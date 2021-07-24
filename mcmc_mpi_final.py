@@ -179,7 +179,7 @@ def gce_model(pars, n, t, inflow, nomgas0, reioniz, pristine, delay, delta_t, sn
         if outflow_z is None:
             model['mout'][timestep,:] = f_out * x_el * (model['II_rate'][timestep] + model['Ia_rate'][timestep]) 
         else:
-            model['mout'][timestep,:] = f_out * outflow_z[timestep]**pars[paramidx+14] * x_el * (model['II_rate'][timestep] + model['Ia_rate'][timestep]) 
+            model['mout'][timestep,:] = f_out * np.exp(outflow_z[timestep]*pars[paramidx+14]) * x_el * (model['II_rate'][timestep] + model['Ia_rate'][timestep]) 
         if rampressure and model['eps'][timestep-1,snindex['fe']] > -1.5:
             model['mout'][timestep,:] += x_el * rampressureconst * 1e6 
 

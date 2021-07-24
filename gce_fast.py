@@ -202,7 +202,7 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
     model['f_in'] = f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)   
     if inflow=='const':
         model['f_in'] = np.ones_like(model['t']) * 0.03275 * 1e9
-    elif inflow=='gausslike':
+    elif inflow=='expdec':
         model['f_in'] = 0.074 * 1e9 * model['t'] * np.exp(-(model['t']-0.5)**2/(2*0.25**2))
 
     # Option to turn off inflow for reionization
@@ -439,7 +439,7 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
     aic = 2*k + 2*negll
     bic = np.log(n)*k + 2*negll
 
-    print('test', negll, aic)
+    #print('test', negll, aic)
 
     return model[:timestep-1], atomic, aic
 

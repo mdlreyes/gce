@@ -93,9 +93,10 @@ def plotsfh(cumulativeSFH=True, chainfile=None, plot_path='plots/', burnin=5000,
     sfrs = np.zeros((Niter,1150))
     finalt = np.arange(0,1.150,0.001)
     idxs = rng.choice(len(samples[:,0]),size=Niter)
-    print(idxs)
     for i, idx in tqdm(enumerate(idxs)):
-        currentmodel, _, _ = gce.runmodel(samples[idx,:], plot=False, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False)
+        sample = samples[idx,:]
+        sample = np.insert(sample, 5, 0.)
+        currentmodel, _, _ = gce.runmodel(sample, plot=False, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False, nomgas0=True)
         if len(currentmodel['mdot']) > 1150:
             sfrs[i,:] = currentmodel['mdot'][:1150]
         else:
@@ -166,4 +167,6 @@ def plotsfh(cumulativeSFH=True, chainfile=None, plot_path='plots/', burnin=5000,
     return
 
 if __name__=="__main__":
-    plotsfh(chainfile='output/empiricaltest_bothba_ba.npy', burnin=10000, Niter=500, cumulativeSFH=True)
+    plotsfh(chainfile='output/final_withoutmgas_med.npy', burnin=5000, Niter=500, cumulativeSFH=True)
+    import os
+    os.system('say "done, motherfucker"')

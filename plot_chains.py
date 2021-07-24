@@ -99,4 +99,4 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, 
 
 if __name__ == "__main__":
 
-    plotmcmc(file='test.npy', burnin=0, empiricalfit=True, c=True, fe=True, rampressure=False, inflow=None, nomgas0=True, outflow='test')
+    plotmcmc(file='output/final_withoutmgas_med.npy', burnin=5000, empiricalfit=True, c=True, fe=True, rampressure=False, inflow=None, nomgas0=True, outflow=None)
