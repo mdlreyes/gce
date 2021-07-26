@@ -48,13 +48,13 @@ scl_iadtd_cutoff = [0.3907399651848807,0.31789100855381613,4.976079316209285,0.4
 scl_imf_chabrier03 = [1.0680354182219103,0.29087824048307825,5.785175190841888,0.32614582504078626,0.6880109337422085,0.,0.8347392374670606,1.3517172298659013,0.5890139428180761,0.2739631120786506,1.7994398252473034,0.9807143044292836,3-0.011967114634611836]
 scl_imf_salpeter55 = [0.5089476125938007,0.32350548351207437,5.391102320123509,0.4003999995632118,0.7799460946453387,0.,0.6164885754010938,1.3299979696872426,0.7198534106528632,0.25245975628500583,2.182828951358294,0.9847378266515173,3-0.00954264476609045]
 
-scl_final = [0.5396618135382528,0.2681707153106137,4.786076060415441,0.8023090276883353,0.7138939456571872,0.0,0.5817572301890092,1.3208335678363674,1.4026483028805945,0.242765941495789,1.9910917547173197,1.095006566170003,2.7833883548905374]
+scl_final = [0.5396618135382528,0.2681707153106137,4.786076060415441,0.8023090276883353,0.7138939456571872,0.0,0.5817572301890092,1.3208335678363674,1.4026483028805945,0.242765941495789,1.9910917547173197,1.095006566170003,2.7833883548905374, 0.]
 
 def compare_sfh(models, title, fiducialtitle='Fiducial'):
     """Compare SFH outputs from multiple GCE models."""
 
     # Run GCE models
-    model, _, ll = gce.runmodel(scl_test_bothba_ba, plot=False, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False)
+    model, _, ll = gce.runmodel(scl_final, plot=False, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False)
     model_reioniz, _, ll_reioniz = gce.runmodel(scl_reioniz, plot=False, title="Sculptor dSph (reionization)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=True)
     model_delaysf, _, ll_delaysf = gce.runmodel(scl_delaySFtest, plot=False, title="Sculptor dSph (delayed SF)", empirical=True, empiricalfit=True, feh_denom=True, delay=True)
     model_rampressure, _, ll_rampressure = gce.runmodel(scl_rampressure, plot=False, title="Sculptor dSph (ram pressure)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, rampressure=True)
@@ -366,11 +366,12 @@ def compare_yields(plottype, feh_denom=True):
     return
 
 if __name__=="__main__":
-    #compare_sfh(['fiducial','delaysf','reioniz','rampressure'], 'modelconstruction')
+    compare_sfh(['fiducial','delaysf','reioniz','rampressure'], 'modelconstruction')
+    #compare_sfh(['fiducial','inflowconst','inflowexp','outflow'], 'modelflows')
     #compare_sfh(['fiducial','iadtd_medhimin','iadtd_index05','iadtd_cutoff'], 'iadtd', fiducialtitle='Fiducial: '+r'$t^{-1.1}$, '+r'$t_{\mathrm{min}}=100$Myr')
     #compare_sfh(['fiducial','iadtd_maoz17','iadtd_lomin','iadtd_medhimin','iadtd_index05','iadtd_index15','iadtd_cutoff'], 'iadtd', fiducialtitle='Fiducial: '+r'$t^{-1.1}$, '+r'$t_{\mathrm{min}}=100$Myr')
     #compare_sfh(['fiducial','imf_chabrier','imf_salpeter'], 'imf', fiducialtitle='Fiducial: Kroupa et al. (1993) IMF')
     
-    compare_yields('IaSN')
-    compare_yields('rprocess', feh_denom=False)
+    #compare_yields('IaSN')
+    #compare_yields('rprocess', feh_denom=False)
     #compare_yields('rprocess_bestfit', feh_denom=False)

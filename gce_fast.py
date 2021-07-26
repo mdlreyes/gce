@@ -166,31 +166,30 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
     model['t'] = t
 
     # Read parameters from pars
-    f_in_norm0 = pars[0]*1.e9    # Normalization of gas inflow rate (M_sun Gyr**-1)
-    f_in_t0 = pars[1]       # Exponential decay time for gas inflow (Gyr)           
-    f_out = pars[2]*1.e3    # Strength of gas outflow due to supernovae (M_sun SN**-1) 
-    sfr_norm = pars[3]      # Normalization of SF law (10**6 M_sun Gyr**-1)
-    sfr_exp = pars[4]       # Exponent of SF law
-    model['mgas'][0] = pars[5]*1.e6    # Initial gas mass (M_sun)
+    paramidx = 0
+    f_in_norm0 = pars[0]*1.e9  # Normalization of gas inflow rate (10**-6 M_sun Gyr**-1)     
+    if inflow=='const':
+        paramidx += -1    
+    else:
+        f_in_t0 = pars[1]       # Exponential decay time for gas inflow (Gyr)  
+    f_out = pars[paramidx+2]*1.e3    # Strength of gas outflow due to supernovae (M_sun SN**-1) 
+    sfr_norm = pars[paramidx+3]      # Normalization of SF law (10**-6 M_sun Gyr**-1)
+    sfr_exp = pars[paramidx+4]       # Exponent of SF law
+    model['mgas'][0] = 0.  # No initial gas mass
 
     if empiricalfit:
         # Additional free parameters from yields
-        if feh_denom:
-            fe_ia = pars[6]         # Fe yield from IaSNe
-            fe_idx = 6
+        fe_ia = pars[paramidx+6]         # Fe yield from IaSNe
+        cexp_ii = pars[paramidx+7]       # C exponent for CCSN yields
+        cnorm_agb = pars[paramidx+10]    # C normalization for AGB yields
+        banorm_agb = pars[paramidx+11]   # Ba normalization for AGB yields
+        bamean_agb = pars[paramidx+12]   # Ba mean for AGB yields
+        mgnorm_ii = pars[paramidx+8]     # Mg normalization for CCSN yields
+        canorm_ii = pars[paramidx+9]     # Ca normalization for CCSN yields
+        if rampressure==False:
+            paramidx += -1
         else:
-            fe_ia = 0.8
-            fe_idx = 5
-        cexp_ii = pars[fe_idx+1]       # C exponent for CCSN yields
-        mgnorm_ii = pars[fe_idx+2]     # Mg normalization for CCSN yields
-        canorm_ii = pars[fe_idx+3]     # Ca normalization for CCSN yields
-        cnorm_agb = pars[fe_idx+4]    # C normalization for AGB yields
-        if len(pars) > 11:
-            banorm_agb = pars[fe_idx+5]
-            bamean_agb = pars[fe_idx+6]
-        else:
-            banorm_agb = 0.33
-            bamean_agb = 0.3
+            rampressureconst = pars[paramidx+13]
 
     # Define parameters for pristine gas 
     pristine = np.zeros(nel)    # Pristine element fractions by mass (dimensionless)
@@ -201,9 +200,9 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
     # Initialize gas inflow
     model['f_in'] = f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)   
     if inflow=='const':
-        model['f_in'] = np.ones_like(model['t']) * 0.03275 * 1e9
+        model['f_in'] = f_in_norm0 * np.ones_like(model['t'])
     elif inflow=='expdec':
-        model['f_in'] = 0.074 * 1e9 * model['t'] * np.exp(-(model['t']-0.5)**2/(2*0.25**2))
+        model['f_in'] = f_in_norm0 * np.exp(-model['t']/f_in_t0)
 
     # Option to turn off inflow for reionization
     if reioniz:
@@ -327,7 +326,7 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
         if outflow=='none':
             outflowcoeff = f_out
         elif outflow=='inflow':
-            outflowcoeff = f_out * model['f_in'][timestep]
+            outflowcoeff = f_out * np.exp(outflow_z[timestep]*pars[paramidx+14])
         model['mout'][timestep,:] = outflowcoeff * x_el * (model['II_rate'][timestep] + model['Ia_rate'][timestep])
         if rampressure and model['eps'][timestep-1,snindex['fe']] > -1.5:
                 model['mout'][timestep,:] += x_el * pars[13] * 1e6 #0.43 * (1+f_out) * sfr_norm
@@ -433,6 +432,8 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
     if rampressure:
         k += 1
     if nomgas0:
+        k += -1
+    if inflow=='const':
         k += -1
     n = 474  # Number of stars
     negll = neglnlike(pars, model=[elem_model, sfr, mstar_model, time, leftovergas])
