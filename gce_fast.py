@@ -198,11 +198,12 @@ def runmodel(pars, plot=False, title="", amr=None, sfh=None, empirical=False, em
     pristine=pristine
 
     # Initialize gas inflow
-    model['f_in'] = f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)   
     if inflow=='const':
         model['f_in'] = f_in_norm0 * np.ones_like(model['t'])
     elif inflow=='expdec':
         model['f_in'] = f_in_norm0 * np.exp(-model['t']/f_in_t0)
+    else:
+        model['f_in'] = f_in_norm0 * model['t'] * np.exp(-model['t']/f_in_t0)    # Compute inflow rates (just a function of time)   
 
     # Option to turn off inflow for reionization
     if reioniz:

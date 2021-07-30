@@ -107,11 +107,16 @@ if __name__ == "__main__":
 
     scl_final = [0.5345416815125118,0.26873964968241854,4.792520166984605,0.669974341000559,0.8076961016570472,0.,0.5788555396852141,1.3172211548419224,1.425232310196399,0.248402552325658,1.9258476702795306,1.0768034902504153,2.7983433770451396]
     scl_test_nomgas0 = [0.5396618135382528,0.2681707153106137,4.786076060415441,0.8023090276883353,0.7138939456571872,0.0,0.5817572301890092,1.3208335678363674,1.4026483028805945,0.242765941495789,1.9910917547173197,1.095006566170003,2.7833883548905374] # From restructured code
-    scl_inflowconst = []
+    scl_inflowconst_1 = [0., 4.63, 0.01, 0.375, 0.52, 0., 1.34, 1.60, 0.28, 1.34, 0.68, 2.85]
+    scl_inflowconst_2 = [0.47, 6.49, 2.16, 1.82, 0.67, 0., 1.37, 0.95, 0.14, 0.68, 0.04, 1.77]
     scl_inflowexp = [0.06496605154954403,0.8150993638882837,4.845007136130306,1.493663884032438,0.293715730475182,0.0,0.5810620713192151,1.3270197716870957,1.3441501508542837,0.22119269118819115,2.038375621935514,0.9877440723565699,2.9129627976905557]
     scl_outflow = []
     scl_delaySF = [0.4385141670294113,0.31321776124241185,4.850818226490671,1.294482857279215,0.4956043540963967,0.0,0.6162743721095508,1.3331982357049064,1.3301465946600732,0.24926427379065966,2.356362120936387,1.0816722104194887,2.896019965318881]
     scl_reioniz = []
+    scl_rampressure = [0.5004475144848842,0.28014976193133256,4.560594860622903,0.7634584087926897,0.7340948173807795,0.0,0.5943831807492506,1.321766413812236,1.3977791844958891,0.2532147136111331,2.0542872982044007,1.117493993641292,2.797300482828119,3.1984896617719167]
+    scl_imf_chabrier03 = [1.108118108946736,0.2840096006704498,5.6694650075134145,0.34191059182870215,0.7127291258587196,0.0,0.88,1.3633020349319787,1.0318175595532324,0.2576929101881398,1.97387804655777,1.5108944744261965,2.611712835999786]
+    scl_imf_salpeter55 =[0.5404783413198105,0.3129102870095325,5.320937484652554,0.45215716255996485,0.7580298734439346,0.0,0.6533602115066313,1.3414525941847104,1.2154187399810408,0.24681829322818655,2.5304790628863247,1.5788499974533377,2.704077988483312]
+    scl_dtd_tmin200 = [0.24622522648838643,0.3792536257559661,4.81425127434149,0.5805976135643267,0.6732329412228181,0.0,0.6608382723291828,1.4119642498905187,1.1924669319481056,0.17237107857841683,1.1165533126821832,1.216109930449961,2.1410963654806854]
 
     #model, atomic, _ = gce.runmodel(scl_init, plot=True, title="Sculptor dSph (Initial conditions)", empirical=True, empiricalfit=True, feh_denom=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, _ = gce.runmodel(scl_mcmc_widerpriors, plot=True, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
@@ -145,7 +150,9 @@ if __name__ == "__main__":
     
     model, atomic, aic = gce.runmodel(scl_test_nomgas0, plot=False, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False, nomgas0=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
     print(model['t'][-1], aic)
+    #model, atomic, aic = gce.runmodel(scl_inflowconst_1, plot=True, title="Sculptor dSph (const inflow 1)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False, nomgas0=True, inflow='const') #, amr="plots/amr_test", sfh="plots/sfh_test")
+    #model, atomic, aic = gce.runmodel(scl_inflowconst_2, plot=False, title="Sculptor dSph (const inflow 2)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False, nomgas0=True, inflow='const') #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, aic = gce.runmodel(scl_inflowexp, plot=False, title="Sculptor dSph (exp dec inflow)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False, nomgas0=True, inflow='expdec') #, amr="plots/amr_test", sfh="plots/sfh_test")
     #model, atomic, aic = gce.runmodel(scl_delaySF, plot=False, title="Sculptor dSph (delayed SF)", empirical=True, empiricalfit=True, feh_denom=True, delay=True, reioniz=False, mgenhance=False, nomgas0=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
-    model, atomic, aic = gce.runmodel(scl_reioniz, plot=True, title="Sculptor dSph (reionization)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=True, mgenhance=False, nomgas0=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
+    #model, atomic, aic = gce.runmodel(scl_reioniz, plot=True, title="Sculptor dSph (reionization)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=True, mgenhance=False, nomgas0=True) #, amr="plots/amr_test", sfh="plots/sfh_test")
     print(model['t'][-1], aic)

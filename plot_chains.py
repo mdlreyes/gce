@@ -99,8 +99,12 @@ def plotmcmc(file='chain.npy', outfile='plots', burnin=100, empiricalfit=False, 
 
 if __name__ == "__main__":
 
-    #plotmcmc(file='output/final/inflowconst.npy', burnin=5000, empiricalfit=True, c=True, fe=True, rampressure=False, inflow='const', nomgas0=True, outflow=None)
+    #plotmcmc(file='output/final/inflowconst.npy', burnin=10000, empiricalfit=True, c=True, fe=True, rampressure=False, inflow='const', nomgas0=True, outflow=None)
     #plotmcmc(file='output/final/inflowexp.npy', burnin=5000, empiricalfit=True, c=True, fe=True, rampressure=False, inflow='expdec', nomgas0=True, outflow=None)
-    plotmcmc(file='output/final/outflow.npy', burnin=5000, empiricalfit=True, c=True, fe=True, rampressure=False, inflow=None, nomgas0=True, outflow='test')
+    #plotmcmc(file='output/final/outflow.npy', burnin=5000, empiricalfit=True, c=True, fe=True, rampressure=False, inflow=None, nomgas0=True, outflow='test')
     #plotmcmc(file='output/final/sfdelay.npy', burnin=5000, empiricalfit=True, c=True, fe=True, rampressure=False, inflow=None, nomgas0=True, outflow=None)
-    #plotmcmc(file='output/final/reioniz.npy', burnin=10000, empiricalfit=True, c=True, fe=True, rampressure=False, inflow=None, nomgas0=True, outflow=None)
+    plotmcmc(file='output/final/reioniz.npy', burnin=5000, empiricalfit=True, c=True, fe=True, rampressure=False, inflow=None, nomgas0=True, outflow=None)
+    #plotmcmc(file='output/final/rampressure.npy', burnin=5000, empiricalfit=True, c=True, fe=True, rampressure=True, inflow=None, nomgas0=True, outflow=None)
+    #plotmcmc(file='output/final/imf_chabrier.npy', burnin=5000, empiricalfit=True, c=True, fe=True, rampressure=False, inflow=None, nomgas0=True, outflow=None)
+    #plotmcmc(file='output/final/imf_salpeter.npy', burnin=5000, empiricalfit=True, c=True, fe=True, rampressure=False, inflow=None, nomgas0=True, outflow=None)
+    #plotmcmc(file='output/final/dtd_tmin200.npy', burnin=5000, empiricalfit=True, c=True, fe=True, rampressure=False, inflow=None, nomgas0=True, outflow=None)

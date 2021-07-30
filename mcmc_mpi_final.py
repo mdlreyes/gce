@@ -341,9 +341,9 @@ def lnprior(parameters, inflow, nomgas0, rampressure, outflow_z):
         outflowexp = parameters[paramidx+14]
 
     # Define uniform priors, based on values in Table 2 of Kirby+11
-    if not ((0. < f_in_norm0 < 5.) and (0. <= f_in_t0 < 1.) and (0. < f_out < 20.) and (0. < sfr_norm < 10.) and (0. < sfr_exp < 2.) and \
-        (0. < fe_ia < 0.9) and (0. < cexp_ii < 2.) and (0. < mgnorm_ii < 2.) and (0. < canorm_ii < 0.5) and (0.4 < cnorm_agb < 5.) and \
-        (0. < banorm_agb < 2.) and (0. <= ramconst < 5.) and (0. <= mgas0 < 1.) and (-2. <= outflowexp <= 2.)):
+    if not ((0. < f_in_norm0 < 5.) and (0. <= f_in_t0 < 5.) and (0. < f_out < 20.) and (0. < sfr_norm < 10.) and (0. < sfr_exp < 2.) and \
+        (0. < fe_ia < 0.9) and (0. < cexp_ii < 2.) and (0. < mgnorm_ii < 2.) and (0. < canorm_ii < 0.5) and (0.4 < cnorm_agb < 10.) and \
+        (0. < banorm_agb < 5.) and (0. <= ramconst < 5.) and (0. <= mgas0 < 1.) and (-2. <= outflowexp <= 2.)):
         return -np.inf
     # Add Gaussian prior on Ba norm
     mu = 2
@@ -475,14 +475,14 @@ def runmcmc(outputname, nsteps=50, nwalkers=32, delay=False, reioniz=False, ramp
 
 if __name__=="__main__":
     #runmcmc('test', nsteps=50, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow='expdec', outflow=None)
-    runmcmc('inflowconst', nsteps=31250, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow='const', outflow=None)
+    #runmcmc('inflowconst', nsteps=20000, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow='const', outflow=None)
     #runmcmc('inflowexp', nsteps=15625, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow='expdec', outflow=None)
-    runmcmc('outflow', nsteps=15625, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow=None, outflow='test')
+    #runmcmc('outflow', nsteps=15625, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow=None, outflow='test')
     #runmcmc('sfdelay', nsteps=15625, nwalkers=32, delay=True, reioniz=False, rampressure=False, nomgas0=True, inflow=None, outflow=None)
-    #runmcmc('reioniz', nsteps=15625, nwalkers=32, delay=False, reioniz=True, rampressure=False, nomgas0=True, inflow=None, outflow=None)
-    runmcmc('rampressure', nsteps=15625, nwalkers=32, delay=False, reioniz=False, rampressure=True, nomgas0=True, inflow=None, outflow=None)
-    runmcmc('imf_chabrier', nsteps=15625, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow=None, outflow=None, imf='chabrier03')
-    runmcmc('imf_salpeter', nsteps=15625, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow=None, outflow=None, imf='salpeter55')
-    runmcmc('dtd_tmin200', nsteps=15625, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow=None, outflow=None, ia_dtd='medhidelay')
+    #runmcmc('rampressure', nsteps=15625, nwalkers=32, delay=False, reioniz=False, rampressure=True, nomgas0=True, inflow=None, outflow=None)
+    #runmcmc('imf_chabrier', nsteps=15625, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow=None, outflow=None, imf='chabrier03')
+    #runmcmc('imf_salpeter', nsteps=15625, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow=None, outflow=None, imf='salpeter55')
+    #runmcmc('dtd_tmin200', nsteps=15625, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow=None, outflow=None, ia_dtd='medhidelay')
     runmcmc('dtd_index05', nsteps=15625, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow=None, outflow=None, ia_dtd='index05')
     runmcmc('dtd_cutoff', nsteps=15625, nwalkers=32, delay=False, reioniz=False, rampressure=False, nomgas0=True, inflow=None, outflow=None, ia_dtd='cutoff')
+    runmcmc('reioniz', nsteps=15625, nwalkers=32, delay=False, reioniz=True, rampressure=False, nomgas0=True, inflow=None, outflow=None)

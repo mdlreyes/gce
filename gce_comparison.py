@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 
 # Import other packages
 import numpy as np
+import scipy.ndimage
 import gce_fast as gce
 from getdata import getdata
 from astropy.cosmology import FlatLambdaCDM  # needed to compute redshifts
@@ -49,6 +50,8 @@ scl_imf_chabrier03 = [1.0680354182219103,0.29087824048307825,5.785175190841888,0
 scl_imf_salpeter55 = [0.5089476125938007,0.32350548351207437,5.391102320123509,0.4003999995632118,0.7799460946453387,0.,0.6164885754010938,1.3299979696872426,0.7198534106528632,0.25245975628500583,2.182828951358294,0.9847378266515173,3-0.00954264476609045]
 
 scl_final = [0.5396618135382528,0.2681707153106137,4.786076060415441,0.8023090276883353,0.7138939456571872,0.0,0.5817572301890092,1.3208335678363674,1.4026483028805945,0.242765941495789,1.9910917547173197,1.095006566170003,2.7833883548905374, 0.]
+scl_inflowconst = [0.47, 6.49, 2.16, 1.82, 0.67, 0., 1.37, 0.95, 0.14, 0.68, 0.04, 1.77, 0.]
+scl_inflowexp = [0.06496605154954403,0.8150993638882837,4.845007136130306,1.493663884032438,0.293715730475182,0.0,0.5810620713192151,1.3270197716870957,1.3441501508542837,0.22119269118819115,2.038375621935514,0.9877440723565699,2.9129627976905557, 0.]
 
 def compare_sfh(models, title, fiducialtitle='Fiducial'):
     """Compare SFH outputs from multiple GCE models."""
@@ -365,8 +368,81 @@ def compare_yields(plottype, feh_denom=True):
 
     return
 
+def compare_mdf(fiducialtitle='Fiducial'):
+    """Compare SFH outputs from multiple GCE models."""
+
+    # Run GCE models
+    model, atomic, ll = gce.runmodel(scl_final, plot=False, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False, nomgas0=True)
+    model_inflowconst, _, ll_inflowconst = gce.runmodel(scl_inflowconst, plot=False, title="Sculptor dSph (const inflow)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False, nomgas0=True, inflow='const')
+    model_inflowexp, _, ll_inflowexp = gce.runmodel(scl_inflowexp, plot=False, title="Sculptor dSph (exp dec inflow)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False, nomgas0=True, inflow='expdec')
+    models = ['fiducial','inflowconst','inflowexp']
+
+    # Get model names
+    modelnames = {'fiducial':model, 'inflowconst':model_inflowconst, 'inflowexp':model_inflowexp}
+    llnames = {'fiducial':ll, 'inflowconst':ll_inflowconst, 'inflowexp':ll_inflowexp}
+    titles = {'fiducial':'Fiducial', 'inflowconst':'Constant inflow', 'inflowexp':'Exponentially decaying inflow'}
+
+    # Create figure
+    fig = plt.figure(figsize=(6,4))
+    ax = plt.subplot()
+    plt.xlabel('[Fe/H]')
+    plt.setp([a.minorticks_on() for a in fig.axes[:]])
+    plt.ylabel('dN/d[Fe/H]')
+
+    colors = ['k', plt.cm.Dark2(2), plt.cm.Dark2(3), plt.cm.Accent(0)]
+    linestyles = ['-','--',(0,(1,1)),'dashdot']
+
+    # Get indexes to access model
+    elem_names = {1:'H', 2:'He', 6:'C', 8:'O', 12:'Mg', 14:'Si', 20:'Ca', 22:'Ti', 25:'Mn', 26:'Fe', 28:'Ni', 56:'Ba', 63:'Eu'}
+    snindex = {}
+    for snindex_idx, snindex_elem in enumerate(atomic):
+        snindex[elem_names[snindex_elem]] = snindex_idx
+
+    # Get observed data
+    elem_data, delem_data, elems = getdata(galaxy='Scl', source='deimos', c=True, ba=True, mn=True, eu=True, ni=True, removerprocess='statistical', feh_denom=True)
+    elem_data_dart, delem_data_dart, _ = getdata(galaxy='Scl', source='dart', c=True, ba=True, mn=True, eu=True, ni=True, removerprocess='statistical', feh_denom=True)
+
+    # Plot DART data
+    x_obs_dart = elem_data_dart[0,:]
+    obsmask_dart = np.where((x_obs_dart > -3.5) & (x_obs_dart < 0.) & (delem_data_dart[0,:] < 0.4))[0]
+    x_obs_dart = x_obs_dart[obsmask_dart]
+    ax.hist(x_obs_dart, bins=20, fill=False, histtype='step', edgecolor=plt.cm.Set3(3), linewidth=1.5, density=True, label='DART')
+
+    # Plot DEIMOS data
+    x_obs = elem_data[0,:]
+    obsmask = np.where((x_obs > -3.5) & (x_obs < 0.) & (delem_data[0,:] < 0.4))[0]
+    x_obs = x_obs[obsmask]
+    ax.hist(x_obs, bins=20, color=plt.cm.Set3(0), alpha=0.7, density=True, label='DEIMOS')
+
+    # Get model data
+    for modelidx, modelname in enumerate(models):
+        model = modelnames[modelname]
+        x = model['eps'][:,snindex['Fe']]
+        x_step = 0.1
+        x_plot = np.arange(-3.5,x_step,x_step)
+        
+        mdot = []
+        for i in range(len(x_plot)):
+            # Add up all star formation that happened in this [Fe/H] step
+            mask = np.where((x_plot[i] - x_step/2. < x) & (x < x_plot[i] + x_step/2.))[0]
+            mdot.append(np.sum(model['mdot'][mask]))
+        mdot = np.array(mdot)
+        gauss_sigma = 1
+
+        # Plot model data
+        if modelname=='fiducial':
+            ax.plot(x_plot,scipy.ndimage.filters.gaussian_filter(mdot/np.sum(mdot)/x_step,gauss_sigma), ls=linestyles[modelidx], color=colors[modelidx], lw=4, label='Fiducial')
+        else:
+            ax.plot(x_plot,scipy.ndimage.filters.gaussian_filter(mdot/np.sum(mdot)/x_step,gauss_sigma), ls=linestyles[modelidx], color=colors[modelidx], lw=4, label=titles[modelname]+r', $\Delta(\mathrm{AIC})=$'+' '+str(int(llnames[modelname]-ll)))
+    
+    ax.legend(fontsize=10, bbox_to_anchor=(-0.03,1.02,1,0.2), loc="lower left")
+    plt.savefig('plots/mdfcompare.png', bbox_inches='tight')
+    plt.show()
+
+    return
+
 if __name__=="__main__":
-    compare_sfh(['fiducial','delaysf','reioniz','rampressure'], 'modelconstruction')
+    #compare_sfh(['fiducial','delaysf','reioniz','rampressure'], 'modelconstruction')
     #compare_sfh(['fiducial','inflowconst','inflowexp','outflow'], 'modelflows')
     #compare_sfh(['fiducial','iadtd_medhimin','iadtd_index05','iadtd_cutoff'], 'iadtd', fiducialtitle='Fiducial: '+r'$t^{-1.1}$, '+r'$t_{\mathrm{min}}=100$Myr')
     #compare_sfh(['fiducial','iadtd_maoz17','iadtd_lomin','iadtd_medhimin','iadtd_index05','iadtd_index15','iadtd_cutoff'], 'iadtd', fiducialtitle='Fiducial: '+r'$t^{-1.1}$, '+r'$t_{\mathrm{min}}=100$Myr')
@@ -375,3 +451,5 @@ if __name__=="__main__":
     #compare_yields('IaSN')
     #compare_yields('rprocess', feh_denom=False)
     #compare_yields('rprocess_bestfit', feh_denom=False)
+
+    compare_mdf()
