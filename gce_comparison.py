@@ -35,6 +35,7 @@ import cycler
 import cmasher as cmr
 
 # Parameters for GCE models
+'''
 scl_test_bothba_ba = [0.43936705, 0.30507695, 4.94212835, 0.49191929, 0.83307305, 0., 0.5627217, 1.291076, 0.85956343, 0.28562448, 1.56742018, 0.89342641, 3-0.01507226, 0.]
 scl_delaySFtest = [0.36963815, 0.34288084, 5.07381209, 0.73231527, 0.62864803, 0., 0.57543231, 1.2897485, 0.84635716, 0.30015869, 1.63283893, 0.93347269, 3-0.01408449, 0.]
 scl_reioniz = [0.6411130691937341,0.24774922551128908,4.643962259917035,0.780729799230917,0.8778813431231577,0.,0.6460839575200857,1.325818097299844,0.7336606535374587,0.26137519407263077,2.7368268789441252,0.9896010405595509,3-0.0056036256827435346, 0.]
@@ -48,37 +49,44 @@ scl_iadtd_hiindex = [0.5446693466306317,0.3092340505074539,4.662881112688744,0.6
 scl_iadtd_cutoff = [0.3907399651848807,0.31789100855381613,4.976079316209285,0.4695236246906028,0.846066267741512,0.,0.5875359459715601,1.301460415128067,0.8259997983101177,0.28742136661443407,1.3484797631127226,0.7983782066064008,3-0.017047139327600602]
 scl_imf_chabrier03 = [1.0680354182219103,0.29087824048307825,5.785175190841888,0.32614582504078626,0.6880109337422085,0.,0.8347392374670606,1.3517172298659013,0.5890139428180761,0.2739631120786506,1.7994398252473034,0.9807143044292836,3-0.011967114634611836]
 scl_imf_salpeter55 = [0.5089476125938007,0.32350548351207437,5.391102320123509,0.4003999995632118,0.7799460946453387,0.,0.6164885754010938,1.3299979696872426,0.7198534106528632,0.25245975628500583,2.182828951358294,0.9847378266515173,3-0.00954264476609045]
+'''
 
 scl_final = [0.5396618135382528,0.2681707153106137,4.786076060415441,0.8023090276883353,0.7138939456571872,0.0,0.5817572301890092,1.3208335678363674,1.4026483028805945,0.242765941495789,1.9910917547173197,1.095006566170003,2.7833883548905374, 0.]
 scl_inflowconst = [0.47, 6.49, 2.16, 1.82, 0.67, 0., 1.37, 0.95, 0.14, 0.68, 0.04, 1.77, 0.]
 scl_inflowexp = [0.06496605154954403,0.8150993638882837,4.845007136130306,1.493663884032438,0.293715730475182,0.0,0.5810620713192151,1.3270197716870957,1.3441501508542837,0.22119269118819115,2.038375621935514,0.9877440723565699,2.9129627976905557, 0.]
+scl_delaySF = [0.4385141670294113,0.31321776124241185,4.850818226490671,1.294482857279215,0.4956043540963967,0.0,0.6162743721095508,1.3331982357049064,1.3301465946600732,0.24926427379065966,2.356362120936387,1.0816722104194887,2.896019965318881, 0.]
+scl_rampressure = [0.5004475144848842,0.28014976193133256,4.560594860622903,0.7634584087926897,0.7340948173807795,0.0,0.5943831807492506,1.321766413812236,1.3977791844958891,0.2532147136111331,2.0542872982044007,1.117493993641292,2.797300482828119,3.1984896617719167, 0.]
+scl_imf_chabrier03 = [1.108118108946736,0.2840096006704498,5.6694650075134145,0.34191059182870215,0.7027291258587196,0.0,0.8609232472738231,1.3633020349319787,1.0318175595532324,0.2576929101881398,1.97387804655777,1.5108944744261965,2.611712835999786, 0.]
+scl_imf_salpeter55 =[0.5404783413198105,0.3129102870095325,5.320937484652554,0.45215716255996485,0.7580298734439346,0.0,0.6533602115066313,1.3414525941847104,1.2154187399810408,0.24681829322818655,2.5304790628863247,1.5788499974533377,2.704077988483312, 0.]
+scl_dtd_tmin200 = [0.24622522648838643,0.3792536257559661,4.81425127434149,0.575627246584796,0.6732329412228181,0.0,0.6608382723291828,1.4119642498905187,1.1924669319481056,0.17237107857841683,1.1165533126821832,1.216109930449961,2.1410963654806854, 0.]
+scl_dtd_index05 = [0.2974899305985777,0.33157342379596605,4.904629711948725,0.6035346678850428,0.7683646877884314,0.0,0.7622064730631224,1.374204559242403,1.171347119843871,0.24184697758748375,0.940535517167115,0.7624298267184866,2.487822650237609, 0.]
+scl_dtd_cutoff = [0.4379910365488767,0.2945709897315299,4.819133791981226,0.6838758109204235,0.7692711561040138,0.0,0.5948843208628403,1.326715583307327,1.3911883185668448,0.2506320725761307,1.5903178004028924,0.9151543982866176,2.784141069743188, 0.]
 
 def compare_sfh(models, title, fiducialtitle='Fiducial'):
     """Compare SFH outputs from multiple GCE models."""
 
     # Run GCE models
-    model, _, ll = gce.runmodel(scl_final, plot=False, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False)
-    model_reioniz, _, ll_reioniz = gce.runmodel(scl_reioniz, plot=False, title="Sculptor dSph (reionization)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=True)
-    model_delaysf, _, ll_delaysf = gce.runmodel(scl_delaySFtest, plot=False, title="Sculptor dSph (delayed SF)", empirical=True, empiricalfit=True, feh_denom=True, delay=True)
-    model_rampressure, _, ll_rampressure = gce.runmodel(scl_rampressure, plot=False, title="Sculptor dSph (ram pressure)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, rampressure=True)
-    model_maoz17, _, ll_maoz17 = gce.runmodel(scl_iadtd_maoz17, plot=False, title="Sculptor dSph (Maoz+17 field Ia DTD)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='maoz17')
-    model_lomin, _, ll_lomin = gce.runmodel(scl_iadtd_lomin, plot=False, title="Sculptor dSph (min Ia delay time = 50 Myr)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='lowmindelay')
-    model_himin, _, ll_himin = gce.runmodel(scl_iadtd_himin, plot=False, title="Sculptor dSph (min Ia delay time = 500 Myr)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='highmindelay')
-    model_medhimin, _, ll_medhimin = gce.runmodel(scl_iadtd_medhimin, plot=False, title="Sculptor dSph (min Ia delay time = 200 Myr)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='medhidelay')
-    model_loindex, _, ll_loindex = gce.runmodel(scl_iadtd_loindex, plot=False, title="Sculptor dSph (Ia DTD index = -0.5)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='index05')
-    model_hiindex, _, ll_hiindex = gce.runmodel(scl_iadtd_hiindex, plot=False, title="Sculptor dSph (Ia DTD index = -1.5)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='index15')
-    model_cutoff, _, ll_cutoff = gce.runmodel(scl_iadtd_cutoff, plot=False, title="Sculptor dSph (Ia DTD with cutoff)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='cutoff')
-    model_chabrier, _, ll_chabrier = gce.runmodel(scl_imf_chabrier03, plot=False, title="Sculptor dSph (Chabrier+03 IMF)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, imf='chabrier03')
-    model_salpeter, _, ll_salpeter = gce.runmodel(scl_imf_salpeter55, plot=False, title="Sculptor dSph (Salpeter+55 IMF)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, imf='salpeter55')
+    model, _, ll = gce.runmodel(scl_final, plot=False, title="Sculptor dSph", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False, nomgas0=True)
+    model_inflowexp, _, ll_inflowexp = gce.runmodel(scl_inflowexp, plot=False, title="Sculptor dSph (exp dec inflow)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, mgenhance=False, nomgas0=True, inflow='expdec')
+    #model_reioniz, _, ll_reioniz = gce.runmodel(scl_reioniz, plot=False, title="Sculptor dSph (reionization)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=True)
+    model_delaysf, _, ll_delaysf = gce.runmodel(scl_delaySF, plot=False, title="Sculptor dSph (delayed SF)", empirical=True, empiricalfit=True, feh_denom=True, delay=True, mgenhance=False, nomgas0=True)
+    model_rampressure, _, ll_rampressure = gce.runmodel(scl_rampressure, plot=False, title="Sculptor dSph (ram pressure)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, reioniz=False, rampressure=True, mgenhance=False, nomgas0=True)
+    #model_maoz17, _, ll_maoz17 = gce.runmodel(scl_iadtd_maoz17, plot=False, title="Sculptor dSph (Maoz+17 field Ia DTD)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='maoz17')
+    #model_lomin, _, ll_lomin = gce.runmodel(scl_iadtd_lomin, plot=False, title="Sculptor dSph (min Ia delay time = 50 Myr)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='lowmindelay')
+    #model_himin, _, ll_himin = gce.runmodel(scl_iadtd_himin, plot=False, title="Sculptor dSph (min Ia delay time = 500 Myr)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='highmindelay')
+    model_medhimin, _, ll_medhimin = gce.runmodel(scl_dtd_tmin200, plot=False, title="Sculptor dSph (min Ia delay time = 200 Myr)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='medhidelay', mgenhance=False, nomgas0=True)
+    model_loindex, _, ll_loindex = gce.runmodel(scl_dtd_index05, plot=False, title="Sculptor dSph (Ia DTD index = -0.5)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='index05', mgenhance=False, nomgas0=True)
+    #model_hiindex, _, ll_hiindex = gce.runmodel(scl_iadtd_hiindex, plot=False, title="Sculptor dSph (Ia DTD index = -1.5)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='index15')
+    model_cutoff, _, ll_cutoff = gce.runmodel(scl_dtd_cutoff, plot=False, title="Sculptor dSph (Ia DTD with cutoff)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, ia_dtd='cutoff', mgenhance=False, nomgas0=True)
+    model_chabrier, _, ll_chabrier = gce.runmodel(scl_imf_chabrier03, plot=False, title="Sculptor dSph (Chabrier+03 IMF)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, imf='chabrier03', mgenhance=False, nomgas0=True)
+    model_salpeter, _, ll_salpeter = gce.runmodel(scl_imf_salpeter55, plot=False, title="Sculptor dSph (Salpeter+55 IMF)", empirical=True, empiricalfit=True, feh_denom=True, delay=False, imf='salpeter55', mgenhance=False, nomgas0=True)
 
     # Get model names
-    modelnames = {'fiducial':model, 'reioniz':model_reioniz, 'delaysf':model_delaysf, 'rampressure':model_rampressure,
-                'iadtd_maoz17':model_maoz17, 'iadtd_lomin':model_lomin, 'iadtd_himin':model_himin, 'iadtd_medhimin':model_medhimin, 'iadtd_index05':model_loindex, 'iadtd_index15':model_hiindex, 'iadtd_cutoff':model_cutoff,
-                'imf_chabrier':model_chabrier, 'imf_salpeter':model_salpeter}
-    llnames = {'fiducial':ll, 'reioniz':ll_reioniz, 'delaysf':ll_delaysf, 'rampressure':ll_rampressure,
-                'iadtd_maoz17':ll_maoz17,'iadtd_lomin':ll_lomin,'iadtd_himin':ll_himin, 'iadtd_medhimin':ll_medhimin, 'iadtd_index05':ll_loindex, 'iadtd_index15':ll_hiindex, 'iadtd_cutoff':ll_cutoff,
-                'imf_chabrier':ll_chabrier, 'imf_salpeter':ll_salpeter}
-    titles = {'fiducial':'Fiducial', 'reioniz':'With reionization', 'delaysf':'Delayed SF', 'rampressure':'Ram pressure',
+    modelnames = {'fiducial':model, 'inflowexp':model_inflowexp, 'delaysf':model_delaysf, 'rampressure':model_rampressure,
+                'iadtd_medhimin':model_medhimin, 'iadtd_index05':model_loindex, 'iadtd_cutoff':model_cutoff, 'imf_chabrier':model_chabrier, 'imf_salpeter':model_salpeter} # 'reioniz':model_reioniz, 'iadtd_maoz17':model_maoz17, 'iadtd_lomin':model_lomin, 'iadtd_himin':model_himin, 'iadtd_index15':model_hiindex, 
+    llnames = {'fiducial':ll, 'inflowexp':ll_inflowexp, 'delaysf':ll_delaysf, 'rampressure':ll_rampressure,
+                'iadtd_medhimin':ll_medhimin, 'iadtd_index05':ll_loindex, 'iadtd_cutoff':ll_cutoff, 'imf_chabrier':ll_chabrier, 'imf_salpeter':ll_salpeter} # 'reioniz':ll_reioniz, 'iadtd_maoz17':ll_maoz17, 'iadtd_lomin':ll_lomin, 'iadtd_himin':ll_himin, 'iadtd_index15':ll_hiindex, 
+    titles = {'fiducial':'Fiducial', 'inflowexp':'Exp decline inflow', 'reioniz':'With reionization', 'delaysf':'Delayed SF', 'rampressure':'Ram pressure',
                 'iadtd_maoz17':'Maoz+17 Ia DTD', 'iadtd_lomin':'Ia DTD: '+r'$t_{\mathrm{min}}=50$Myr', 'iadtd_himin':'Ia DTD: '+r'$t_{\mathrm{min}}=500$Myr', 'iadtd_medhimin':'Ia DTD: '+r'$t_{\mathrm{min}}=200$Myr', 
                 'iadtd_index05':'Ia DTD: '+r'$t^{-0.5}$', 'iadtd_index15':'Ia DTD: '+r'$t^{-1.5}$', 'iadtd_cutoff':'Ia DTD with cutoff',
                 'imf_chabrier':'Chabrier (2003) IMF', 'imf_salpeter':'Salpeter (1955) IMF'}
@@ -283,7 +291,7 @@ def compare_yields(plottype, feh_denom=True):
 
             # Create legend
             if idx==0:
-                axs[idx].legend(fontsize=10, bbox_to_anchor=(-0.03,1.02,1,0.2), loc="lower left")
+                axs[idx].legend(fontsize=10, bbox_to_anchor=(-0.03,1.02,1,0.2), loc="lower left", handlelength=3)
 
         #plt.legend(fontsize=10) #, bbox_to_anchor=(0,1.02,1,0.2), loc="lower left")
         plt.savefig('plots/'+'rprocess_compare.png', bbox_inches='tight')
@@ -360,7 +368,7 @@ def compare_yields(plottype, feh_denom=True):
 
             # Create legend
             if idx==0:
-                axs[idx].legend(fontsize=10, bbox_to_anchor=(-0.03,1.02,1,0.2), loc="lower left")
+                axs[idx].legend(fontsize=10, bbox_to_anchor=(-0.03,1.02,1,0.2), loc="lower left", handlelength=3)
 
         #plt.legend(fontsize=10) #, bbox_to_anchor=(0,1.02,1,0.2), loc="lower left")
         plt.savefig('plots/'+'rprocess_compare_bestfit.png', bbox_inches='tight')
@@ -380,7 +388,7 @@ def compare_mdf(fiducialtitle='Fiducial'):
     # Get model names
     modelnames = {'fiducial':model, 'inflowconst':model_inflowconst, 'inflowexp':model_inflowexp}
     llnames = {'fiducial':ll, 'inflowconst':ll_inflowconst, 'inflowexp':ll_inflowexp}
-    titles = {'fiducial':'Fiducial', 'inflowconst':'Constant inflow', 'inflowexp':'Exponentially decaying inflow'}
+    titles = {'fiducial':'Fiducial', 'inflowconst':'Constant inflow', 'inflowexp':'Exp decline inflow'}
 
     # Create figure
     fig = plt.figure(figsize=(6,4))
@@ -442,11 +450,11 @@ def compare_mdf(fiducialtitle='Fiducial'):
     return
 
 if __name__=="__main__":
-    #compare_sfh(['fiducial','delaysf','reioniz','rampressure'], 'modelconstruction')
+    compare_sfh(['fiducial','inflowexp','delaysf','rampressure'], 'modelconstruction')
     #compare_sfh(['fiducial','inflowconst','inflowexp','outflow'], 'modelflows')
-    #compare_sfh(['fiducial','iadtd_medhimin','iadtd_index05','iadtd_cutoff'], 'iadtd', fiducialtitle='Fiducial: '+r'$t^{-1.1}$, '+r'$t_{\mathrm{min}}=100$Myr')
+    compare_sfh(['fiducial','iadtd_medhimin','iadtd_index05','iadtd_cutoff'], 'iadtd', fiducialtitle='Fiducial: '+r'$t^{-1.1}$, '+r'$t_{\mathrm{min}}=100$Myr')
     #compare_sfh(['fiducial','iadtd_maoz17','iadtd_lomin','iadtd_medhimin','iadtd_index05','iadtd_index15','iadtd_cutoff'], 'iadtd', fiducialtitle='Fiducial: '+r'$t^{-1.1}$, '+r'$t_{\mathrm{min}}=100$Myr')
-    #compare_sfh(['fiducial','imf_chabrier','imf_salpeter'], 'imf', fiducialtitle='Fiducial: Kroupa et al. (1993) IMF')
+    compare_sfh(['fiducial','imf_chabrier','imf_salpeter'], 'imf', fiducialtitle='Fiducial: Kroupa et al. (1993) IMF')
     
     #compare_yields('IaSN')
     #compare_yields('rprocess', feh_denom=False)

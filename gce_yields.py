@@ -14,6 +14,7 @@ import pandas as pd
 import os
 from scipy.stats import lognorm, norm
 import imf
+import matplotlib.pyplot as plt
 
 # Set up parameters
 # Atomic data
@@ -596,6 +597,12 @@ def initialize_yields(yield_path='yields/', r_process_keyword='none', AGB_source
         M_ces06 = np.array([12.0, 15.0, 30.0, 40.0])
         eu_ces06_weakr = np.array([4.5e-8, 3.0e-8, 5.0e-10, 0.])
 
+        plt.plot(M_li14, ba_li14_weakr, 'k-', label='Li+14')
+        plt.show()
+        
+        plt.plot(M_ces06, eu_ces06_weakr, 'k-', label='Cescutti+06')
+        plt.show()
+
         # Linearly interpolate to high-mass end
         ba_li14_weakr[-2] = ba_li14_weakr[-3]*M_li14[-2]/M_li14[-3]
         ba_li14_weakr[-1] = ba_li14_weakr[-2]*M_li14[-1]/M_li14[-2]
@@ -821,7 +828,6 @@ if __name__ == "__main__":
 
     #readkaryields()
 
-    #nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB = initialize_yields(r_process_keyword='none')
+    nel, eps_sun, SN_yield, AGB_yield, M_SN, z_II, M_AGB, z_AGB = initialize_yields(r_process_keyword='typical_SN_only')
     #print(eps_sun, SN_yield['atomic'][9], SN_yield['Ia'][9,:])
-    nel, eps_sun, atomic, weight, f_ia_metallicity, f_ii_metallicity, f_agb_metallicity = initialize_empirical()
-    print(nel, atomic)
+    #nel, eps_sun, atomic, weight, f_ia_metallicity, f_ii_metallicity, f_agb_metallicity = initialize_empirical()
